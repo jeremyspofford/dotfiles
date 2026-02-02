@@ -1,0 +1,52 @@
+[user]
+    name = Jeremy Spofford
+    email = jeremy@arialabs.ai
+
+[init]
+    defaultBranch = main
+
+[core]
+    editor = nvim
+    autocrlf = input
+    pager = delta
+
+[pull]
+    rebase = true
+
+[push]
+    default = current
+    autoSetupRemote = true
+
+[fetch]
+    prune = true
+
+[rebase]
+    autoStash = true
+
+[merge]
+    conflictstyle = diff3
+
+[diff]
+    colorMoved = default
+
+[alias]
+    co = checkout
+    br = branch
+    ci = commit
+    st = status
+    unstage = reset HEAD --
+    last = log -1 HEAD
+    lg = log --oneline --graph --decorate -20
+    branches = branch -a
+    remotes = remote -v
+    stashes = stash list
+    amend = commit --amend --no-edit
+    undo = reset --soft HEAD~1
+    wip = !git add -A && git commit -m 'WIP'
+
+[color]
+    ui = auto
+
+# Include machine-specific overrides
+[include]
+    path = ~/.gitconfig.local

@@ -1,0 +1,106 @@
+# Navigation
+alias ..='cd ..'
+alias ...='cd ../..'
+alias ....='cd ../../..'
+alias ~='cd ~'
+
+# List directory contents
+alias ls='ls --color=auto'
+alias ll='ls -alF'
+alias la='ls -A'
+alias l='ls -CF'
+
+# Safety nets
+alias rm='rm -i'
+alias cp='cp -i'
+alias mv='mv -i'
+alias mkdir='mkdir -pv'
+
+# Grep with color
+alias grep='grep --color=auto'
+alias fgrep='fgrep --color=auto'
+alias egrep='egrep --color=auto'
+
+# Git shortcuts
+alias g='git'
+alias gs='git status'
+alias ga='git add'
+alias gc='git commit'
+alias gp='git push'
+alias gl='git pull'
+alias gd='git diff'
+alias gco='git checkout'
+alias gb='git branch'
+alias glog='git log --oneline --graph --decorate -20'
+
+# Common commands
+alias c='clear'
+alias h='history'
+alias j='jobs -l'
+alias path='echo -e ${PATH//:/\\n}'
+alias now='date +"%Y-%m-%d %H:%M:%S"'
+
+# Disk usage
+alias df='df -h'
+alias du='du -h'
+alias duh='du -h --max-depth=1 | sort -hr'
+
+# Process management
+alias psg='ps aux | grep -v grep | grep -i'
+alias topcpu='ps aux --sort=-%cpu | head -20'
+alias topmem='ps aux --sort=-%mem | head -20'
+
+# Network
+alias ports='netstat -tulanp'
+alias myip='curl -s ifconfig.me'
+
+# Docker (if installed)
+alias d='docker'
+alias dc='docker compose'
+alias dps='docker ps'
+alias dpa='docker ps -a'
+alias di='docker images'
+alias dex='docker exec -it'
+alias dlog='docker logs -f'
+alias dprune='docker system prune -af'
+
+# Kubernetes (if installed)
+alias k='kubectl'
+alias kgp='kubectl get pods'
+alias kgs='kubectl get svc'
+alias kgd='kubectl get deployments'
+alias kga='kubectl get all'
+alias kd='kubectl describe'
+alias kl='kubectl logs -f'
+alias kex='kubectl exec -it'
+
+# Terraform (if installed)
+alias tf='terraform'
+alias tfi='terraform init'
+alias tfp='terraform plan'
+alias tfa='terraform apply'
+alias tfd='terraform destroy'
+
+# Python
+alias py='python3'
+alias pip='pip3'
+alias venv='python3 -m venv'
+alias activate='source venv/bin/activate'
+
+# Node
+alias ni='npm install'
+alias nr='npm run'
+alias ns='npm start'
+alias nt='npm test'
+
+# Editors
+alias v='nvim'
+alias vim='nvim'
+
+# Misc
+alias weather='curl wttr.in'
+alias serve='python3 -m http.server 8000'
+alias uuid='uuidgen | tr "[:upper:]" "[:lower:]"'
+
+# Machine-specific aliases (create ~/.aliases.local)
+[[ -f ~/.aliases.local ]] && source ~/.aliases.local

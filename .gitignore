@@ -1,0 +1,29 @@
+# Secrets - NEVER commit these
+.secrets
+*.secret
+*.local
+!*.template
+
+# SSH private keys
+ssh/.ssh/id_*
+ssh/.ssh/*.pem
+!ssh/.ssh/*.pub
+!ssh/.ssh/config.template
+
+# macOS
+.DS_Store
+
+# Editor backups
+*~
+*.swp
+*.swo
+.*.swp
+
+# Node
+node_modules/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
