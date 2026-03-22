@@ -43,7 +43,7 @@ if ! command -v stow &>/dev/null; then
 fi
 
 # ─── SSH directory setup ────────────────────────────────────────────
-mkdir -p "$HOME/.ssh/keys"
+mkdir -p "$HOME/.ssh"
 chmod 700 "$HOME/.ssh"
 
 # ─── First run: back up conflicting files ───────────────────────────

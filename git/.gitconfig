@@ -12,6 +12,7 @@
 	editor = nvim
 	autocrlf = input
 	pager = delta
+	sshCommand = ssh.exe
 
 [pull]
 	rebase = true

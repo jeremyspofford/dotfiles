@@ -35,36 +35,20 @@ fi
 export EDITOR=nvim
 export VISUAL=nvim
 
-# ─── 1Password SSH Agent ─────────────────────────────────────────────
-# macOS:       native socket in ~/Library/Group Containers/
-# Linux:       1Password app creates ~/.1password/agent.sock
-# WSL2:        relay Windows named pipe via npiperelay + socat
-_1p_setup() {
-  case "$PLATFORM" in
-    macos)
-      local sock="$HOME/Library/Group Containers/2BUA8C4S2C.com.1password/t/agent.sock"
-      [ -S "$sock" ] && export SSH_AUTH_SOCK="$sock"
-      ;;
-    linux)
-      local sock="$HOME/.1password/agent.sock"
-      [ -S "$sock" ] && export SSH_AUTH_SOCK="$sock"
-      ;;
-    wsl)
-      local sock="$HOME/.1password/agent.sock"
-      if [ ! -S "$sock" ]; then
-        local relay
-        relay="$(command -v npiperelay.exe 2>/dev/null)"
-        if [ -n "$relay" ] && command -v socat >/dev/null 2>&1; then
-          mkdir -p "$HOME/.1password"
-          (setsid socat UNIX-LISTEN:"$sock",fork EXEC:"$relay -ei -s //./pipe/openssh-ssh-agent",nofork &) >/dev/null 2>&1
-        fi
-      fi
-      [ -S "$sock" ] && export SSH_AUTH_SOCK="$sock"
-      ;;
-  esac
-}
-_1p_setup
-unset -f _1p_setup
+# ─── SSH Agent ───────────────────────────────────────────────────────
+# WSL:   SSH keys extracted from 1Password live in ~/.ssh/ (not committed).
+# macOS: 1Password agent socket.
+# Linux: 1Password agent socket.
+case "$PLATFORM" in
+  macos)
+    _sock="$HOME/Library/Group Containers/2BUA8C4S2C.com.1password/t/agent.sock"
+    [ -S "$_sock" ] && export SSH_AUTH_SOCK="$_sock"
+    unset _sock
+    ;;
+  linux)
+    [ -S "$HOME/.1password/agent.sock" ] && export SSH_AUTH_SOCK="$HOME/.1password/agent.sock"
+    ;;
+esac
 
 # ─── Aliases ──────────────────────────────────────────────────────────
 [ -f ~/.aliases ] && . ~/.aliases
