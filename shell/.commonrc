@@ -35,11 +35,14 @@ fi
 export EDITOR=nvim
 export VISUAL=nvim
 
-# ─── SSH Agent ───────────────────────────────────────────────────────
-# WSL:   SSH keys extracted from 1Password live in ~/.ssh/ (not committed).
+# ─── 1Password SSH ───────────────────────────────────────────────────
+# WSL:   ssh.exe talks to 1Password agent via Windows named pipe.
 # macOS: 1Password agent socket.
 # Linux: 1Password agent socket.
 case "$PLATFORM" in
+  wsl)
+    export GIT_SSH_COMMAND="ssh.exe"
+    ;;
   macos)
     _sock="$HOME/Library/Group Containers/2BUA8C4S2C.com.1password/t/agent.sock"
     [ -S "$_sock" ] && export SSH_AUTH_SOCK="$_sock"
