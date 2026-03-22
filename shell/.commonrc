@@ -1,0 +1,84 @@
+# ~/.commonrc — shared config for bash and zsh
+# Sourced by both .bashrc and .zshrc. No shell-specific syntax here.
+
+# ─── Platform detection ───────────────────────────────────────────────
+case "$(uname -s)" in
+  Darwin) PLATFORM="macos" ;;
+  Linux)
+    if grep -qi microsoft /proc/version 2>/dev/null; then
+      PLATFORM="wsl"
+    else
+      PLATFORM="linux"
+    fi
+    ;;
+  *) PLATFORM="unknown" ;;
+esac
+export PLATFORM
+
+# ─── PATH ─────────────────────────────────────────────────────────────
+export PATH="$HOME/.local/bin:$HOME/bin:$PATH"
+export PATH="$HOME/.npm-global/bin:$PATH"
+
+# bun
+export BUN_INSTALL="$HOME/.bun"
+[ -d "$BUN_INSTALL" ] && export PATH="$BUN_INSTALL/bin:$PATH"
+
+# Go
+[ -d "$HOME/go/bin" ] && export PATH="$HOME/go/bin:$PATH"
+
+# Homebrew (macOS)
+if [ "$PLATFORM" = "macos" ]; then
+  [ -x /opt/homebrew/bin/brew ] && eval "$(/opt/homebrew/bin/brew shellenv)"
+fi
+
+# ─── Editor ───────────────────────────────────────────────────────────
+export EDITOR=nvim
+export VISUAL=nvim
+
+# ─── 1Password SSH Agent ─────────────────────────────────────────────
+# macOS:       native socket in ~/Library/Group Containers/
+# Linux:       1Password app creates ~/.1password/agent.sock
+# WSL2:        relay Windows named pipe via npiperelay + socat
+_1p_setup() {
+  case "$PLATFORM" in
+    macos)
+      local sock="$HOME/Library/Group Containers/2BUA8C4S2C.com.1password/t/agent.sock"
+      [ -S "$sock" ] && export SSH_AUTH_SOCK="$sock"
+      ;;
+    linux)
+      local sock="$HOME/.1password/agent.sock"
+      [ -S "$sock" ] && export SSH_AUTH_SOCK="$sock"
+      ;;
+    wsl)
+      local sock="$HOME/.1password/agent.sock"
+      if [ ! -S "$sock" ]; then
+        local relay
+        relay="$(command -v npiperelay.exe 2>/dev/null)"
+        if [ -n "$relay" ] && command -v socat >/dev/null 2>&1; then
+          mkdir -p "$HOME/.1password"
+          (setsid socat UNIX-LISTEN:"$sock",fork EXEC:"$relay -ei -s //./pipe/openssh-ssh-agent",nofork &) >/dev/null 2>&1
+        fi
+      fi
+      [ -S "$sock" ] && export SSH_AUTH_SOCK="$sock"
+      ;;
+  esac
+}
+_1p_setup
+unset -f _1p_setup
+
+# ─── Aliases ──────────────────────────────────────────────────────────
+[ -f ~/.aliases ] && . ~/.aliases
+
+# ─── Secrets (never committed) ───────────────────────────────────────
+[ -f ~/.secrets ] && . ~/.secrets
+
+# ─── Tool loaders ────────────────────────────────────────────────────
+# nvm
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
+
+# mise (modern asdf alternative)
+command -v mise >/dev/null 2>&1 && eval "$(mise activate "${SHELL##*/}")"
+
+# ─── Machine-specific overrides ──────────────────────────────────────
+[ -f ~/.commonrc.local ] && . ~/.commonrc.local

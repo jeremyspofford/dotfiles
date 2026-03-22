@@ -1,82 +1,119 @@
 # dotfiles
 
-Jeremy's personal dotfiles, managed with [GNU Stow](https://www.gnu.org/software/stow/).
+Personal dotfiles managed with [GNU Stow](https://www.gnu.org/software/stow/). Works on macOS, Linux, and WSL2.
 
-## Quick Start
+## What's inside
+
+| Package | Contents |
+|---------|----------|
+| `git/` | `.gitconfig` with aliases, delta pager, Aria Labs conditional identity |
+| `shell/` | `.bashrc`, `.zshrc`, `.commonrc` (shared config), `.aliases` |
+| `ssh/` | Multi-account SSH config (GitHub personal, GitHub Aria Labs, GitLab) |
+| `nvim/` | Minimal `init.lua` — line numbers, space leader, sane defaults |
+
+Shell config is split into three layers:
+- `.commonrc` — platform detection, PATH, 1Password SSH agent, tool loaders (nvm, mise, bun, gcloud). Sourced by both `.bashrc` and `.zshrc`.
+- `.bashrc` / `.zshrc` — shell-specific settings (prompt, completion, keybindings).
+- `.aliases` — platform-aware aliases for git, docker, k8s, terraform, etc.
+
+## Quickstart
+
+### Prerequisites
+
+All platforms need [GNU Stow](https://www.gnu.org/software/stow/) and [delta](https://github.com/dandavella/delta) (git pager).
+
+**macOS:**
+```bash
+brew install stow git-delta
+```
+
+**Ubuntu/Debian (including WSL2):**
+```bash
+sudo apt install stow
+# delta: download .deb from https://github.com/dandavella/delta/releases
+```
+
+### Install
 
 ```bash
-# Clone the repo
-git clone git@github.com:jeremyspofford/dotfiles.git ~/.dotfiles
-cd ~/.dotfiles
-
-# Install stow if needed
-sudo apt install stow  # Debian/Ubuntu
-brew install stow      # macOS
-
-# Symlink everything
-./install.sh
-
-# Or symlink specific packages
-stow git
-stow shell
-stow nvim
-```
-
-## Structure
-
-Each directory is a "package" that maps to `$HOME`:
-
-```
-dotfiles/
-├── git/           # Git configuration
-│   └── .gitconfig
-├── shell/         # Shell configuration
-│   ├── .bashrc
-│   ├── .zshrc
-│   └── .aliases
-├── nvim/          # Neovim configuration
-│   └── .config/
-│       └── nvim/
-└── ssh/           # SSH config (templates only)
-    └── .ssh/
-        └── config.template
-```
-
-## Usage
-
-### Install all packages
-```bash
+git clone git@github.com:jeremyspofford/dotfiles.git ~/dotfiles
+cd ~/dotfiles
 ./install.sh
 ```
 
-### Install specific package
+Stow symlinks each package into `$HOME`. Restart your shell afterward.
+
+### Install specific packages
+
 ```bash
-stow git      # Symlinks git/.gitconfig → ~/.gitconfig
-stow shell    # Symlinks shell files to ~
+stow git          # just git config
+stow shell        # just shell config
+stow -D shell     # unlink shell config
+stow -n -v shell  # dry run (preview only)
 ```
 
-### Uninstall a package
-```bash
-stow -D git   # Removes symlinks for git package
-```
+## 1Password SSH agent
 
-### Preview changes (dry run)
-```bash
-stow -n -v git
-```
+SSH keys are stored in 1Password. The `.commonrc` auto-configures the SSH agent socket per platform:
 
-## Adding New Dotfiles
+| Platform | How it works |
+|----------|-------------|
+| **macOS** | Native socket at `~/Library/Group Containers/2BUA8C4S2C.com.1password/t/agent.sock`. Just works after enabling SSH agent in 1Password settings. |
+| **Linux** | 1Password Linux app creates `~/.1password/agent.sock` directly. Enable SSH agent in 1Password settings. |
+| **WSL2** | Bridges the Windows named pipe into a Unix socket via `npiperelay` + `socat`. Requires extra setup (see below). |
 
-1. Create a package directory: `mkdir -p package-name/.config/app`
-2. Move your dotfile: `mv ~/.config/app/config.toml package-name/.config/app/`
-3. Stow it: `stow package-name`
+### WSL2 setup
 
-## Notes
+1Password runs on Windows but WSL2 is a separate Linux VM. You need to relay the agent:
 
-- **Secrets**: Never commit secrets. Use `.gitignore` and templates (e.g., `.env.template`)
-- **Machine-specific**: Use `.local` suffix for machine-specific overrides (e.g., `.bashrc.local`)
-- **Backup**: Existing files are NOT overwritten. Stow will warn about conflicts.
+1. **Enable SSH agent** in 1Password (Windows) > Settings > Developer > "Use the SSH agent"
+2. **Install socat** in WSL2: `sudo apt install socat`
+3. **Install npiperelay:**
+   ```bash
+   go install github.com/jstarks/npiperelay@latest
+   # or download the binary from https://github.com/jstarks/npiperelay/releases
+   # and put npiperelay.exe somewhere on your Windows PATH
+   ```
+4. Restart your shell. `.commonrc` starts the relay automatically.
 
-## License
+### SSH key setup (all platforms)
 
-MIT
+1. Create your SSH keys in 1Password (or import existing ones)
+2. Export the **public keys only** to `~/.ssh/keys/`:
+   ```bash
+   mkdir -p ~/.ssh/keys
+   # Copy public keys from 1Password into:
+   #   ~/.ssh/keys/github-personal.pub
+   #   ~/.ssh/keys/github-arialabs.pub
+   #   ~/.ssh/keys/gitlab-client.pub
+   ```
+3. Verify: `ssh-add -l` should list your 1Password keys
+4. Test: `ssh -T git@github.com`
+
+No private keys on disk. 1Password handles signing.
+
+## Multi-account Git/SSH
+
+The Aria Labs GitHub org uses a separate SSH key and git identity:
+
+- **SSH:** Repos under `~/workspace/arialabs/` use `github.com-arialabs` host alias. Clone with `git clone-aria <repo>` or set the remote to `git@github.com-arialabs:arialabs/<repo>.git`.
+- **Git identity:** `.gitconfig` conditionally loads `.gitconfig-arialabs` (different name/email) for anything in `~/workspace/arialabs/`.
+
+## Machine-specific overrides
+
+Drop a `.local` file next to any config to add machine-specific settings without modifying the shared files:
+
+- `~/.commonrc.local` — extra PATH entries, env vars
+- `~/.bashrc.local` / `~/.zshrc.local` — shell-specific overrides
+- `~/.aliases.local` — extra aliases
+- `~/.secrets` — API keys, tokens (git-ignored)
+
+## Adding new dotfiles
+
+1. Create a package directory mirroring the home directory structure:
+   ```bash
+   mkdir -p tmux
+   mv ~/.tmux.conf tmux/.tmux.conf
+   ```
+2. Stow it: `stow tmux`
+3. Commit.

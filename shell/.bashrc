@@ -1,38 +1,27 @@
-# ~/.bashrc - Bash configuration
+# ~/.bashrc — Bash-specific configuration
 
-# If not running interactively, don't do anything
+# Non-interactive? Bail.
 case $- in
-    *i*) ;;
-      *) return;;
+  *i*) ;;
+    *) return ;;
 esac
 
-# History settings
+# ─── Bash options ─────────────────────────────────────────────────────
 HISTCONTROL=ignoreboth
 HISTSIZE=10000
 HISTFILESIZE=20000
 shopt -s histappend
-
-# Check window size after each command
 shopt -s checkwinsize
 
-# Enable color support
+# ─── Color support ────────────────────────────────────────────────────
 if [ -x /usr/bin/dircolors ]; then
-    test -r ~/.dircolors && eval "$(dircolors -b ~/.dircolors)" || eval "$(dircolors -b)"
+  test -r ~/.dircolors && eval "$(dircolors -b ~/.dircolors)" || eval "$(dircolors -b)"
 fi
 
-# Prompt - simple and clean
+# ─── Prompt ───────────────────────────────────────────────────────────
 PS1='\[\033[01;32m\]\u@\h\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$ '
 
-# Load aliases
-[[ -f ~/.aliases ]] && source ~/.aliases
-
-# Load secrets (if present, never commit this file!)
-[[ -f ~/.secrets ]] && source ~/.secrets
-
-# Load machine-specific configuration
-[[ -f ~/.bashrc.local ]] && source ~/.bashrc.local
-
-# Completion
+# ─── Completion ───────────────────────────────────────────────────────
 if ! shopt -oq posix; then
   if [ -f /usr/share/bash-completion/bash_completion ]; then
     . /usr/share/bash-completion/bash_completion
@@ -41,17 +30,15 @@ if ! shopt -oq posix; then
   fi
 fi
 
-# Common path additions (add more in ~/.bashrc.local)
-export PATH="$HOME/.local/bin:$HOME/bin:$PATH"
+# nvm bash completion
+[ -s "$NVM_DIR/bash_completion" ] && . "$NVM_DIR/bash_completion"
 
-# Default editor
-export EDITOR=nvim
-export VISUAL=nvim
+# Google Cloud SDK
+[ -f "$HOME/google-cloud-sdk/path.bash.inc" ] && . "$HOME/google-cloud-sdk/path.bash.inc"
+[ -f "$HOME/google-cloud-sdk/completion.bash.inc" ] && . "$HOME/google-cloud-sdk/completion.bash.inc"
 
-# Enable nvm if installed
-export NVM_DIR="$HOME/.nvm"
-[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"
+# ─── Common config ────────────────────────────────────────────────────
+[ -f ~/.commonrc ] && . ~/.commonrc
 
-# Enable mise if installed (modern asdf alternative)
-command -v mise &> /dev/null && eval "$(mise activate bash)"
+# ─── Machine-specific overrides ──────────────────────────────────────
+[ -f ~/.bashrc.local ] && . ~/.bashrc.local

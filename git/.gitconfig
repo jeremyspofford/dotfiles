@@ -1,52 +1,52 @@
 [user]
-    name = Jeremy Spofford
-    email = jeremy@arialabs.ai
+	name = Jeremy Spofford
+	email = 235280024+jeremyspofford@users.noreply.github.com
+
+[includeIf "gitdir:~/workspace/arialabs/"]
+	path = ~/.gitconfig-arialabs
 
 [init]
-    defaultBranch = main
+	defaultBranch = main
 
 [core]
-    editor = nvim
-    autocrlf = input
-    pager = delta
+	editor = nvim
+	autocrlf = input
+	pager = delta
 
 [pull]
-    rebase = true
+	rebase = true
 
 [push]
-    default = current
-    autoSetupRemote = true
+	default = current
+	autoSetupRemote = true
 
 [fetch]
-    prune = true
+	prune = true
 
 [rebase]
-    autoStash = true
+	autoStash = true
 
 [merge]
-    conflictstyle = diff3
+	conflictstyle = diff3
 
 [diff]
-    colorMoved = default
-
-[alias]
-    co = checkout
-    br = branch
-    ci = commit
-    st = status
-    unstage = reset HEAD --
-    last = log -1 HEAD
-    lg = log --oneline --graph --decorate -20
-    branches = branch -a
-    remotes = remote -v
-    stashes = stash list
-    amend = commit --amend --no-edit
-    undo = reset --soft HEAD~1
-    wip = !git add -A && git commit -m 'WIP'
+	colorMoved = default
 
 [color]
-    ui = auto
+	ui = auto
 
-# Include machine-specific overrides
-[include]
-    path = ~/.gitconfig.local
+[alias]
+	co = checkout
+	br = branch
+	ci = commit
+	st = status
+	unstage = reset HEAD --
+	last = log -1 HEAD
+	lg = log --oneline --graph --decorate -20
+	branches = branch -a
+	remotes = remote -v
+	stashes = stash list
+	amend = commit --amend --no-edit
+	undo = reset --soft HEAD~1
+	wip = !git add -A && git commit -m 'WIP'
+	clone-aria = "!f() { git clone git@github.com-arialabs:arialabs/$1.git ~/workspace/arialabs/$1; }; f"

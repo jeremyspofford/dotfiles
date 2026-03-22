@@ -1,28 +1,25 @@
-# Secrets - NEVER commit these
+# Secrets
 .secrets
 *.secret
 *.local
-!*.template
 
-# SSH private keys
+# SSH private keys (only .pub files and config are tracked)
 ssh/.ssh/id_*
+ssh/.ssh/keys/*
+!ssh/.ssh/keys/*.pub
 ssh/.ssh/*.pem
-!ssh/.ssh/*.pub
-!ssh/.ssh/config.template
 
-# macOS
+# OS
 .DS_Store
 
-# Editor backups
+# Editor
 *~
 *.swp
 *.swo
 .*.swp
 
-# Node
+# Runtime
 node_modules/
-
-# Python
 __pycache__/
 *.pyc
 .venv/
