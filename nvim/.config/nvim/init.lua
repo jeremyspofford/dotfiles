@@ -1,5 +1,6 @@
 -- ~/.config/nvim/init.lua
 -- Minimal Neovim config - add lazy.nvim or kickstart.nvim for more features
+require('config.lazy')
 
 -- Options
 vim.opt.number = true

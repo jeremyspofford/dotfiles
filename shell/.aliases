@@ -4,11 +4,16 @@ alias ...='cd ../..'
 alias ....='cd ../../..'
 alias ~='cd ~'
 
-# List directory contents
-alias ls='ls --color=auto'
+# List directory contents (platform-aware)
+if [ "$PLATFORM" = "macos" ]; then
+  alias ls='ls -G'
+else
+  alias ls='ls --color=auto'
+fi
 alias ll='ls -alF'
 alias la='ls -A'
 alias l='ls -CF'
+alias lsl='ls -l | grep "^l"' # List symbolic links
 
 # Safety nets
 alias rm='rm -i'
@@ -43,18 +48,31 @@ alias now='date +"%Y-%m-%d %H:%M:%S"'
 # Disk usage
 alias df='df -h'
 alias du='du -h'
-alias duh='du -h --max-depth=1 | sort -hr'
+if [ "$PLATFORM" = "macos" ]; then
+  alias duh='du -h -d 1 | sort -hr'
+else
+  alias duh='du -h --max-depth=1 | sort -hr'
+fi
 
 # Process management
 alias psg='ps aux | grep -v grep | grep -i'
-alias topcpu='ps aux --sort=-%cpu | head -20'
-alias topmem='ps aux --sort=-%mem | head -20'
+if [ "$PLATFORM" = "macos" ]; then
+  alias topcpu='ps aux -r | head -20'
+  alias topmem='ps aux -m | head -20'
+else
+  alias topcpu='ps aux --sort=-%cpu | head -20'
+  alias topmem='ps aux --sort=-%mem | head -20'
+fi
 
 # Network
-alias ports='netstat -tulanp'
+if [ "$PLATFORM" = "macos" ]; then
+  alias ports='lsof -iTCP -sTCP:LISTEN -n -P'
+else
+  alias ports='ss -tulanp'
+fi
 alias myip='curl -s ifconfig.me'
 
-# Docker (if installed)
+# Docker
 alias d='docker'
 alias dc='docker compose'
 alias dps='docker ps'
@@ -64,7 +82,7 @@ alias dex='docker exec -it'
 alias dlog='docker logs -f'
 alias dprune='docker system prune -af'
 
-# Kubernetes (if installed)
+# Kubernetes
 alias k='kubectl'
 alias kgp='kubectl get pods'
 alias kgs='kubectl get svc'
@@ -74,7 +92,7 @@ alias kd='kubectl describe'
 alias kl='kubectl logs -f'
 alias kex='kubectl exec -it'
 
-# Terraform (if installed)
+# Terraform
 alias tf='terraform'
 alias tfi='terraform init'
 alias tfp='terraform plan'
@@ -97,10 +115,22 @@ alias nt='npm test'
 alias v='nvim'
 alias vim='nvim'
 
+# File explorer (platform-aware)
+if [ "$PLATFORM" = "wsl" ]; then
+  _open_path() { explorer.exe "$(wslpath -w "${1:-.}")" 2>/dev/null; }
+  alias start='_open_path'
+elif [ "$PLATFORM" = "macos" ]; then
+  alias start='open'
+elif command -v xdg-open >/dev/null 2>&1; then
+  alias start='xdg-open'
+fi
+
 # Misc
 alias weather='curl wttr.in'
 alias serve='python3 -m http.server 8000'
-alias uuid='uuidgen | tr "[:upper:]" "[:lower:]"'
+if command -v uuidgen >/dev/null 2>&1; then
+  alias uuid='uuidgen | tr "[:upper:]" "[:lower:]"'
+fi
 
-# Machine-specific aliases (create ~/.aliases.local)
-[[ -f ~/.aliases.local ]] && source ~/.aliases.local
+# Machine-specific aliases
+[ -f ~/.aliases.local ] && . ~/.aliases.local
