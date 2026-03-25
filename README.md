@@ -2,46 +2,30 @@
 
 Personal dotfiles managed with [GNU Stow](https://www.gnu.org/software/stow/). Works on macOS, Linux, and WSL2.
 
-## What's inside
+## Quick install
 
-| Package | Contents |
-|---------|----------|
-| `git/` | `.gitconfig` with aliases, delta pager, Aria Labs conditional identity |
-| `shell/` | `.bashrc`, `.zshrc`, `.commonrc` (shared config), `.aliases` |
-| `ssh/` | Multi-account SSH config (GitHub personal, GitHub Aria Labs, GitLab) |
-| `nvim/` | Minimal `init.lua` — line numbers, space leader, sane defaults |
+On a fresh machine (Ubuntu/Debian/WSL2):
 
-Shell config is split into three layers:
-- `.commonrc` — platform detection, PATH, 1Password SSH agent, tool loaders (nvm, mise, bun, gcloud). Sourced by both `.bashrc` and `.zshrc`.
-- `.bashrc` / `.zshrc` — shell-specific settings (prompt, completion, keybindings).
-- `.aliases` — platform-aware aliases for git, docker, k8s, terraform, etc.
-
-## Quickstart
-
-### Prerequisites
-
-All platforms need [GNU Stow](https://www.gnu.org/software/stow/) and [delta](https://github.com/dandavella/delta) (git pager).
-
-**macOS:**
 ```bash
-brew install stow git-delta
+bash <(curl -fsSL https://raw.githubusercontent.com/jeremyspofford/dotfiles/main/bootstrap.sh)
 ```
 
-**Ubuntu/Debian (including WSL2):**
-```bash
-sudo apt install stow
-# delta: download .deb from https://github.com/dandavella/delta/releases
-```
+This installs prerequisites (git, stow, zsh, curl, unzip), clones the repo to `~/workspace/dotfiles`, runs `install.sh`, and sets zsh as the default shell. Restart your shell afterward.
 
-### Install
+> **WSL2 note:** Before dotfiles are installed, git can't reach 1Password. If you need to clone a repo first, prefix the command:
+> ```bash
+> GIT_SSH_COMMAND=ssh.exe git clone git@gitlab.com:org/repo.git
+> ```
+
+### Manual install
 
 ```bash
-git clone git@github.com:jeremyspofford/dotfiles.git ~/dotfiles
-cd ~/dotfiles
+git clone https://github.com/jeremyspofford/dotfiles.git ~/workspace/dotfiles
+cd ~/workspace/dotfiles
 ./install.sh
 ```
 
-Stow symlinks each package into `$HOME`. Restart your shell afterward.
+The install script handles stow installation if missing, backs up conflicting files on first run, stows all packages, bootstraps SSH known_hosts, and installs JetBrains Mono Nerd Font.
 
 ### Install specific packages
 
@@ -52,56 +36,51 @@ stow -D shell     # unlink shell config
 stow -n -v shell  # dry run (preview only)
 ```
 
-## 1Password SSH agent
+## What's inside
 
-SSH keys are stored in 1Password. The `.commonrc` auto-configures the SSH agent socket per platform:
+| Package | Contents |
+|---------|----------|
+| `git/` | `.gitconfig` with aliases, delta pager, Aria Labs conditional identity |
+| `shell/` | `.bashrc`, `.zshrc`, `.commonrc` (shared config), `.aliases` |
+| `ssh/` | Multi-account SSH config (GitHub personal, GitHub Aria Labs, GitLab) |
+| `nvim/` | Minimal `init.lua` — line numbers, space leader, sane defaults |
+
+Shell config is split into three layers:
+- `.commonrc` — platform detection, PATH, 1Password SSH integration, tool loaders (nvm, mise, bun, gcloud). Sourced by both `.bashrc` and `.zshrc`.
+- `.bashrc` / `.zshrc` — shell-specific settings (prompt, completion, keybindings).
+- `.aliases` — aliases for git, docker, k8s, terraform, etc.
+
+## 1Password SSH
+
+SSH keys live in 1Password — no private keys on disk. The `.commonrc` configures the agent per platform:
 
 | Platform | How it works |
 |----------|-------------|
-| **macOS** | Native socket at `~/Library/Group Containers/2BUA8C4S2C.com.1password/t/agent.sock`. Just works after enabling SSH agent in 1Password settings. |
-| **Linux** | 1Password Linux app creates `~/.1password/agent.sock` directly. Enable SSH agent in 1Password settings. |
-| **WSL2** | Bridges the Windows named pipe into a Unix socket via `npiperelay` + `socat`. Requires extra setup (see below). |
+| **macOS** | `SSH_AUTH_SOCK` points to `~/Library/Group Containers/2BUA8C4S2C.com.1password/t/agent.sock` |
+| **Linux** | `SSH_AUTH_SOCK` points to `~/.1password/agent.sock` |
+| **WSL2** | `GIT_SSH_COMMAND="ssh.exe"` — git calls the Windows SSH binary, which talks to 1Password natively. No relay or socket bridging needed. |
 
-### WSL2 setup
+### Setup
 
-1Password runs on Windows but WSL2 is a separate Linux VM. You need to relay the agent:
-
-1. **Enable SSH agent** in 1Password (Windows) > Settings > Developer > "Use the SSH agent"
-2. **Install socat** in WSL2: `sudo apt install socat`
-3. **Install npiperelay:**
-   ```bash
-   go install github.com/jstarks/npiperelay@latest
-   # or download the binary from https://github.com/jstarks/npiperelay/releases
-   # and put npiperelay.exe somewhere on your Windows PATH
-   ```
-4. Restart your shell. `.commonrc` starts the relay automatically.
-
-### SSH key setup (all platforms)
-
-1. Create your SSH keys in 1Password (or import existing ones)
-2. Export the **public keys only** to `~/.ssh/keys/`:
-   ```bash
-   mkdir -p ~/.ssh/keys
-   # Copy public keys from 1Password into:
-   #   ~/.ssh/keys/github-personal.pub
-   #   ~/.ssh/keys/github-arialabs.pub
-   #   ~/.ssh/keys/gitlab-client.pub
-   ```
-3. Verify: `ssh-add -l` should list your 1Password keys
-4. Test: `ssh -T git@github.com`
-
-No private keys on disk. 1Password handles signing.
+1. In 1Password > **Settings > Developer**, enable **"Use the SSH agent"**
+2. On WSL2, also enable **"WSL integration"**
+3. Create SSH keys in 1Password (or import existing ones)
+4. Add the public keys to your GitHub/GitLab accounts
+5. Test: `ssh.exe -T git@github.com` (WSL2) or `ssh -T git@github.com` (macOS/Linux)
 
 ## Multi-account Git/SSH
 
-The Aria Labs GitHub org uses a separate SSH key and git identity:
+The SSH config uses host aliases for multi-account GitHub access. Clone Aria Labs repos with:
 
-- **SSH:** Repos under `~/workspace/arialabs/` use `github.com-arialabs` host alias. Clone with `git clone-aria <repo>` or set the remote to `git@github.com-arialabs:arialabs/<repo>.git`.
-- **Git identity:** `.gitconfig` conditionally loads `.gitconfig-arialabs` (different name/email) for anything in `~/workspace/arialabs/`.
+```bash
+git clone-aria <repo-name>
+```
+
+This clones `git@github.com-arialabs:arialabs/<repo>.git` into `~/workspace/arialabs/`. The `.gitconfig` conditionally loads `.gitconfig-arialabs` (different name/email) for anything in `~/workspace/arialabs/`.
 
 ## Machine-specific overrides
 
-Drop a `.local` file next to any config to add machine-specific settings without modifying the shared files:
+Drop a `.local` file next to any config to add machine-specific settings without touching the repo:
 
 - `~/.commonrc.local` — extra PATH entries, env vars
 - `~/.bashrc.local` / `~/.zshrc.local` — shell-specific overrides
