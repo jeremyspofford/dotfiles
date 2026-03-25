@@ -52,6 +52,9 @@ fi
 # Aliases
 [ -f ~/.aliases ] && . ~/.aliases
 
+# ─── Claude Code ──────────────────────────────────────────────────────
+export CLAUDE_CODE_EFFORT_LEVEL=max
+
 # ─── Common config ────────────────────────────────────────────────────
 [ -f ~/.commonrc ] && . ~/.commonrc
 

@@ -46,6 +46,49 @@ fi
 mkdir -p "$HOME/.ssh"
 chmod 700 "$HOME/.ssh"
 
+# ─── SSH known hosts bootstrap ────────────────────────────────────
+# Pre-populate known_hosts so first git clone doesn't prompt.
+bootstrap_known_hosts() {
+  local hosts="github.com gitlab.com"
+
+  # Always populate WSL-side (per-instance)
+  local needs_scan=false
+  for host in $hosts; do
+    if ! grep -q "^$host " "$HOME/.ssh/known_hosts" 2>/dev/null; then
+      needs_scan=true
+      break
+    fi
+  done
+
+  if $needs_scan; then
+    echo "Adding SSH host keys to ~/.ssh/known_hosts..."
+    ssh-keyscan $hosts >> "$HOME/.ssh/known_hosts" 2>/dev/null
+  fi
+
+  # On WSL, also populate Windows-side (shared, used by ssh.exe)
+  if [ "$PLATFORM" = "wsl" ]; then
+    local win_user
+    win_user="$(cmd.exe /c "echo %USERNAME%" 2>/dev/null | tr -d '\r')"
+    local win_known_hosts="/mnt/c/Users/$win_user/.ssh/known_hosts"
+    mkdir -p "$(dirname "$win_known_hosts")"
+
+    local win_needs_scan=false
+    for host in $hosts; do
+      if ! grep -q "^$host " "$win_known_hosts" 2>/dev/null; then
+        win_needs_scan=true
+        break
+      fi
+    done
+
+    if $win_needs_scan; then
+      echo "Adding SSH host keys to Windows known_hosts..."
+      ssh-keyscan $hosts >> "$win_known_hosts" 2>/dev/null
+    fi
+  fi
+}
+
+bootstrap_known_hosts
+
 # ─── First run: back up conflicting files ───────────────────────────
 if [ ! -f "$STOWRC" ]; then
   echo "First run — checking for existing files to back up..."
