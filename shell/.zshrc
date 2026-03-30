@@ -49,12 +49,6 @@ fi
 [ -f "$HOME/google-cloud-sdk/path.zsh.inc" ] && . "$HOME/google-cloud-sdk/path.zsh.inc"
 [ -f "$HOME/google-cloud-sdk/completion.zsh.inc" ] && . "$HOME/google-cloud-sdk/completion.zsh.inc"
 
-# Aliases
-[ -f ~/.aliases ] && . ~/.aliases
-
-# ─── Claude Code ──────────────────────────────────────────────────────
-export CLAUDE_CODE_EFFORT_LEVEL=max
-
 # ─── Common config ────────────────────────────────────────────────────
 [ -f ~/.commonrc ] && . ~/.commonrc
 

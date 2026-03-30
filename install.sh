@@ -18,40 +18,131 @@ case "$(uname -s)" in
   *) PLATFORM="unknown" ;;
 esac
 
-# ─── Install stow if missing ─────────────────────────────────────────
-if ! command -v stow &>/dev/null; then
-  echo "GNU Stow not found. Installing..."
+# ─── Package manager helper ─────────────────────────────────────────
+pkg_install() {
   case "$PLATFORM" in
-    macos)       brew install stow ;;
+    macos) brew install "$@" ;;
     wsl|linux)
       if command -v apt-get &>/dev/null; then
-        sudo apt-get install -y stow
+        sudo apt-get install -y "$@"
       elif command -v dnf &>/dev/null; then
-        sudo dnf install -y stow
+        sudo dnf install -y "$@"
       elif command -v pacman &>/dev/null; then
-        sudo pacman -S --noconfirm stow
+        sudo pacman -S --noconfirm "$@"
       else
-        echo "Could not detect package manager. Install stow manually."
-        exit 1
+        echo "No supported package manager. Install manually: $*"
+        return 1
       fi
       ;;
-    *)
-      echo "Unsupported platform. Install stow manually."
-      exit 1
+  esac
+}
+
+# ─── Install base packages ──────────────────────────────────────────
+install_base() {
+  local needs_install=false
+  for cmd in stow curl unzip zsh; do
+    command -v "$cmd" &>/dev/null || { needs_install=true; break; }
+  done
+
+  if $needs_install; then
+    echo "Installing base packages..."
+    if command -v apt-get &>/dev/null; then
+      sudo apt-get update -qq
+    fi
+    pkg_install stow curl unzip zsh
+  fi
+}
+
+install_base
+
+# ─── Install neovim ─────────────────────────────────────────────────
+install_neovim() {
+  if command -v nvim &>/dev/null; then
+    local ver minor
+    ver=$(nvim --version | head -1 | grep -oE '[0-9]+\.[0-9]+' | head -1)
+    minor=${ver#*.}
+    if [ "${ver%%.*}" -gt 0 ] 2>/dev/null || [ "$minor" -ge 9 ] 2>/dev/null; then
+      return
+    fi
+    echo "Neovim $ver too old (need >= 0.9), upgrading..."
+  fi
+
+  case "$PLATFORM" in
+    macos)
+      brew install neovim
+      ;;
+    wsl|linux)
+      if command -v apt-get &>/dev/null && [ "$(uname -m)" = "x86_64" ]; then
+        echo "Installing Neovim from GitHub releases..."
+        local tmp
+        tmp=$(mktemp -d)
+        trap "rm -rf '$tmp'" RETURN
+        curl -fsSL "https://github.com/neovim/neovim/releases/latest/download/nvim-linux-x86_64.tar.gz" \
+          -o "$tmp/nvim.tar.gz"
+        tar xzf "$tmp/nvim.tar.gz" -C "$tmp"
+        sudo cp -r "$tmp"/nvim-linux-x86_64/* /usr/local/
+      else
+        pkg_install neovim
+      fi
       ;;
   esac
-fi
+  echo "Neovim installed: $(nvim --version | head -1)"
+}
+
+install_neovim
+
+# ─── Install delta ──────────────────────────────────────────────────
+install_delta() {
+  command -v delta &>/dev/null && return
+
+  case "$PLATFORM" in
+    macos)
+      brew install git-delta
+      ;;
+    wsl|linux)
+      if command -v apt-get &>/dev/null; then
+        echo "Installing delta from GitHub releases..."
+        local tmp tag arch
+        tmp=$(mktemp -d)
+        trap "rm -rf '$tmp'" RETURN
+        tag=$(curl -fsSI https://github.com/dandavison/delta/releases/latest \
+          | grep -i '^location:' | sed 's|.*/||' | tr -d '\r\n')
+        arch=$(dpkg --print-architecture 2>/dev/null || echo "amd64")
+        curl -fsSL "https://github.com/dandavison/delta/releases/download/${tag}/git-delta_${tag}_${arch}.deb" \
+          -o "$tmp/delta.deb"
+        sudo dpkg -i "$tmp/delta.deb"
+      elif command -v dnf &>/dev/null; then
+        sudo dnf install -y git-delta
+      elif command -v pacman &>/dev/null; then
+        sudo pacman -S --noconfirm git-delta
+      fi
+      ;;
+  esac
+}
+
+install_delta
+
+# ─── Install mise ───────────────────────────────────────────────────
+install_mise() {
+  command -v mise &>/dev/null && return
+  echo "Installing mise..."
+  if [ "$PLATFORM" = "macos" ]; then
+    brew install mise
+  else
+    curl https://mise.run | sh
+  fi
+}
+
+install_mise
 
 # ─── SSH directory setup ────────────────────────────────────────────
 mkdir -p "$HOME/.ssh"
 chmod 700 "$HOME/.ssh"
 
 # ─── SSH known hosts bootstrap ────────────────────────────────────
-# Pre-populate known_hosts so first git clone doesn't prompt.
 bootstrap_known_hosts() {
   local hosts="github.com gitlab.com"
 
-  # Always populate WSL-side (per-instance)
   local needs_scan=false
   for host in $hosts; do
     if ! grep -q "^$host " "$HOME/.ssh/known_hosts" 2>/dev/null; then
@@ -65,7 +156,6 @@ bootstrap_known_hosts() {
     ssh-keyscan $hosts >> "$HOME/.ssh/known_hosts" 2>/dev/null
   fi
 
-  # On WSL, also populate Windows-side (shared, used by ssh.exe)
   if [ "$PLATFORM" = "wsl" ]; then
     local win_user
     win_user="$(cmd.exe /c "echo %USERNAME%" 2>/dev/null | tr -d '\r')"
@@ -89,29 +179,8 @@ bootstrap_known_hosts() {
 
 bootstrap_known_hosts
 
-# ─── First run: back up conflicting files ───────────────────────────
+# ─── Create .stowrc on first run ───────────────────────────────────
 if [ ! -f "$STOWRC" ]; then
-  echo "First run — checking for existing files to back up..."
-
-  for dir in "$DOTFILES_DIR"/*/; do
-    pkg="$(basename "$dir")"
-    while IFS= read -r -d '' file; do
-      rel="${file#"$dir"}"
-      target="$HOME/$rel"
-      if [ -f "$target" ] && [ ! -L "$target" ]; then
-        backup_path="$BACKUP_DIR/$rel"
-        mkdir -p "$(dirname "$backup_path")"
-        mv "$target" "$backup_path"
-        echo "  Backed up: ~/$rel -> ~/.dotfiles_backup/$rel"
-      fi
-    done < <(find "$dir" -type f -print0)
-  done
-
-  if [ -d "$BACKUP_DIR" ]; then
-    echo "Originals saved to ~/.dotfiles_backup/"
-  fi
-
-  # Create .stowrc with defaults for manual stow commands
   cat > "$STOWRC" << EOF
 --dir=$DOTFILES_DIR
 --target=$HOME
@@ -119,12 +188,29 @@ EOF
   echo "Created ~/.stowrc"
 fi
 
-# ─── Stow all packages ─────────────────────────────────────────────
+# ─── Back up conflicting files and stow packages ───────────────────
 for dir in "$DOTFILES_DIR"/*/; do
   pkg="$(basename "$dir")"
+
+  # Move aside any real files that would conflict with symlinks
+  while IFS= read -r -d '' file; do
+    rel="${file#"$dir"}"
+    target="$HOME/$rel"
+    if [ -f "$target" ] && [ ! -L "$target" ]; then
+      backup_path="$BACKUP_DIR/$rel"
+      mkdir -p "$(dirname "$backup_path")"
+      mv "$target" "$backup_path"
+      echo "  Backed up: ~/$rel -> ~/.dotfiles_backup/$rel"
+    fi
+  done < <(find "$dir" -type f -print0)
+
   echo "Stowing $pkg..."
   stow -R -v -d "$DOTFILES_DIR" -t "$HOME" "$pkg" 2> >(grep -v "BUG in find_stowed_path" >&2)
 done
+
+if [ -d "$BACKUP_DIR" ]; then
+  echo "Originals saved to ~/.dotfiles_backup/"
+fi
 
 # ─── Nerd Font install ──────────────────────────────────────────────
 install_nerd_font() {
@@ -140,7 +226,6 @@ install_nerd_font() {
     *)      font_dir="$HOME/.local/share/fonts" ;;
   esac
 
-  # Skip if already installed
   if ls "$font_dir"/JetBrainsMonoNerd* &>/dev/null; then
     echo "Nerd Font already installed."
     return
@@ -167,9 +252,21 @@ install_nerd_font() {
   mkdir -p "$font_dir"
   cp "$tmp_dir"/font/*.ttf "$font_dir/"
 
-  # Refresh font cache on native Linux
   if [ "$PLATFORM" = "linux" ] && command -v fc-cache &>/dev/null; then
     fc-cache -f "$font_dir"
+  fi
+
+  # Auto-register fonts on WSL (per-user, no admin needed)
+  if [ "$PLATFORM" = "wsl" ]; then
+    local win_font_dir
+    win_font_dir="$(wslpath -w "$font_dir")"
+    powershell.exe -NoProfile -Command "
+      \$regPath = 'HKCU:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Fonts'
+      if (-not (Test-Path \$regPath)) { New-Item -Path \$regPath -Force | Out-Null }
+      Get-ChildItem '${win_font_dir}' -Filter '*.ttf' | ForEach-Object {
+        Set-ItemProperty -Path \$regPath -Name (\$_.BaseName + ' (TrueType)') -Value \$_.FullName
+      }
+    " 2>/dev/null && echo "Fonts registered in Windows." || true
   fi
 
   echo "Nerd Font installed to $font_dir"
@@ -196,8 +293,14 @@ check_font_registered() {
 
 if ! check_font_registered; then
   echo ""
-  echo "JetBrainsMono Nerd Font Mono is downloaded but not installed."
-  echo "You need to install it for Neovim icons to render correctly."
+  if [ "$PLATFORM" = "wsl" ]; then
+    echo "Nerd Font was registered but may need a terminal restart to take effect."
+    echo "Set your terminal font to 'JetBrainsMono Nerd Font Mono'."
+    echo "If icons still don't render, install the fonts manually:"
+  else
+    echo "JetBrainsMono Nerd Font Mono is downloaded but not registered."
+    echo "Install it for Neovim icons to render correctly:"
+  fi
   echo "  Search for: JetBrainsMonoNerdFontMono-"
   echo "  Select all matches, right-click, and install them."
   echo "  Then set your terminal font to 'JetBrainsMono Nerd Font Mono'."
@@ -227,6 +330,12 @@ if ! check_font_registered; then
         ;;
     esac
   fi
+fi
+
+# ─── Set zsh as default shell ───────────────────────────────────────
+if command -v zsh &>/dev/null && [ "$(basename "$SHELL")" != "zsh" ]; then
+  echo "Setting zsh as default shell..."
+  sudo chsh -s "$(which zsh)" "$USER"
 fi
 
 echo ""
