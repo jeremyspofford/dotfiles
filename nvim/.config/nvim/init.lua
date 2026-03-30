@@ -1,6 +1,9 @@
 -- ~/.config/nvim/init.lua
--- Minimal Neovim config - add lazy.nvim or kickstart.nvim for more features
 require('config.lazy')
+
+-- Disable netrw (neo-tree replaces it)
+vim.g.loaded_netrw = 1
+vim.g.loaded_netrwPlugin = 1
 
 -- Options
 vim.opt.number = true
