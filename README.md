@@ -4,15 +4,17 @@ Personal dotfiles managed with [GNU Stow](https://www.gnu.org/software/stow/). W
 
 ## Quick install
 
-On a fresh machine (Ubuntu/Debian/WSL2):
+On a fresh machine (macOS, Ubuntu/Debian, Fedora, Arch, or WSL2):
 
 ```bash
 bash <(curl -fsSL https://raw.githubusercontent.com/jeremyspofford/dotfiles/main/bootstrap.sh)
 ```
 
-This installs prerequisites (git, stow, zsh, curl, unzip), clones the repo to `~/workspace/dotfiles`, runs `install.sh`, and sets zsh as the default shell. Restart your shell afterward.
+This installs prerequisites, clones the repo to `~/workspace/dotfiles`, and runs `install.sh`. Restart your shell afterward.
 
-> **WSL2 note:** Before dotfiles are installed, git can't reach 1Password. If you need to clone a repo first, prefix the command:
+> **macOS:** Homebrew must be installed first ([brew.sh](https://brew.sh)).
+
+> **WSL2:** Before dotfiles are installed, git can't reach 1Password. If you need to clone a repo first, prefix the command:
 > ```bash
 > GIT_SSH_COMMAND=ssh.exe git clone git@gitlab.com:org/repo.git
 > ```
@@ -25,8 +27,6 @@ cd ~/workspace/dotfiles
 ./install.sh
 ```
 
-The install script handles stow installation if missing, backs up conflicting files on first run, stows all packages, bootstraps SSH known_hosts, and installs JetBrains Mono Nerd Font.
-
 ### Install specific packages
 
 ```bash
@@ -36,6 +36,20 @@ stow -D shell     # unlink shell config
 stow -n -v shell  # dry run (preview only)
 ```
 
+## What gets installed
+
+The install script handles everything:
+
+| Tool | Method |
+|------|--------|
+| stow, zsh, curl, unzip | System package manager |
+| [Neovim](https://neovim.io) | GitHub releases on apt (for a recent version), package manager elsewhere |
+| [delta](https://github.com/dandavison/delta) | GitHub releases .deb on apt, package manager elsewhere |
+| [mise](https://mise.jdx.dev) | `mise.run` installer on Linux, Homebrew on macOS |
+| JetBrains Mono Nerd Font | GitHub releases (auto-registered on WSL) |
+
+Zsh is set as the default shell. Conflicting files are backed up to `~/.dotfiles_backup/` before stowing (safe on re-runs).
+
 ## What's inside
 
 | Package | Contents |
@@ -43,7 +57,7 @@ stow -n -v shell  # dry run (preview only)
 | `git/` | `.gitconfig` with aliases, delta pager, Aria Labs conditional identity |
 | `shell/` | `.bashrc`, `.zshrc`, `.commonrc` (shared config), `.aliases` |
 | `ssh/` | Multi-account SSH config (GitHub personal, GitHub Aria Labs, GitLab) |
-| `nvim/` | Minimal `init.lua` — line numbers, space leader, sane defaults |
+| `nvim/` | `init.lua` with lazy.nvim, catppuccin theme, treesitter |
 
 Shell config is split into three layers:
 - `.commonrc` — platform detection, PATH, 1Password SSH integration, tool loaders (nvm, mise, bun, gcloud). Sourced by both `.bashrc` and `.zshrc`.
@@ -96,3 +110,5 @@ Drop a `.local` file next to any config to add machine-specific settings without
    ```
 2. Stow it: `stow tmux`
 3. Commit.
+
+Conflicting files are automatically backed up on the next `install.sh` run.
