@@ -1,0 +1,20 @@
+# 1Password SSH Agent configuration
+# Docs: https://developer.1password.com/docs/ssh/agent/config
+#
+# By default the agent offers SSH keys from ALL unlocked vaults.
+# This file locks it down: only keys from the vaults listed below
+# are offered to SSH clients, and each use requires your approval.
+
+[agent]
+# Require a tap/click in 1Password before each key is used.
+# "always" = confirm every use  |  "when-needed" = confirm first use per session
+confirmation = "when-needed"
+
+# ── Personal SSH keys ─────────────────────────────────────────────────
+[[ssh-keys]]
+vault = "Personal"
+
+# ── Work / client SSH keys ────────────────────────────────────────────
+# Uncomment and set the vault name if you keep work keys in a separate vault.
+# [[ssh-keys]]
+# vault = "Work"
