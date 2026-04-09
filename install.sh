@@ -211,8 +211,13 @@ EOF
 fi
 
 # ─── Back up conflicting files and stow packages ───────────────────
+# Directories that are not stow packages (docs, examples, etc.)
+NO_STOW="examples"
+
 for dir in "$DOTFILES_DIR"/*/; do
   pkg="$(basename "$dir")"
+  # Skip non-stow directories
+  echo "$NO_STOW" | grep -qw "$pkg" && continue
 
   # Move aside any real files that would conflict with symlinks
   while IFS= read -r -d '' file; do
@@ -326,7 +331,10 @@ if ! check_font_registered; then
   echo "  Search for: JetBrainsMonoNerdFontMono-"
   echo "  Select all matches, right-click, and install them."
   echo "  Then set your terminal font to 'JetBrainsMono Nerd Font Mono'."
-  read -rp "Open the font directory now? [y/N] " yn
+  local yn=""
+  if [ -t 0 ]; then
+    read -rp "Open the font directory now? [y/N] " yn
+  fi
   if [[ "$yn" =~ ^[Yy]$ ]]; then
     case "$PLATFORM" in
       wsl)
