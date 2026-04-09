@@ -1,0 +1,6 @@
+# ~/.bashrc.local — bash-specific machine overrides (never committed)
+# Copy this to ~/.bashrc.local and uncomment/edit what you need.
+
+# ─── Google Cloud SDK bash completion ─────────────────────────────────
+# [ -f "$HOME/google-cloud-sdk/path.bash.inc" ] && . "$HOME/google-cloud-sdk/path.bash.inc"
+# [ -f "$HOME/google-cloud-sdk/completion.bash.inc" ] && . "$HOME/google-cloud-sdk/completion.bash.inc"

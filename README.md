@@ -43,9 +43,10 @@ The install script handles everything:
 | Tool | Method |
 |------|--------|
 | stow, zsh, curl, unzip | System package manager |
-| [Neovim](https://neovim.io) | GitHub releases on apt (for a recent version), package manager elsewhere |
+| [Neovim 0.11](https://neovim.io) | GitHub releases on apt/x86_64 (pinned), package manager elsewhere |
 | [delta](https://github.com/dandavison/delta) | GitHub releases .deb on apt, package manager elsewhere |
 | [mise](https://mise.jdx.dev) | `mise.run` installer on Linux, Homebrew on macOS |
+| [bun](https://bun.sh) | `mise use --global bun@latest` |
 | JetBrains Mono Nerd Font | GitHub releases (auto-registered on WSL) |
 
 Zsh is set as the default shell. Conflicting files are backed up to `~/.dotfiles_backup/` before stowing (safe on re-runs).
@@ -60,7 +61,7 @@ Zsh is set as the default shell. Conflicting files are backed up to `~/.dotfiles
 | `nvim/` | `init.lua` with lazy.nvim, catppuccin theme, treesitter |
 
 Shell config is split into three layers:
-- `.commonrc` — platform detection, PATH, 1Password SSH integration, tool loaders (nvm, mise, bun, gcloud). Sourced by both `.bashrc` and `.zshrc`.
+- `.commonrc` — platform detection, PATH, 1Password SSH integration, mise activation. Sourced by both `.bashrc` and `.zshrc`.
 - `.bashrc` / `.zshrc` — shell-specific settings (prompt, completion, keybindings).
 - `.aliases` — aliases for git, docker, k8s, terraform, etc.
 
@@ -96,10 +97,19 @@ This clones `git@github.com-arialabs:arialabs/<repo>.git` into `~/workspace/aria
 
 Drop a `.local` file next to any config to add machine-specific settings without touching the repo:
 
-- `~/.commonrc.local` — extra PATH entries, env vars
-- `~/.bashrc.local` / `~/.zshrc.local` — shell-specific overrides
+- `~/.commonrc.local` — extra PATH entries, env vars, optional tools (gcloud, etc.)
+- `~/.bashrc.local` / `~/.zshrc.local` — shell-specific overrides and completions
 - `~/.aliases.local` — extra aliases
 - `~/.secrets` — API keys, tokens (git-ignored)
+
+The `examples/` directory has commented starter files for common setups:
+
+```bash
+cp examples/commonrc.local.example ~/.commonrc.local
+cp examples/zshrc.local.example ~/.zshrc.local
+```
+
+Edit the copies to uncomment what you need (gcloud, client-specific env vars, proxy settings, etc.).
 
 ## Adding new dotfiles
 
