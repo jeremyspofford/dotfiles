@@ -40,7 +40,7 @@ pkg_install() {
 # ─── Install base packages ──────────────────────────────────────────
 install_base() {
   local needs_install=false
-  for cmd in stow curl unzip zsh; do
+  for cmd in stow curl unzip zsh notify-send; do
     command -v "$cmd" &>/dev/null || { needs_install=true; break; }
   done
 
@@ -48,8 +48,10 @@ install_base() {
     echo "Installing base packages..."
     if command -v apt-get &>/dev/null; then
       sudo apt-get update -qq
+      pkg_install stow curl unzip zsh libnotify-bin
+    else
+      pkg_install stow curl unzip zsh
     fi
-    pkg_install stow curl unzip zsh
   fi
 }
 
