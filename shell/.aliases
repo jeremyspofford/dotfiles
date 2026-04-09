@@ -4,19 +4,27 @@ alias ...='cd ../..'
 alias ....='cd ../../..'
 alias ~='cd ~'
 
-# List directory contents (platform-aware)
-if [ "$PLATFORM" = "macos" ]; then
-  alias ls='ls -G'
+# List directory contents — eza if available, fallback to ls
+if command -v eza >/dev/null 2>&1; then
+  alias ls='eza --icons'
+  alias ll='eza -alF --icons --git'
+  alias la='eza -a --icons'
+  alias l='eza -F --icons'
+  alias lt='eza --tree --icons -L 2'
+  alias lsl='eza -l --icons | grep "^l"'
 else
-  alias ls='ls --color=auto'
+  if [ "$PLATFORM" = "macos" ]; then
+    alias ls='ls -G'
+  else
+    alias ls='ls --color=auto'
+  fi
+  alias ll='ls -alF'
+  alias la='ls -A'
+  alias l='ls -CF'
+  alias lsl='ls -l | grep "^l"'
 fi
-alias ll='ls -alF'
-alias la='ls -A'
-alias l='ls -CF'
-alias lsl='ls -l | grep "^l"' # List symbolic links
 
 # Safety nets
-alias rm='rm -i'
 alias cp='cp -i'
 alias mv='mv -i'
 alias mkdir='mkdir -pv'
@@ -105,11 +113,30 @@ alias pip='pip3'
 alias venv='python3 -m venv'
 alias activate='source venv/bin/activate'
 
-# Node
+# Node / npm
 alias ni='npm install'
 alias nr='npm run'
 alias ns='npm start'
 alias nt='npm test'
+
+# Bun
+alias bi='bun install'
+alias ba='bun add'
+alias bad='bun add -d'
+alias brm='bun remove'
+alias br='bun run'
+alias bs='bun start'
+alias bt='bun test'
+alias bx='bunx'
+
+# bat — syntax-highlighted cat (plain output, no paging)
+command -v bat >/dev/null 2>&1 && alias cat='bat --pager=never --style=plain'
+
+# fd — faster find
+# Usage: fd <pattern> [path]  (drop-in, no alias needed)
+
+# rg — faster grep
+# Usage: rg <pattern> [path]  (drop-in, no alias needed)
 
 # Editors
 alias v='nvim'
