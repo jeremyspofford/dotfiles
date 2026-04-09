@@ -1,0 +1,22 @@
+# ~/.commonrc.local — machine-specific overrides (never committed)
+# Copy this to ~/.commonrc.local and uncomment/edit what you need.
+
+# ─── Google Cloud SDK ─────────────────────────────────────────────────
+# Uncomment if gcloud is installed (e.g. via `mise use --global gcloud@latest`
+# or the official installer at https://cloud.google.com/sdk/docs/install).
+# The path.*.inc scripts add gcloud to PATH; completion.*.inc adds tab completion.
+#
+# [ -f "$HOME/google-cloud-sdk/path.bash.inc" ] && . "$HOME/google-cloud-sdk/path.bash.inc"
+
+# ─── Extra PATH entries ────────────────────────────────────────────────
+# export PATH="$HOME/some-tool/bin:$PATH"
+
+# ─── Client/project-specific env vars ────────────────────────────────
+# export KUBECONFIG="$HOME/.kube/client-a-config"
+# export AWS_PROFILE="client-a"
+# export TF_WORKSPACE="staging"
+
+# ─── Work proxy ───────────────────────────────────────────────────────
+# export HTTP_PROXY="http://proxy.corp.example.com:8080"
+# export HTTPS_PROXY="$HTTP_PROXY"
+# export NO_PROXY="localhost,127.0.0.1,.corp.example.com"

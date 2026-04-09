@@ -30,13 +30,6 @@ if ! shopt -oq posix; then
   fi
 fi
 
-# nvm bash completion
-[ -s "$NVM_DIR/bash_completion" ] && . "$NVM_DIR/bash_completion"
-
-# Google Cloud SDK
-[ -f "$HOME/google-cloud-sdk/path.bash.inc" ] && . "$HOME/google-cloud-sdk/path.bash.inc"
-[ -f "$HOME/google-cloud-sdk/completion.bash.inc" ] && . "$HOME/google-cloud-sdk/completion.bash.inc"
-
 # ─── Common config ────────────────────────────────────────────────────
 [ -f ~/.commonrc ] && . ~/.commonrc
 

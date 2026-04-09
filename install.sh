@@ -56,15 +56,17 @@ install_base() {
 install_base
 
 # ─── Install neovim ─────────────────────────────────────────────────
+NVIM_VERSION="v0.11.0"
+
 install_neovim() {
   if command -v nvim &>/dev/null; then
     local ver minor
     ver=$(nvim --version | head -1 | grep -oE '[0-9]+\.[0-9]+' | head -1)
     minor=${ver#*.}
-    if [ "${ver%%.*}" -gt 0 ] 2>/dev/null || [ "$minor" -ge 9 ] 2>/dev/null; then
+    if [ "${ver%%.*}" -gt 0 ] 2>/dev/null || [ "$minor" -ge 11 ] 2>/dev/null; then
       return
     fi
-    echo "Neovim $ver too old (need >= 0.9), upgrading..."
+    echo "Neovim $ver too old (need >= 0.11), upgrading..."
   fi
 
   case "$PLATFORM" in
@@ -73,11 +75,11 @@ install_neovim() {
       ;;
     wsl|linux)
       if command -v apt-get &>/dev/null && [ "$(uname -m)" = "x86_64" ]; then
-        echo "Installing Neovim from GitHub releases..."
+        echo "Installing Neovim $NVIM_VERSION from GitHub releases..."
         local tmp
         tmp=$(mktemp -d)
         trap "rm -rf '$tmp'" RETURN
-        curl -fsSL "https://github.com/neovim/neovim/releases/latest/download/nvim-linux-x86_64.tar.gz" \
+        curl -fsSL "https://github.com/neovim/neovim/releases/download/${NVIM_VERSION}/nvim-linux-x86_64.tar.gz" \
           -o "$tmp/nvim.tar.gz"
         tar xzf "$tmp/nvim.tar.gz" -C "$tmp"
         sudo cp -r "$tmp"/nvim-linux-x86_64/* /usr/local/
@@ -134,6 +136,26 @@ install_mise() {
 }
 
 install_mise
+
+# ─── Install bun via mise ───────────────────────────────────────────
+install_bun() {
+  local mise_bin
+  if command -v mise &>/dev/null; then
+    mise_bin="mise"
+  elif [ -f "$HOME/.local/bin/mise" ]; then
+    mise_bin="$HOME/.local/bin/mise"
+  else
+    echo "mise not found, skipping bun install"
+    return 1
+  fi
+  if "$mise_bin" ls --installed 2>/dev/null | grep -q "^bun"; then
+    return
+  fi
+  echo "Installing bun via mise..."
+  "$mise_bin" use --global bun@latest
+}
+
+install_bun
 
 # ─── SSH directory setup ────────────────────────────────────────────
 mkdir -p "$HOME/.ssh"

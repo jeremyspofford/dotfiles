@@ -1,0 +1,11 @@
+# ~/.zshrc.local — zsh-specific machine overrides (never committed)
+# Copy this to ~/.zshrc.local and uncomment/edit what you need.
+
+# ─── Google Cloud SDK zsh completion ──────────────────────────────────
+# [ -f "$HOME/google-cloud-sdk/path.zsh.inc" ] && . "$HOME/google-cloud-sdk/path.zsh.inc"
+# [ -f "$HOME/google-cloud-sdk/completion.zsh.inc" ] && . "$HOME/google-cloud-sdk/completion.zsh.inc"
+
+# ─── Prompt override ──────────────────────────────────────────────────
+# Uncomment to use starship instead of the default adam1 prompt.
+# Requires: mise use --global starship@latest (or brew install starship)
+# command -v starship >/dev/null 2>&1 && eval "$(starship init zsh)"

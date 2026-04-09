@@ -63,11 +63,7 @@ esac
 [ -f ~/.secrets ] && . ~/.secrets
 
 # ─── Tool loaders ────────────────────────────────────────────────────
-# nvm
-export NVM_DIR="$HOME/.nvm"
-[ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
-
-# mise (modern asdf alternative)
+# mise — manages Node, Python, Ruby, bun, and other runtimes
 command -v mise >/dev/null 2>&1 && eval "$(mise activate "${SHELL##*/}")"
 
 # ─── Machine-specific overrides ──────────────────────────────────────

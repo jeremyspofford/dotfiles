@@ -39,15 +39,8 @@ if command -v dircolors >/dev/null 2>&1; then
   zstyle ':completion:*:default' list-colors ${(s.:.)LS_COLORS}
 fi
 
-# nvm completion
-[ -s "$NVM_DIR/bash_completion" ] && . "$NVM_DIR/bash_completion"
-
-# bun completions
+# bun completions (if installed standalone outside mise)
 [ -s "$HOME/.bun/_bun" ] && source "$HOME/.bun/_bun"
-
-# Google Cloud SDK
-[ -f "$HOME/google-cloud-sdk/path.zsh.inc" ] && . "$HOME/google-cloud-sdk/path.zsh.inc"
-[ -f "$HOME/google-cloud-sdk/completion.zsh.inc" ] && . "$HOME/google-cloud-sdk/completion.zsh.inc"
 
 # ─── Common config ────────────────────────────────────────────────────
 [ -f ~/.commonrc ] && . ~/.commonrc
