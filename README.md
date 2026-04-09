@@ -10,7 +10,7 @@ On a fresh machine (macOS, Ubuntu/Debian, Fedora, Arch, or WSL2):
 bash <(curl -fsSL https://raw.githubusercontent.com/jeremyspofford/dotfiles/main/bootstrap.sh)
 ```
 
-This installs prerequisites, clones the repo to `~/workspace/dotfiles`, and runs `install.sh`. Restart your shell afterward.
+This installs prerequisites, clones the repo to `~/workspace/dotfiles`, runs `install.sh`, and installs all global tools via mise. Restart your shell afterward.
 
 > **macOS:** Homebrew must be installed first ([brew.sh](https://brew.sh)).
 
@@ -42,11 +42,11 @@ The install script handles everything:
 
 | Tool | Method |
 |------|--------|
-| stow, zsh, curl, unzip | System package manager |
-| [Neovim 0.11](https://neovim.io) | GitHub releases on apt/x86_64 (pinned), package manager elsewhere |
+| stow, zsh, curl, unzip, libnotify-bin | System package manager |
+| [Neovim 0.11](https://neovim.io) | GitHub releases on apt/x86_64 (pinned to `NVIM_VERSION`), package manager elsewhere |
 | [delta](https://github.com/dandavison/delta) | GitHub releases .deb on apt, package manager elsewhere |
 | [mise](https://mise.jdx.dev) | `mise.run` installer on Linux, Homebrew on macOS |
-| [bun](https://bun.sh) | `mise use --global bun@latest` |
+| All tools in `mise/.config/mise/config.toml` | `mise install` (runs after stowing) |
 | JetBrains Mono Nerd Font | GitHub releases (auto-registered on WSL) |
 
 Zsh is set as the default shell. Conflicting files are backed up to `~/.dotfiles_backup/` before stowing (safe on re-runs).
@@ -55,15 +55,33 @@ Zsh is set as the default shell. Conflicting files are backed up to `~/.dotfiles
 
 | Package | Contents |
 |---------|----------|
-| `git/` | `.gitconfig` with aliases, delta pager, Aria Labs conditional identity |
+| `git/` | `.gitconfig`, `.gitconfig-arialabs`, `.gitignore_global` |
 | `shell/` | `.bashrc`, `.zshrc`, `.commonrc` (shared config), `.aliases` |
-| `ssh/` | Multi-account SSH config (GitHub personal, GitHub Aria Labs, GitLab) |
-| `nvim/` | `init.lua` with lazy.nvim, catppuccin theme, treesitter |
+| `ssh/` | Multi-account SSH config (GitHub personal, GitHub Aria Labs, GitLab) with 1Password agent |
+| `nvim/` | `init.lua` with lazy.nvim, catppuccin theme, treesitter, neo-tree |
+| `1password/` | SSH agent config (`agent.toml`) — Personal vault keys, confirmation on use |
+| `mise/` | Global tool versions (`config.toml`) — bun, node, python, claude, gh, bat, eza, ripgrep, fzf, uv, and more |
+| `claude/` | Global Claude Code config — `CLAUDE.md`, `settings.json`, custom commands |
 
 Shell config is split into three layers:
 - `.commonrc` — platform detection, PATH, 1Password SSH integration, mise activation. Sourced by both `.bashrc` and `.zshrc`.
 - `.bashrc` / `.zshrc` — shell-specific settings (prompt, completion, keybindings).
 - `.aliases` — aliases for git, docker, k8s, terraform, etc.
+
+## Claude Code config
+
+The `claude/` package sets up a global Claude Code environment:
+
+- **`CLAUDE.md`** — global context: who I am, work contexts (personal vs Aria Labs), preferences, working style
+- **`settings.json`** — permissions (`dontAsk` mode), global tool allows, hooks
+- **`commands/init-project.md`** — `/init-project` command: scaffolds a project-specific `CLAUDE.md` + `.claude/settings.json` with hooks tuned to the project's actual toolchain
+
+### Global hooks
+
+| Event | Hook |
+|-------|------|
+| `PreToolUse/Bash` | Logs all bash commands with timestamps to `~/.claude/bash-log.txt` (async) |
+| `Notification` | Desktop notification via `notify-send` (Linux) or `osascript` (macOS) |
 
 ## 1Password SSH
 
@@ -73,7 +91,7 @@ SSH keys live in 1Password — no private keys on disk. The `.commonrc` configur
 |----------|-------------|
 | **macOS** | `SSH_AUTH_SOCK` points to `~/Library/Group Containers/2BUA8C4S2C.com.1password/t/agent.sock` |
 | **Linux** | `SSH_AUTH_SOCK` points to `~/.1password/agent.sock` |
-| **WSL2** | `GIT_SSH_COMMAND="ssh.exe"` — git calls the Windows SSH binary, which talks to 1Password natively. No relay or socket bridging needed. |
+| **WSL2** | `GIT_SSH_COMMAND="ssh.exe"` — git calls the Windows SSH binary, which talks to 1Password natively. |
 
 ### Setup
 
@@ -100,7 +118,7 @@ Drop a `.local` file next to any config to add machine-specific settings without
 - `~/.commonrc.local` — extra PATH entries, env vars, optional tools (gcloud, etc.)
 - `~/.bashrc.local` / `~/.zshrc.local` — shell-specific overrides and completions
 - `~/.aliases.local` — extra aliases
-- `~/.secrets` — API keys, tokens (git-ignored)
+- `~/.secrets` — API keys, tokens (git-ignored by `.gitignore_global`)
 
 The `examples/` directory has commented starter files for common setups:
 
@@ -108,8 +126,6 @@ The `examples/` directory has commented starter files for common setups:
 cp examples/commonrc.local.example ~/.commonrc.local
 cp examples/zshrc.local.example ~/.zshrc.local
 ```
-
-Edit the copies to uncomment what you need (gcloud, client-specific env vars, proxy settings, etc.).
 
 ## Adding new dotfiles
 
@@ -120,5 +136,7 @@ Edit the copies to uncomment what you need (gcloud, client-specific env vars, pr
    ```
 2. Stow it: `stow tmux`
 3. Commit.
+
+Non-stow directories (like `examples/`) are excluded from the stow loop via the `NO_STOW` list in `install.sh`.
 
 Conflicting files are automatically backed up on the next `install.sh` run.
