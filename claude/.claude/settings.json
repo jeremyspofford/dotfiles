@@ -1,0 +1,28 @@
+{
+  "permissions": {
+    "defaultMode": "dontAsk",
+    "allow": [
+      "Bash(git:*)",
+      "Bash(gh:*)",
+      "Bash(mise:*)",
+      "Bash(bun:*)",
+      "Bash(npm:*)",
+      "Bash(npx:*)",
+      "Bash(node:*)",
+      "Bash(python:*)",
+      "Bash(python3:*)",
+      "Bash(uv:*)",
+      "Bash(stow:*)",
+      "Bash(ssh:*)",
+      "Bash(ssh-keygen:*)",
+      "Bash(ssh-add:*)",
+      "Bash(curl:*)",
+      "Bash(jq:*)",
+      "Bash(make:*)",
+      "Bash(docker:*)",
+      "Bash(docker-compose:*)"
+    ]
+  },
+  "autoUpdatesChannel": "stable",
+  "skipDangerousModePermissionPrompt": true
+}
