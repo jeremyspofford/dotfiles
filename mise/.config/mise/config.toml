@@ -1,0 +1,123 @@
+# Mise Configuration
+# Uncomment tools as needed for your environment
+# Run `mise install` after uncommenting to install tools
+
+[tools]
+# ============================================================================ #
+# Cloud & Infrastructure
+# ============================================================================ #
+1password-cli = "latest"
+aws-cli = { version = "latest", symlink_bins = "true" }
+# aws-sam-cli = "1.150.1"
+# iam-policy-json-to-terraform = "latest"
+# gcloud = "latest"
+# jules = "latest"
+# terraform = "1.14.0"
+# terragrunt = "0.93.12"
+# opentofu = "1.10.7"
+# infracost = "latest"
+# driftctl = "latest"
+# localstack = "latest"
+
+# ============================================================================ #
+# AI & Coding Assistants
+# ============================================================================ #
+claude = "latest"
+# gemini = "latest"
+codex = "latest"
+# "npm:opencode-ai" = "latest"
+# "pipx:aider-chat" = "latest"
+# "pipx:ralph-orchestrator" = "latest"
+# "npm:@ralph-orchestrator/ralph-cli" = "latest"
+# "npm:@beads/bd" = "latest"
+# "npm:beads-ui" = "latest"
+# "npm:agent-browser" = "latest"
+# taskwarrior = "latest"
+
+# ============================================================================ #
+# Git & Version Control
+# ============================================================================ #
+# lazygit = "latest"
+# delta = "latest"
+# gitconfig = "latest"
+gh = "latest"
+# glab = "latest"
+
+# ============================================================================ #
+# File & Text Tools
+# ============================================================================ #
+bat = "latest"
+eza = "latest"
+fd = "latest"
+ripgrep = "latest"
+jq = "latest"
+yq = "latest"
+fzf = "latest"
+# glow = "latest"
+
+# ============================================================================ #
+# Documentation
+# ============================================================================ #
+# terraform-docs = "latest"
+# tlrc = "latest"
+
+# ============================================================================ #
+# Linters & Formatters
+# ============================================================================ #
+"npm:markdownlint" = "latest"
+# shellcheck = "latest"
+# shfmt = "latest"
+# yamlfmt = "latest"
+# yamllint = "latest"
+# tflint = "latest"
+# lefthook = "latest"
+# terraform-ls = "latest"
+
+# ============================================================================ #
+# Security
+# ============================================================================ #
+gitleaks = "latest"
+# terrascan = "latest"
+# tfsec = "latest"
+# checkov = "latest"
+
+# ============================================================================ #
+# Docker & Containers
+# ============================================================================ #
+# docker-cli = "latest"
+# docker-compose = "latest"
+# lazydocker = "latest"
+# kubectl = "latest"
+# argocd = "latest"
+
+# ============================================================================ #
+# Package Managers
+# ============================================================================ #
+# yarn = "latest"
+uv = "latest"
+# pipx = "latest"
+# pnpm = "latest"
+# npm = "24"
+
+# ============================================================================ #
+# Project-Specific (npm packages)
+# ============================================================================ #
+# "npm:@mirohq/cloud-data-import" = "latest"
+# "npm:@shopify/cli" = "latest"
+
+# ============================================================================ #
+# Languages & Runtimes
+# ============================================================================ #
+node = "latest"
+python = "3.12.11"
+pnpm = "latest"
+bun = "latest"
+# go = "latest"
+# rust = "latest"
+
+# ============================================================================ #
+# Misc Tools
+# ============================================================================ #
+# hcl2json = "latest"
+# direnv = "latest"
+# lazyssh = "latest"

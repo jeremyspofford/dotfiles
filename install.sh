@@ -137,26 +137,6 @@ install_mise() {
 
 install_mise
 
-# ─── Install bun via mise ───────────────────────────────────────────
-install_bun() {
-  local mise_bin
-  if command -v mise &>/dev/null; then
-    mise_bin="mise"
-  elif [ -f "$HOME/.local/bin/mise" ]; then
-    mise_bin="$HOME/.local/bin/mise"
-  else
-    echo "mise not found, skipping bun install"
-    return 1
-  fi
-  if "$mise_bin" ls --installed 2>/dev/null | grep -q "^bun"; then
-    return
-  fi
-  echo "Installing bun via mise..."
-  "$mise_bin" use --global bun@latest
-}
-
-install_bun
-
 # ─── SSH directory setup ────────────────────────────────────────────
 mkdir -p "$HOME/.ssh"
 chmod 700 "$HOME/.ssh"
@@ -238,6 +218,15 @@ done
 if [ -d "$BACKUP_DIR" ]; then
   echo "Originals saved to ~/.dotfiles_backup/"
 fi
+
+# ─── Install global mise tools ──────────────────────────────────────
+# mise config is now stowed — install everything declared in config.toml
+_mise_bin="$(command -v mise 2>/dev/null || echo "$HOME/.local/bin/mise")"
+if [ -x "$_mise_bin" ]; then
+  echo "Installing global mise tools..."
+  "$_mise_bin" install --yes 2>/dev/null || true
+fi
+unset _mise_bin
 
 # ─── Nerd Font install ──────────────────────────────────────────────
 install_nerd_font() {
