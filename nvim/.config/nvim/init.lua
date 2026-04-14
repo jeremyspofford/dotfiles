@@ -1,9 +1,13 @@
 -- ~/.config/nvim/init.lua
-require('config.lazy')
 
--- Disable netrw (neo-tree replaces it)
+-- Disable netrw BEFORE loading plugins (neo-tree replaces it).
+-- These flags must be set before lazy.nvim loads, otherwise netrw will
+-- have already registered its autocmds and you'll get E117 errors on
+-- VimEnter (function netrw#LocalBrowseCheck not found).
 vim.g.loaded_netrw = 1
 vim.g.loaded_netrwPlugin = 1
+
+require('config.lazy')
 
 -- Options
 vim.opt.number = true

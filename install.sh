@@ -80,7 +80,9 @@ install_neovim() {
         echo "Installing Neovim $NVIM_VERSION from GitHub releases..."
         local tmp
         tmp=$(mktemp -d)
-        trap "rm -rf '$tmp'" RETURN
+        # Single-quoted trap so $tmp expands when the trap fires (at
+        # function return), not now. shellcheck SC2064.
+        trap 'rm -rf "$tmp"' RETURN
         curl -fsSL "https://github.com/neovim/neovim/releases/download/${NVIM_VERSION}/nvim-linux-x86_64.tar.gz" \
           -o "$tmp/nvim.tar.gz"
         tar xzf "$tmp/nvim.tar.gz" -C "$tmp"
@@ -108,7 +110,7 @@ install_delta() {
         echo "Installing delta from GitHub releases..."
         local tmp tag arch
         tmp=$(mktemp -d)
-        trap "rm -rf '$tmp'" RETURN
+        trap 'rm -rf "$tmp"' RETURN
         tag=$(curl -fsSI https://github.com/dandavison/delta/releases/latest \
           | grep -i '^location:' | sed 's|.*/||' | tr -d '\r\n')
         arch=$(dpkg --print-architecture 2>/dev/null || echo "amd64")
@@ -125,6 +127,21 @@ install_delta() {
 }
 
 install_delta
+
+# ─── Install shellcheck ─────────────────────────────────────────────
+# Required by the .githooks/pre-commit hook to lint shell scripts on
+# commit. Hook degrades to a warning if shellcheck isn't installed, but
+# we install it here so the hook is actually useful out of the box.
+install_shellcheck() {
+  command -v shellcheck &>/dev/null && return
+  echo "Installing shellcheck..."
+  case "$PLATFORM" in
+    macos) brew install shellcheck ;;
+    wsl|linux) pkg_install shellcheck ;;
+  esac
+}
+
+install_shellcheck
 
 # ─── Install mise ───────────────────────────────────────────────────
 install_mise() {
@@ -145,10 +162,11 @@ chmod 700 "$HOME/.ssh"
 
 # ─── SSH known hosts bootstrap ────────────────────────────────────
 bootstrap_known_hosts() {
-  local hosts="github.com gitlab.com"
+  # Array form so we can quote-expand cleanly. shellcheck SC2086.
+  local hosts=(github.com gitlab.com)
 
   local needs_scan=false
-  for host in $hosts; do
+  for host in "${hosts[@]}"; do
     if ! grep -q "^$host " "$HOME/.ssh/known_hosts" 2>/dev/null; then
       needs_scan=true
       break
@@ -157,7 +175,7 @@ bootstrap_known_hosts() {
 
   if $needs_scan; then
     echo "Adding SSH host keys to ~/.ssh/known_hosts..."
-    ssh-keyscan $hosts >> "$HOME/.ssh/known_hosts" 2>/dev/null
+    ssh-keyscan "${hosts[@]}" >> "$HOME/.ssh/known_hosts" 2>/dev/null
   fi
 
   if [ "$PLATFORM" = "wsl" ]; then
@@ -167,7 +185,7 @@ bootstrap_known_hosts() {
     mkdir -p "$(dirname "$win_known_hosts")"
 
     local win_needs_scan=false
-    for host in $hosts; do
+    for host in "${hosts[@]}"; do
       if ! grep -q "^$host " "$win_known_hosts" 2>/dev/null; then
         win_needs_scan=true
         break
@@ -176,7 +194,7 @@ bootstrap_known_hosts() {
 
     if $win_needs_scan; then
       echo "Adding SSH host keys to Windows known_hosts..."
-      ssh-keyscan $hosts >> "$win_known_hosts" 2>/dev/null
+      ssh-keyscan "${hosts[@]}" >> "$win_known_hosts" 2>/dev/null
     fi
   fi
 }
@@ -193,8 +211,11 @@ EOF
 fi
 
 # ─── Back up conflicting files and stow packages ───────────────────
-# Directories that are not stow packages (docs, examples, etc.)
-NO_STOW="examples"
+# Directories that are not stow packages (docs, examples, reference content).
+# These contain files that should NOT be symlinked into $HOME — they're
+# either repo-only docs (examples) or reference material that lives in
+# per-project locations (cursor rules → .cursor/ inside each project).
+NO_STOW="examples cursor"
 
 for dir in "$DOTFILES_DIR"/*/; do
   pkg="$(basename "$dir")"
@@ -220,6 +241,31 @@ done
 if [ -d "$BACKUP_DIR" ]; then
   echo "Originals saved to ~/.dotfiles_backup/"
 fi
+
+# ─── Configure git hooks for the dotfiles repo ──────────────────────
+# Tracked hooks live in .githooks/ but git won't run them until we
+# point core.hooksPath at that directory. core.hooksPath is per-repo
+# (lives in .git/config, not tracked) so a fresh clone needs this.
+setup_git_hooks() {
+  local hooks_dir="$DOTFILES_DIR/.githooks"
+  [ -d "$hooks_dir" ] || return 0
+
+  # Make all hooks executable. write_file from MCP doesn't preserve the
+  # executable bit, so this is the safety net.
+  find "$hooks_dir" -maxdepth 1 -type f ! -name 'README*' -exec chmod +x {} +
+
+  # Configure the dotfiles repo to use the tracked hooks dir.
+  if git -C "$DOTFILES_DIR" rev-parse --git-dir &>/dev/null; then
+    local current
+    current="$(git -C "$DOTFILES_DIR" config --get core.hooksPath || true)"
+    if [ "$current" != ".githooks" ]; then
+      git -C "$DOTFILES_DIR" config core.hooksPath .githooks
+      echo "Git hooks: configured dotfiles repo to use .githooks/"
+    fi
+  fi
+}
+
+setup_git_hooks
 
 # ─── Install global mise tools ──────────────────────────────────────
 # mise config is now stowed — install everything declared in config.toml
@@ -261,7 +307,7 @@ install_nerd_font() {
   echo "Installing JetBrains Mono Nerd Font..."
   local tmp_dir
   tmp_dir="$(mktemp -d)"
-  trap "rm -rf '$tmp_dir'" RETURN
+  trap 'rm -rf "$tmp_dir"' RETURN
 
   curl -fsSL "https://github.com/ryanoasis/nerd-fonts/releases/latest/download/JetBrainsMono.zip" \
     -o "$tmp_dir/font.zip"
@@ -293,6 +339,9 @@ install_nerd_font() {
 install_nerd_font
 
 # ─── Nerd Font registration check ──────────────────────────────────
+# On macOS, fonts dropped into ~/Library/Fonts are auto-registered for the
+# user. system_profiler is unreliable right after install (caches lag), so
+# we check the filesystem first and only fall back to system_profiler.
 check_font_registered() {
   case "$PLATFORM" in
     wsl)
@@ -301,6 +350,12 @@ check_font_registered() {
         | tr -d '\r' | grep -q "JetBrainsMono Nerd Font Mono"
       ;;
     macos)
+      # Filesystem check is authoritative on macOS — if the .ttf is in
+      # ~/Library/Fonts it IS registered for the user.
+      if ls "$HOME/Library/Fonts"/JetBrainsMonoNerdFontMono-* &>/dev/null; then
+        return 0
+      fi
+      # Fallback: check system font registry
       system_profiler SPFontsDataType 2>/dev/null | grep -q "JetBrainsMono Nerd Font Mono"
       ;;
     *)
@@ -322,7 +377,7 @@ if ! check_font_registered; then
   echo "  Search for: JetBrainsMonoNerdFontMono-"
   echo "  Select all matches, right-click, and install them."
   echo "  Then set your terminal font to 'JetBrainsMono Nerd Font Mono'."
-  local yn=""
+  yn=""
   if [ -t 0 ]; then
     read -rp "Open the font directory now? [y/N] " yn
   fi

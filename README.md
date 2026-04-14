@@ -46,6 +46,7 @@ The install script handles everything:
 | stow, zsh, curl, unzip, libnotify-bin | System package manager |
 | [Neovim 0.11](https://neovim.io) | GitHub releases on apt/x86_64 (pinned to `NVIM_VERSION`), package manager elsewhere |
 | [delta](https://github.com/dandavison/delta) | GitHub releases .deb on apt, package manager elsewhere |
+| [shellcheck](https://www.shellcheck.net/) | System package manager (used by the pre-commit hook) |
 | [mise](https://mise.jdx.dev) | `mise.run` installer on Linux, Homebrew on macOS |
 | All tools in `mise/.config/mise/config.toml` | `mise install` (runs after stowing) |
 | JetBrains Mono Nerd Font | GitHub releases (auto-registered on WSL) |
@@ -63,6 +64,7 @@ Zsh is set as the default shell. Conflicting files are backed up to `~/.dotfiles
 | `1password/` | SSH agent config (`agent.toml`) — Personal vault keys, confirmation on use |
 | `mise/` | Global tool versions (`config.toml`) — bun, node, python, claude, gh, bat, eza, ripgrep, fzf, uv, and more |
 | `claude/` | Global Claude Code config — `CLAUDE.md`, `settings.json`, custom commands |
+| `.githooks/` | Tracked git hooks (pre-commit shellcheck) — repo-level, not stowed |
 
 Shell config is split into three layers:
 
@@ -77,6 +79,10 @@ The `claude/` package sets up a global Claude Code environment:
 - **`CLAUDE.md`** — global context: who I am, work contexts (personal vs Aria Labs), preferences, working style
 - **`settings.json`** — permissions (`dontAsk` mode), global tool allows, hooks
 - **`commands/init-project.md`** — `/init-project` command: scaffolds a project-specific `CLAUDE.md` + `.claude/settings.json` with hooks tuned to the project's actual toolchain
+- **`commands/lecture-note.md`** — `/lecture-note`: turns a Udemy transcript into an Obsidian study note + spaced repetition cards
+- **`commands/quiz-me.md`** — `/quiz-me`: Socratic active-recall quiz on study notes
+- **`commands/weak-spots-drill.md`** — `/weak-spots-drill`: high-pressure drill on cert weak spots
+- **`commands/exam-eve.md`** — `/exam-eve`: calm pre-exam refresh session
 
 ### Global hooks
 
@@ -84,6 +90,35 @@ The `claude/` package sets up a global Claude Code environment:
 |-------|------|
 | `PreToolUse/Bash` | Logs all bash commands with timestamps to `~/.claude/bash-log.txt` (async) |
 | `Notification` | Desktop notification via `notify-send` (Linux) or `osascript` (macOS) |
+
+## Pre-commit hook
+
+The repo has a tracked `pre-commit` hook in `.githooks/` that runs [shellcheck](https://www.shellcheck.net/) on staged shell scripts. `install.sh` activates it for you on a fresh clone via `git config core.hooksPath .githooks`.
+
+**What it lints:** files matching `*.sh`, `*.bash`, `install.sh`, `bootstrap.sh`, plus any other staged file with a `#!/usr/bin/env bash` (or `sh`) shebang.
+
+**Severity:** `--severity=warning` — catches real bugs including `SC2168` (`local` outside function), `SC2086` (unquoted expansions), `SC2155` (declare-and-assign masking exit codes), and `SC2064` (trap quoting).
+
+**To bypass:** `git commit --no-verify`
+
+**To test:** introduce a deliberate bug and try to commit:
+
+```bash
+echo 'local foo=bar' >> install.sh
+git add install.sh
+git commit -m "test"
+# → blocked by hook with shellcheck error
+git checkout install.sh   # undo
+```
+
+If the hook ever isn't running, check:
+
+```bash
+git config --get core.hooksPath          # should print .githooks
+ls -l .githooks/pre-commit               # should be executable
+```
+
+Re-run `./install.sh` to fix both.
 
 ## 1Password SSH
 
@@ -141,6 +176,6 @@ cp examples/zshrc.local.example ~/.zshrc.local
 2. Stow it: `stow tmux`
 3. Commit.
 
-Non-stow directories (like `examples/`) are excluded from the stow loop via the `NO_STOW` list in `install.sh`.
+The stow loop in `install.sh` only iterates over directories matching `*/` (no leading dot), so dotfile directories like `.githooks/` and `.git/` are excluded automatically. Other top-level directories (currently just `examples/`) are excluded via the `NO_STOW` list.
 
 Conflicting files are automatically backed up on the next `install.sh` run.
