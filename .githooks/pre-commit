@@ -1,0 +1,93 @@
+#!/usr/bin/env bash
+# .githooks/pre-commit
+#
+# Lints staged shell scripts with shellcheck. Blocks commit on errors.
+# Skips with a warning if shellcheck isn't installed (so the hook never
+# becomes a hard dependency you have to fight).
+#
+# Activated by `git config core.hooksPath .githooks` (done automatically
+# by install.sh on a fresh clone).
+#
+# To bypass intentionally: `git commit --no-verify`
+#
+# Compatibility: bash 3.2+ (so it works on stock macOS bash). No mapfile,
+# no <(<<<), no other bash-4-isms.
+
+set -eo pipefail
+
+# ─── Find staged shell files ────────────────────────────────────────
+# Strategy:
+#   1. By extension/name: *.sh, *.bash, install.sh, bootstrap.sh
+#   2. By shebang: any staged file whose first line is a sh/bash shebang
+#
+# We accumulate matching files into the shell_files array using a
+# while-read loop instead of mapfile (bash 3.2 has no mapfile builtin
+# and macOS ships /bin/bash 3.2).
+
+shell_files=()
+
+while IFS= read -r f; do
+  [ -z "$f" ] && continue
+  [ -f "$f" ] || continue
+
+  # Match by extension
+  case "$f" in
+    *.sh|*.bash)
+      shell_files+=("$f")
+      continue
+      ;;
+  esac
+
+  # Match by canonical script name
+  case "$(basename "$f")" in
+    install.sh|bootstrap.sh|install|bootstrap)
+      shell_files+=("$f")
+      continue
+      ;;
+  esac
+
+  # Match by shebang
+  if head -1 "$f" 2>/dev/null | grep -qE '^#!.*\b(bash|sh)\b'; then
+    shell_files+=("$f")
+  fi
+done < <(git diff --cached --name-only --diff-filter=ACM)
+
+if [ ${#shell_files[@]} -eq 0 ]; then
+  exit 0
+fi
+
+# ─── Run shellcheck ─────────────────────────────────────────────────
+if ! command -v shellcheck >/dev/null 2>&1; then
+  echo "⚠  shellcheck not installed — skipping shell script linting."
+  echo "   Install with:"
+  echo "     macOS:           brew install shellcheck"
+  echo "     Debian/Ubuntu:   sudo apt-get install shellcheck"
+  echo "     Or re-run:       ./install.sh"
+  exit 0
+fi
+
+echo "→ shellcheck: linting ${#shell_files[@]} staged shell script(s)..."
+failed=0
+for f in "${shell_files[@]}"; do
+  # --severity=warning catches:
+  #   - SC2168: 'local' is only valid in functions  ← the bug that bit us
+  #   - SC2086: unquoted variable expansions
+  #   - SC2046: unquoted command substitution
+  #   - SC2155: declare and assign separately
+  #   - SC2064: trap quoting
+  # --external-sources lets shellcheck follow `source`/`.` directives
+  # --check-sourced enables validation of sourced files
+  if ! shellcheck --severity=warning --external-sources --check-sourced "$f"; then
+    failed=1
+  fi
+done
+
+if [ $failed -eq 1 ]; then
+  echo ""
+  echo "✗ shellcheck found issues in staged shell scripts. Commit blocked."
+  echo "  Fix the issues above, or bypass with: git commit --no-verify"
+  exit 1
+fi
+
+echo "✓ shellcheck passed."
+exit 0
