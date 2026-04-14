@@ -15,6 +15,7 @@ This installs prerequisites, clones the repo to `~/workspace/dotfiles`, runs `in
 > **macOS:** Homebrew must be installed first ([brew.sh](https://brew.sh)).
 
 > **WSL2:** Before dotfiles are installed, git can't reach 1Password. If you need to clone a repo first, prefix the command:
+>
 > ```bash
 > GIT_SSH_COMMAND=ssh.exe git clone git@gitlab.com:org/repo.git
 > ```
@@ -64,6 +65,7 @@ Zsh is set as the default shell. Conflicting files are backed up to `~/.dotfiles
 | `claude/` | Global Claude Code config — `CLAUDE.md`, `settings.json`, custom commands |
 
 Shell config is split into three layers:
+
 - `.commonrc` — platform detection, PATH, 1Password SSH integration, mise activation. Sourced by both `.bashrc` and `.zshrc`.
 - `.bashrc` / `.zshrc` — shell-specific settings (prompt, completion, keybindings).
 - `.aliases` — aliases for git, docker, k8s, terraform, etc.
@@ -130,10 +132,12 @@ cp examples/zshrc.local.example ~/.zshrc.local
 ## Adding new dotfiles
 
 1. Create a package directory mirroring the home directory structure:
+
    ```bash
    mkdir -p tmux
    mv ~/.tmux.conf tmux/.tmux.conf
    ```
+
 2. Stow it: `stow tmux`
 3. Commit.
 

@@ -1,52 +1,42 @@
 {
   "permissions": {
-    "defaultMode": "dontAsk",
     "allow": [
-      "Bash(git:*)",
-      "Bash(gh:*)",
-      "Bash(mise:*)",
-      "Bash(bun:*)",
-      "Bash(npm:*)",
-      "Bash(npx:*)",
-      "Bash(node:*)",
-      "Bash(python:*)",
-      "Bash(python3:*)",
-      "Bash(uv:*)",
-      "Bash(stow:*)",
-      "Bash(ssh:*)",
-      "Bash(ssh-keygen:*)",
-      "Bash(ssh-add:*)",
-      "Bash(curl:*)",
-      "Bash(jq:*)",
-      "Bash(make:*)",
-      "Bash(docker:*)",
-      "Bash(docker-compose:*)"
-    ]
-  },
-  "autoUpdatesChannel": "stable",
-  "skipDangerousModePermissionPrompt": true,
-  "hooks": {
-    "PreToolUse": [
-      {
-        "matcher": "Bash",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "jq -r '\"[\\(now | strftime(\"%Y-%m-%d %H:%M:%S\"))] \\(.tool_input.command)\"' >> ~/.claude/bash-log.txt",
-            "async": true
-          }
-        ]
-      }
+      "Bash(docker buildx:*)",
+      "Bash(docker builder:*)",
+      "Bash(sudo service:*)",
+      "Bash(git init)",
+      "Bash(git remote add origin git@github.com:arialabs/nova.git)",
+      "Bash(git config --global user.name)",
+      "Bash(git config --global user.email)"
     ],
-    "Notification": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "if command -v notify-send >/dev/null 2>&1; then notify-send 'Claude Code' 'Needs your attention' --icon=dialog-information 2>/dev/null; elif command -v osascript >/dev/null 2>&1; then osascript -e 'display notification \"Needs your attention\" with title \"Claude Code\"' 2>/dev/null; fi"
-          }
-        ]
-      }
-    ]
-  }
+    "defaultMode": "default"
+  },
+  "model": "sonnet",
+  "statusLine": {
+    "type": "command",
+    "command": "bash /home/jeremy/.claude/statusline-command.sh"
+  },
+  "enabledPlugins": {
+    "frontend-design@claude-plugins-official": true,
+    "context7@claude-plugins-official": true,
+    "superpowers@claude-plugins-official": true,
+    "code-review@claude-plugins-official": true,
+    "feature-dev@claude-plugins-official": true,
+    "code-simplifier@claude-plugins-official": true,
+    "playwright@claude-plugins-official": true,
+    "typescript-lsp@claude-plugins-official": true,
+    "commit-commands@claude-plugins-official": true,
+    "security-guidance@claude-plugins-official": true,
+    "claude-md-management@claude-plugins-official": true,
+    "claude-code-setup@claude-plugins-official": true,
+    "explanatory-output-style@claude-plugins-official": true,
+    "hookify@claude-plugins-official": true,
+    "learning-output-style@claude-plugins-official": true,
+    "huggingface-skills@claude-plugins-official": true,
+    "skill-creator@claude-plugins-official": true,
+    "firecrawl@claude-plugins-official": true,
+    "semgrep@claude-plugins-official": false
+  },
+  "effortLevel": "high",
+  "skipDangerousModePermissionPrompt": true
 }
