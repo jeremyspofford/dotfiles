@@ -68,3 +68,14 @@ command -v mise >/dev/null 2>&1 && eval "$(mise activate "${SHELL##*/}")"
 
 # ─── Machine-specific overrides ──────────────────────────────────────
 [ -f ~/.commonrc.local ] && . ~/.commonrc.local
+
+# pnpm
+export PNPM_HOME="/home/jeremy/.local/share/pnpm"
+case ":$PATH:" in
+  *":$PNPM_HOME:"*) ;;
+  *) export PATH="$PNPM_HOME:$PATH" ;;
+esac
+# pnpm end
+
+# === WIKI_VAULT: Obsidian LLM Wiki ===
+export WIKI_VAULT="$HOME/Obsidian_Vault"
