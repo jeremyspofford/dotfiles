@@ -70,7 +70,10 @@ command -v mise >/dev/null 2>&1 && eval "$(mise activate "${SHELL##*/}")"
 [ -f ~/.commonrc.local ] && . ~/.commonrc.local
 
 # pnpm
-export PNPM_HOME="/home/jeremy/.local/share/pnpm"
+case "$PLATFORM" in
+  macos) export PNPM_HOME="$HOME/Library/pnpm" ;;
+  *)     export PNPM_HOME="$HOME/.local/share/pnpm" ;;
+esac
 case ":$PATH:" in
   *":$PNPM_HOME:"*) ;;
   *) export PATH="$PNPM_HOME:$PATH" ;;
