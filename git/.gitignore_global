@@ -26,6 +26,9 @@ desktop.ini
 # ─── Claude Code ──────────────────────────────────────────────────────
 .claude/settings.local.json
 
+# ─── Cursor personal rules ────────────────────────────────────────────
+.cursor/rules/jeremy-context.mdc
+
 # ─── Python ───────────────────────────────────────────────────────────
 __pycache__/
 *.pyc

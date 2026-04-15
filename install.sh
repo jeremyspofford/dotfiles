@@ -213,9 +213,9 @@ fi
 # ─── Back up conflicting files and stow packages ───────────────────
 # Directories that are not stow packages (docs, examples, reference content).
 # These contain files that should NOT be symlinked into $HOME — they're
-# either repo-only docs (examples) or reference material that lives in
+# either repo-only docs (examples/scripts) or reference material that lives in
 # per-project locations (cursor rules → .cursor/ inside each project).
-NO_STOW="examples cursor"
+NO_STOW="examples cursor scripts"
 
 for dir in "$DOTFILES_DIR"/*/; do
   pkg="$(basename "$dir")"

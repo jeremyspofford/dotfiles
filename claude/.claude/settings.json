@@ -12,6 +12,55 @@
     "defaultMode": "default"
   },
   "model": "sonnet",
+  "hooks": {
+    "PreCompact": [
+      {
+        "matcher": "auto",
+        "hooks": [
+          {
+            "type": "prompt",
+            "prompt": "Before context compaction occurs: use the Write tool to create a session dump at $WIKI_VAULT/raw/sessions/[YYYY-MM-DD-HHMMSS]-session-dump.md (use the actual current date and time in the filename). Write this frontmatter exactly: source: session/[infer domain/project from CWD or conversation], source_project: [domain/project], captured_date: [today], captured_at: [datetime], session_context: [one line describing what we were working on], ingested: false. In the body, capture thoroughly: key decisions made, technical insights, patterns identified, project status changes, anything worth preserving. This is the permanent record before the context window compresses — be thorough. After writing the file, continue normally."
+          }
+        ]
+      }
+    ],
+    "PostCompact": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$HOME/.claude/hooks/auto-ingest.sh",
+            "timeout": 30
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$HOME/.claude/hooks/auto-ingest.sh",
+            "timeout": 30
+          }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "matcher": ".*-scout",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$HOME/.claude/hooks/auto-ingest.sh",
+            "timeout": 30
+          }
+        ]
+      }
+    ]
+  },
   "statusLine": {
     "type": "command",
     "command": "bash $HOME/.claude/statusline-command.sh"

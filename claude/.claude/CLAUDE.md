@@ -78,15 +78,17 @@ Own it. Fix it. Say what happened. Ask if you need input to resolve.
 
 ## Work Contexts
 
-Three distinct contexts:
+Four distinct contexts:
 
 - **Personal** — `jeremyspofford` on GitHub, `~/workspace/`
 - **Aria Labs** — `nova-arialabs` on GitHub, `~/workspace/arialabs/`
 - **Alertventure** — client work, `~/workspace/alertventure/`
+- **Life / Vault** — `~/Obsidian_Vault/`, `~/` — personal life context (not code)
 
 Git identity switches automatically via `.gitconfig` conditional include.
 Aria Labs repos: AI operates autonomously with minimal hand-holding.
 Personal repos: directly driven.
+Life/Vault: captures personal knowledge, not tied to any git repo.
 
 ---
 
@@ -155,6 +157,8 @@ Wiki slug resolution from CWD (strips `~/workspace/` prefix):
 - `~/workspace/alertventure/ft-quoting` → `alertventure/ft-quoting`
 - `~/workspace/arialabs/some-project` → `arialabs/some-project`
 - `~/workspace/dotfiles` → `dotfiles`
+- `~/Obsidian_Vault` or non-workspace paths → `personal/general`
+- Explicit `--project personal/home` → `personal/home`
 
 ### Passive capture
 
@@ -165,6 +169,8 @@ Append if today's file exists. Keep captures fast and rough.
 **Project resolution:**
 - Strip `~/workspace/` prefix to get the slug: `alertventure/ft-quoting`, `arialabs/nova`, etc.
 - Worktree subdirectories: resolve to the parent project's slug
+- Non-workspace paths (home dir, vault, etc.): use `personal/general` as the slug
+- Personal captures can use specific subdomains: `personal/home`, `personal/family`, `personal/health`
 - If association cannot be determined: use `unknown/[dirname]` as the slug,
   set `needs-review: true` — these surface in `/wiki status` for discussion
 
