@@ -160,5 +160,8 @@ if command -v uuidgen >/dev/null 2>&1; then
 fi
 
 
+# Client repo setup — copies personal Cursor rules into the current repo
+alias sync-cursor='~/bin/sync-cursor'
+
 # Machine-specific aliases
 [ -f ~/.aliases.local ] && . ~/.aliases.local
