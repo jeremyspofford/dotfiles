@@ -159,8 +159,6 @@ if command -v uuidgen >/dev/null 2>&1; then
   alias uuid='uuidgen | tr "[:upper:]" "[:lower:]"'
 fi
 
-# Client repo setup — copies personal Cursor rules into the current repo
-alias sync-cursor='~/workspace/dotfiles/scripts/sync-cursor.sh'
 
 # Machine-specific aliases
 [ -f ~/.aliases.local ] && . ~/.aliases.local
