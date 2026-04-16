@@ -67,7 +67,7 @@ For each imported lecture, apply the first matching rule:
 
 Rows in the existing index that don't appear in the import are left untouched.
 
-**Fuzzy match warning format** (note: `(index, todo)` and "Adding as" are intentional refinements over the spec's example — they clarify why the match is flagged):
+**Fuzzy match warning format:**
 ```
 Warning: "EC2 Basics Hands On" (import) closely matches "EC2 Basics - Hands On" (index, todo).
 Adding as new row. If these are the same lecture, manually merge and remove the duplicate.
