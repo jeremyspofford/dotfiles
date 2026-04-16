@@ -11,6 +11,8 @@ Extract from the pasted markdown:
 - Cert folder name (from the `> cert: <name>` line)
 - Lecture table (all rows under the `| # | Title | Section | Duration |` header)
 
+If no lecture rows were extracted from the pasted content, stop immediately: "No lectures found in the pasted content. Make sure you're pasting output from the `/course-import` Chrome extension shortcut."
+
 ## 2. Validate cert folder
 
 List actual directories under `$WIKI_VAULT/Learning/`:
@@ -30,7 +32,7 @@ Which folder should this import go to?
 
 Wait for confirmation before continuing. Never operate on a folder that doesn't exist.
 
-Read `$WIKI_VAULT/Learning/<cert>/_Index.md`. If it doesn't exist, stop and tell the user.
+Read `$WIKI_VAULT/Learning/<cert>/_Index.md`. If it doesn't exist, stop with: "Cannot find `_Index.md` at that path. Please check the cert folder name or create the index file before importing."
 
 ## 3. First-run setup
 
@@ -67,6 +69,8 @@ For each imported lecture, apply the first matching rule:
 
 Rows in the existing index that don't appear in the import are left untouched.
 
+**Schema migration:** If the existing `_Index.md` table has only 5 columns (no Duration column), treat all existing rows as having `Duration: —`. The merge rules above still apply — exact title matches update the Duration field and the schema upgrades to 6 columns when the file is written in Step 5.
+
 **Fuzzy match warning format:**
 ```
 Warning: "EC2 Basics Hands On" (import) closely matches "EC2 Basics - Hands On" (index, todo).
@@ -82,13 +86,15 @@ Write the updated table with the 6-column schema:
 
 Duration format: integer minutes with `m` suffix (e.g. `5m`, `62m`). Missing durations: `—`.
 
-Update the `## Sections covered` checklist: add any new sections from the import as `⬜ Section N — Title`.
+Update the `## Sections covered` checklist: for each section in the import, check if it already appears in the checklist. If it does, leave it alone. If it's new, append `⬜ <section string from import>` (e.g. `⬜ Section 5 — EC2 Fundamentals`).
 
 Compute and write frontmatter scalars:
 ```yaml
 remaining_count: <count of rows where Status != complete>
 remaining_minutes: <sum of Duration integers for those rows; treat — as 0>
 ```
+
+Valid Status values are `complete` and `todo`. Only rows with `complete` are excluded from `remaining_count`. Any other value is treated as `todo`.
 
 Rows with Duration `—` contribute 0 to `remaining_minutes` but are still counted in `remaining_count`.
 
