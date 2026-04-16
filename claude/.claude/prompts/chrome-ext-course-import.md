@@ -50,7 +50,7 @@ Output a single markdown code block in this exact format:
 
 Rules:
 - Use Udemy's displayed lecture numbers if visible. If not, sequence from 1.
-- Duration: normalize to whole minutes. `5:23` → `5m`. `1:02:15` → `62m`. Round up.
+- Duration: normalize to whole minutes (truncate seconds). `5:23` → `5m`. `1:02:15` → `62m`.
 - Section: use the section number and title exactly as shown (e.g. `5 - EC2 Fundamentals`).
 - Title: use the lecture title exactly as shown on Udemy.
 - One row per lecture. Section name goes in the Section column — no section header rows.
