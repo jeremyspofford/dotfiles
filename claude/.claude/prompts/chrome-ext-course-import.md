@@ -21,7 +21,7 @@ Read the full course curriculum from this page. It may appear in:
 - The **sidebar** on the video player page (collapsible section list on the left)
 - The **curriculum section** on the course overview/landing page (expandable section list)
 
-Expand all collapsed sections before reading so you have the full list.
+Expand all collapsed sections before reading so you have the full list. If some sections remain collapsed or show only a lecture count (e.g. "12 lectures"), note which sections could not be read fully and list them in the Step 4 report.
 
 Include: video lectures, hands-on labs.
 Skip: quizzes, coding exercises, practice tests — anything that is not a video lecture.
@@ -50,7 +50,7 @@ Output a single markdown code block in this exact format:
 
 Rules:
 - Use Udemy's displayed lecture numbers if visible. If not, sequence from 1.
-- Duration: normalize to whole minutes (truncate seconds). `5:23` → `5m`. `1:02:15` → `62m`.
+- Duration: floor to whole minutes (drop seconds). `5:23` → `5m`. `1:02:15` → `62m`.
 - Section: use the section number and title exactly as shown (e.g. `5 - EC2 Fundamentals`).
 - Title: use the lecture title exactly as shown on Udemy.
 - One row per lecture. Section name goes in the Section column — no section header rows.
