@@ -7,7 +7,13 @@ SAVEHIST=10000
 HISTFILE=~/.zsh_history
 
 # ─── Keybindings ──────────────────────────────────────────────────────
-bindkey -e
+bindkey -v
+KEYTIMEOUT=1                                    # 10ms — snappy <Esc> mode switch
+bindkey '^R' history-incremental-search-backward
+bindkey -M vicmd '^R' history-incremental-search-backward
+bindkey '^?' backward-delete-char               # backspace works after <Esc>
+bindkey '^A' beginning-of-line
+bindkey '^E' end-of-line
 
 # ─── Prompt ───────────────────────────────────────────────────────────
 autoload -Uz promptinit
@@ -41,6 +47,17 @@ fi
 
 # bun completions (if installed standalone outside mise)
 [ -s "$HOME/.bun/_bun" ] && source "$HOME/.bun/_bun"
+
+# ─── Plugins ──────────────────────────────────────────────────────────
+# Fish-style autosuggestions (installed via apt or brew by install.sh).
+# Try known paths in order; silently skip if not found (e.g. pre-bootstrap).
+for _p in \
+  /usr/share/zsh-autosuggestions/zsh-autosuggestions.zsh \
+  /opt/homebrew/share/zsh-autosuggestions/zsh-autosuggestions.zsh \
+  /usr/local/share/zsh-autosuggestions/zsh-autosuggestions.zsh; do
+  [ -r "$_p" ] && source "$_p" && break
+done
+unset _p
 
 # ─── Common config ────────────────────────────────────────────────────
 [ -f ~/.commonrc ] && . ~/.commonrc

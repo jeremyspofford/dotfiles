@@ -156,6 +156,25 @@ install_mise() {
 
 install_mise
 
+# ─── Install zsh-autosuggestions ────────────────────────────────────
+# Fish-style grey ghost-text suggestions while typing. Shipped as a
+# sourceable script (not a binary), so we check the known install paths
+# instead of `command -v`.
+install_zsh_autosuggestions() {
+  for f in /usr/share/zsh-autosuggestions/zsh-autosuggestions.zsh \
+           /opt/homebrew/share/zsh-autosuggestions/zsh-autosuggestions.zsh \
+           /usr/local/share/zsh-autosuggestions/zsh-autosuggestions.zsh; do
+    [ -r "$f" ] && return
+  done
+  echo "Installing zsh-autosuggestions..."
+  case "$PLATFORM" in
+    macos) brew install zsh-autosuggestions ;;
+    wsl|linux) pkg_install zsh-autosuggestions ;;
+  esac
+}
+
+install_zsh_autosuggestions
+
 # ─── SSH directory setup ────────────────────────────────────────────
 mkdir -p "$HOME/.ssh"
 chmod 700 "$HOME/.ssh"

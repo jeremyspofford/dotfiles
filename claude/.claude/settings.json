@@ -11,7 +11,6 @@
     ],
     "defaultMode": "default"
   },
-  "model": "sonnet",
   "hooks": {
     "PreCompact": [
       {
@@ -36,7 +35,28 @@
         ]
       }
     ],
+    "SessionEnd": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "prompt",
+            "prompt": "Before this session ends: use the Write tool to create a session dump at $WIKI_VAULT/raw/sessions/[YYYY-MM-DD-HHMMSS]-session-dump.md (use the actual current date and time in the filename). Write this frontmatter exactly: source: session/[infer domain/project from CWD or conversation], source_project: [domain/project], captured_date: [today], captured_at: [datetime], session_context: [one line describing what we were working on], ingested: false. In the body, capture: key decisions made, technical insights, patterns identified, project status changes, anything worth preserving. Skip trivial or routine exchanges. Then append a curated summary (3-8 bullet points) to $WIKI_VAULT/Assistant/memory/[YYYY-MM-DD].md under a new section heading matching the session context. If today's log doesn't exist, create it with frontmatter: date: [today], ingested: false."
+          }
+        ]
+      }
+    ],
     "SessionStart": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$HOME/.claude/hooks/init-daily-log.sh",
+            "timeout": 10
+          }
+        ]
+      },
       {
         "matcher": "",
         "hooks": [

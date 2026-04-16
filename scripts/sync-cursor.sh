@@ -1,7 +1,20 @@
 #!/usr/bin/env bash
 # sync-cursor — initialize personal Cursor rules in a client/project repo
-# Run from the project root.
+# Run from the project root. Use --force / -f to overwrite an existing rule.
 set -euo pipefail
+
+force=0
+case "${1:-}" in
+  -f|--force) force=1 ;;
+  -h|--help)
+    echo "Usage: sync-cursor [--force|-f]"
+    echo "  Copies the personal Cursor rule template into .cursor/rules/."
+    echo "  Without --force, an existing rule is left untouched."
+    exit 0
+    ;;
+  "") ;;
+  *) echo "Unknown argument: $1" >&2; exit 2 ;;
+esac
 
 DOTFILES="$HOME/workspace/dotfiles"
 CURSOR_RULE_SRC="$DOTFILES/scripts/templates/cursor-jeremy-context.mdc"
@@ -12,10 +25,15 @@ if [ ! -f "$CURSOR_RULE_SRC" ]; then
   exit 1
 fi
 
-if [ -f "$CURSOR_RULE_DST" ]; then
-  echo "Already exists: $CURSOR_RULE_DST (skipping)"
+if [ -f "$CURSOR_RULE_DST" ] && [ "$force" -eq 0 ]; then
+  echo "Already exists: $CURSOR_RULE_DST (use --force to overwrite)"
+  exit 0
+fi
+
+mkdir -p .cursor/rules
+cp "$CURSOR_RULE_SRC" "$CURSOR_RULE_DST"
+if [ "$force" -eq 1 ]; then
+  echo "Updated: $CURSOR_RULE_DST"
 else
-  mkdir -p .cursor/rules
-  cp "$CURSOR_RULE_SRC" "$CURSOR_RULE_DST"
   echo "Created: $CURSOR_RULE_DST"
 fi
