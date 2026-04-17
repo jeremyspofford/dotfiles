@@ -1,0 +1,5 @@
+[tools]
+
+"aws-cli" = "latest"
+"aqua:anthropics/claude-code" = "latest"
+op = "latest"

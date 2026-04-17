@@ -119,28 +119,11 @@ alias nr='npm run'
 alias ns='npm start'
 alias nt='npm test'
 
-# Bun
-alias bi='bun install'
-alias ba='bun add'
-alias bad='bun add -d'
-alias brm='bun remove'
-alias br='bun run'
-alias bs='bun start'
-alias bt='bun test'
-alias bx='bunx'
-
-# bat — syntax-highlighted cat (plain output, no paging)
-command -v bat >/dev/null 2>&1 && alias cat='bat --pager=never --style=plain'
-
-# fd — faster find
-# Usage: fd <pattern> [path]  (drop-in, no alias needed)
-
-# rg — faster grep
-# Usage: rg <pattern> [path]  (drop-in, no alias needed)
-
 # Editors
 alias v='nvim'
 alias vim='nvim'
+# AWS
+alias sso='bash ~/workspace/dotfiles/scripts/sso.sh'
 
 # File explorer (platform-aware)
 if [ "$PLATFORM" = "wsl" ]; then

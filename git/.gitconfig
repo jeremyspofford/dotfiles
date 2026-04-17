@@ -9,7 +9,7 @@
 	defaultBranch = main
 
 [core]
-	editor = nvim
+	editor = vim
 	autocrlf = input
 	pager = delta
 	excludesfile = ~/.gitignore_global
