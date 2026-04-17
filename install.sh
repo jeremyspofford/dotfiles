@@ -143,6 +143,20 @@ install_shellcheck() {
 
 install_shellcheck
 
+# ─── Install wslu (WSL only) ────────────────────────────────────────
+# Provides `wslview`, which opens URLs in the Windows default browser
+# from inside WSL. shell/.commonrc sets BROWSER=wslview on WSL, but
+# without the package it silently falls back to a Linux-side browser
+# (e.g. `aws sso login` launching a profile-less Linux Chrome).
+install_wslu() {
+  [ "$PLATFORM" = "wsl" ] || return 0
+  command -v wslview &>/dev/null && return 0
+  echo "Installing wslu..."
+  pkg_install wslu
+}
+
+install_wslu
+
 # ─── Install mise ───────────────────────────────────────────────────
 install_mise() {
   command -v mise &>/dev/null && return
@@ -234,7 +248,7 @@ fi
 # These contain files that should NOT be symlinked into $HOME — they're
 # either repo-only docs (examples/scripts) or reference material that lives in
 # per-project locations (cursor rules → .cursor/ inside each project).
-NO_STOW="examples cursor scripts"
+NO_STOW="docs examples cursor"
 
 for dir in "$DOTFILES_DIR"/*/; do
   pkg="$(basename "$dir")"

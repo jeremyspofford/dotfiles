@@ -22,9 +22,9 @@ aws-cli = { version = "latest", symlink_bins = "true" }
 # ============================================================================ #
 # AI & Coding Assistants
 # ============================================================================ #
-claude = "latest"
+"aqua:anthropics/claude-code" = "latest"
 # gemini = "latest"
-codex = "latest"
+# codex = "latest"
 # "npm:opencode-ai" = "latest"
 # "pipx:aider-chat" = "latest"
 # "pipx:ralph-orchestrator" = "latest"
