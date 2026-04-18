@@ -5,6 +5,12 @@
 [includeIf "gitdir:~/workspace/arialabs/"]
 	path = ~/.gitconfig-arialabs
 
+[includeIf "gitdir:~/workspace/vividcloud/"]
+    path = ~/.gitconfig-vividcloud
+
+[includeIf "gitdir:~/workspace/alertventure/"]
+    path = ~/.gitconfig-alertventure
+
 [init]
 	defaultBranch = main
 
@@ -50,4 +56,7 @@
 	amend = commit --amend --no-edit
 	undo = reset --soft HEAD~1
 	wip = !git add -A && git commit -m 'WIP'
-	clone-aria = "!f() { git clone git@github.com-arialabs:arialabs/$1.git ~/workspace/arialabs/$1; }; f"
+	# clone-aria = "!f() { git clone git@github.com-arialabs:arialabs/$1.git ~/workspace/arialabs/$1; }; f"
+	clone-aria = "!f() { git clone git@github.com-arialabs:arialabs/$1.git $1; }; f"
+	clone-alertventure = "!f() { git clone git@gitlab.com-alertventure:alertventure/$1.git $1; }; f"
+	clone-vividcloud = "!f() { git clone git@gitlab.com-vividcloud:vividcloud/$1.git $1; }; f"

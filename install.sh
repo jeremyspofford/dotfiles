@@ -234,6 +234,49 @@ bootstrap_known_hosts() {
 
 bootstrap_known_hosts
 
+# ─── Mirror SSH config to Windows side (WSL only) ─────────────────
+# On WSL, GIT_SSH_COMMAND=ssh.exe in .commonrc routes git through
+# Windows' OpenSSH. ssh.exe reads %USERPROFILE%\.ssh\config — it does
+# NOT read the Linux-side file that stow links into ~/.ssh/config. So
+# we copy our dotfiles ssh config into the Windows user profile too.
+#
+# Copy (not symlink) because NTFS symlinks created from WSL aren't
+# reliably followed by Windows apps like ssh.exe. Re-running install.sh
+# re-copies, keeping the two sides in sync; the dotfiles file remains
+# the source of truth.
+#
+# First run on a given machine backs up any pre-existing Windows ssh
+# config to $BACKUP_DIR so nothing is silently lost.
+mirror_ssh_to_windows() {
+  [ "$PLATFORM" = "wsl" ] || return 0
+
+  local src="$DOTFILES_DIR/ssh/.ssh/config"
+  [ -f "$src" ] || return 0
+
+  local win_user
+  win_user="$(cmd.exe /c "echo %USERNAME%" 2>/dev/null | tr -d '\r')"
+  if [ -z "$win_user" ]; then
+    echo "Could not resolve Windows username; skipping SSH mirror to Windows."
+    return 0
+  fi
+
+  local dest="/mnt/c/Users/$win_user/.ssh/config"
+  mkdir -p "$(dirname "$dest")"
+
+  if [ -f "$dest" ] && ! cmp -s "$src" "$dest"; then
+    local backup
+    backup="$BACKUP_DIR/windows-ssh-config.$(date +%Y%m%dT%H%M%S)"
+    mkdir -p "$BACKUP_DIR"
+    cp "$dest" "$backup"
+    echo "  Backed up existing Windows SSH config: $dest -> $backup"
+  fi
+
+  cp -f "$src" "$dest"
+  echo "SSH config mirrored to $dest"
+}
+
+mirror_ssh_to_windows
+
 # ─── Create .stowrc on first run ───────────────────────────────────
 if [ ! -f "$STOWRC" ]; then
   cat > "$STOWRC" << EOF
