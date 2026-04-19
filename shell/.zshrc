@@ -71,3 +71,9 @@ unset _p
 
 # ─── Aliases ─────────────────────────────────────────────────────────
 [ -f ~/.aliases ] && . ~/.aliases
+
+# Ollama runs on Windows for performance increase 
+# and ease of allowing internal traffic to it.
+# ollama from WSL will transparently call the Windows daemon. 
+export OLLAMA_HOST=http://host.docker.internal:11434
+
