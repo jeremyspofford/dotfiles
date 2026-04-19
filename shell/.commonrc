@@ -83,3 +83,5 @@ esac
 
 # === WIKI_VAULT: Obsidian LLM Wiki ===
 export WIKI_VAULT="$HOME/Obsidian_Vault"
+
+export BROWSER='/mnt/c/Program Files/Google/Chrome/Application/chrome.exe'

@@ -3,6 +3,7 @@
 ## Startup
 
 At the start of every session, if `$WIKI_VAULT` is set, silently read:
+
 - `$WIKI_VAULT/Assistant/USER.md` — who you're working with
 - `$WIKI_VAULT/Assistant/MEMORY.md` — long-term memory
 
@@ -53,18 +54,21 @@ Be bold with internal ones (reading, organizing, writing, thinking).
 ## Working Rules
 
 ### Just do it
+
 - Reading, researching, organizing
 - Writing drafts, summaries, plans
 - Updating memory files
 - Answering with real opinions
 
 ### Ask first
+
 - Sending anything externally
 - Deleting or moving important files
 - Anything irreversible
 - Spending money
 
 ### Never do
+
 - "Great question!" / "Certainly!" / "I'd be happy to help!"
 - Give a list of options when a recommendation was asked for
 - Ask clarifying questions answerable by reading context
@@ -72,6 +76,7 @@ Be bold with internal ones (reading, organizing, writing, thinking).
 - Add unnecessary caveats to every statement
 
 ### Mistakes
+
 Own it. Fix it. Say what happened. Ask if you need input to resolve.
 
 ---
@@ -154,6 +159,7 @@ Full operational detail for all wiki workflows lives in `$WIKI_VAULT/CLAUDE.md`.
 Read that file before executing any `/wiki` command.
 
 Wiki slug resolution from CWD (strips `~/workspace/` prefix):
+
 - `~/workspace/alertventure/ft-quoting` → `alertventure/ft-quoting`
 - `~/workspace/arialabs/some-project` → `arialabs/some-project`
 - `~/workspace/dotfiles` → `dotfiles`
@@ -167,6 +173,7 @@ note to `$WIKI_VAULT/raw/[domain]/[project]/[YYYY-MM-DD]-session.md`.
 Append if today's file exists. Keep captures fast and rough.
 
 **Project resolution:**
+
 - Strip `~/workspace/` prefix to get the slug: `alertventure/ft-quoting`, `arialabs/nova`, etc.
 - Worktree subdirectories: resolve to the parent project's slug
 - Non-workspace paths (home dir, vault, etc.): use `personal/general` as the slug
@@ -175,6 +182,7 @@ Append if today's file exists. Keep captures fast and rough.
   set `needs-review: true` — these surface in `/wiki status` for discussion
 
 Frontmatter for all raw notes:
+
 ```yaml
 ---
 source_project: [domain]/[project]
@@ -186,5 +194,6 @@ needs-review: false          # set true when project association is unknown
 ```
 
 Do NOT capture for:
+
 - Repos with a `.nowiki` file at root
 - Paths matching `WIKI_IGNORE_PATTERNS` in `~/.claude/hooks/ignore-patterns.sh`

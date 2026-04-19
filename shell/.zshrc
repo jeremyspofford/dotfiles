@@ -2,7 +2,7 @@
 
 # ─── Options ──────────────────────────────────────────────────────────
 setopt histignorealldups sharehistory
-setopt interactive_comments 
+setopt interactive_comments
 HISTSIZE=10000
 SAVEHIST=10000
 HISTFILE=~/.zsh_history
@@ -71,4 +71,3 @@ unset _p
 
 # ─── Aliases ─────────────────────────────────────────────────────────
 [ -f ~/.aliases ] && . ~/.aliases
-
