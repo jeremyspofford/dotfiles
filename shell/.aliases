@@ -132,19 +132,15 @@ command -v bat >/dev/null 2>&1 && alias cat='bat --pager=never --style=plain'
 alias v='nvim'
 alias vim='nvim'
 
-# AWS
-alias sso='bash ~/workspace/dotfiles/scripts/sso.sh'
-
-# AWS environment variables
-aws-env() {
-  local profile="${1:-$AWS_PROFILE}"
-  if [ -z "$profile" ]; then
-    echo "Usage: aws-env <profile>" >&2
-    return 1
-  fi
-  eval "$(aws configure export-credentials --profile "$profile" --format env)" \
-    && unset AWS_PROFILE \
-    && echo "Loaded AWS credentials from profile '$profile' into env (expires $AWS_CREDENTIAL_EXPIRATION)"
+# AWS SSO login + export credentials into the current shell.
+# Defined as a function (not `bash script.sh`) so the exports persist.
+sso() {
+  local profile="${1:-ft-dev}"
+  aws sso login --profile "$profile" || return 1
+  eval "$(aws configure export-credentials --profile "$profile" --format env)"
+  unset AWS_PROFILE
+  echo "Exported credentials for profile: $profile (expires $AWS_CREDENTIAL_EXPIRATION)"
+  aws sts get-caller-identity --query 'Arn' --output text
 }
 
 # File explorer (platform-aware)

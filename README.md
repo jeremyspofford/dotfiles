@@ -84,6 +84,20 @@ The `claude/` package sets up a global Claude Code environment:
 - **`commands/weak-spots-drill.md`** — `/weak-spots-drill`: high-pressure drill on cert weak spots
 - **`commands/exam-eve.md`** — `/exam-eve`: calm pre-exam refresh session
 
+### MCP servers
+
+Custom and third-party Model Context Protocol servers are declared in
+[`mcp-servers/manifest.json`](./mcp-servers/manifest.json) and applied to
+Claude Code's user scope by [`mcp-servers/register.sh`](./mcp-servers/register.sh)
+(called automatically from `install.sh`). The manifest is a true source of
+truth — `register.sh` is a sync, so removing a server from the manifest
+unregisters it on the next run. See [mcp-servers/README.md](./mcp-servers/README.md)
+for the why and the how, including why `.mcp.json` at user scope doesn't work.
+
+Custom server implementations also live under `mcp-servers/` (e.g.
+[`memory-capture/`](./mcp-servers/memory-capture/) — the cross-tool daily-log
+writer for `$WIKI_VAULT/Assistant/memory/`).
+
 ### Global hooks
 
 | Event | Hook |
