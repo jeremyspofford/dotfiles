@@ -19,7 +19,7 @@ describe("stdio integration", () => {
     const proc = spawn("bun", ["run", "src/index.ts"], {
       env: { ...process.env, WIKI_VAULT: vault },
       stdio: ["pipe", "pipe", "pipe"],
-      cwd: "/home/jeremy/workspace/dotfiles/mcp-servers/memory-capture",
+      cwd: join(import.meta.dir, ".."),
     });
 
     const responsesById = new Map<number, any>();
