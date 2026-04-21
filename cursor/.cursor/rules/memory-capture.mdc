@@ -1,0 +1,23 @@
+---
+description: Capture durable notes to the personal assistant vault
+alwaysApply: true
+---
+
+# Memory capture
+
+When something worth keeping comes up during our work together — a decision
+made, a pattern identified, a correction, a preference expressed, or an
+explicit "remember this" — call the `append_to_daily_log` MCP tool from
+the `memory-capture` server with:
+
+- `source_tool`: "cursor"
+- `session_context`: one line describing the current work
+- `content`: 1-5 bullet points in plain markdown
+- `timestamp`: current ISO datetime
+
+At the end of a session (or when clearly wrapping up a chunk of work),
+call it once more with a 3-8 bullet summary under the same `session_context`.
+
+Do NOT use file-writing tools to edit `Assistant/memory/*.md` directly.
+The MCP tool maintains the frontmatter `sources: []` array atomically
+under a file lock; direct writes bypass that protection.
