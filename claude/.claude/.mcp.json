@@ -1,0 +1,16 @@
+{
+  "mcpServers": {
+    "sequential-thinking": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-sequential-thinking"]
+    },
+    "memory-capture": {
+      "command": "bun",
+      "args": [
+        "run",
+        "/home/jeremy/workspace/dotfiles/mcp-servers/memory-capture/src/index.ts"
+      ],
+      "env": { "WIKI_VAULT": "/home/jeremy/Obsidian_Vault" }
+    }
+  }
+}
