@@ -75,5 +75,5 @@ unset _p
 # Ollama runs on Windows for performance increase 
 # and ease of allowing internal traffic to it.
 # ollama from WSL will transparently call the Windows daemon. 
-export OLLAMA_HOST=http://host.docker.internal:11434
+export OLLAMA_HOST=http://localhost:11434
 
