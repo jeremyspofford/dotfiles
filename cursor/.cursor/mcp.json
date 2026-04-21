@@ -1,0 +1,22 @@
+{
+  "mcpServers": {
+    "Snyk": {
+      "args": [
+        "mcp",
+        "-t",
+        "stdio"
+      ],
+      "command": "/home/jeremy/.local/share/snyk/vscode-cli/snyk-linux",
+      "env": {
+        "IDE_CONFIG_PATH": "Cursor",
+        "SNYK_API": "https://api.snyk.io",
+        "TRUSTED_FOLDERS": "/home/jeremy/workspace/dotfiles"
+      }
+    },
+    "memory-capture": {
+      "command": "bun",
+      "args": ["run", "/home/jeremy/workspace/dotfiles/mcp-servers/memory-capture/src/index.ts"],
+      "env": { "WIKI_VAULT": "/home/jeremy/Obsidian_Vault" }
+    }
+  }
+}
