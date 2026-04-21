@@ -62,6 +62,16 @@
         "hooks": [
           {
             "type": "command",
+            "command": "$HOME/.claude/hooks/catchup-daily-log.sh",
+            "timeout": 10
+          }
+        ]
+      },
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
             "command": "$HOME/.claude/hooks/auto-ingest.sh",
             "timeout": 30
           }
