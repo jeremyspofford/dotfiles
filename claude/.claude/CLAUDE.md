@@ -197,3 +197,22 @@ Do NOT capture for:
 
 - Repos with a `.nowiki` file at root
 - Paths matching `WIKI_IGNORE_PATTERNS` in `~/.claude/hooks/ignore-patterns.sh`
+
+## Memory capture
+
+Use the `append_to_daily_log` MCP tool (from the `memory-capture` server) to
+write durable notes to `$WIKI_VAULT/Assistant/memory/YYYY-MM-DD.md`:
+
+- Any time something worth keeping comes up during a session — a decision,
+  preference, correction, pattern, or explicit "remember this" — call the
+  tool with `source_tool: "claude-code"`, a one-line `session_context`, and
+  1-5 bullet points as `content`.
+- At session end, the SessionEnd hook will prompt you to write a curated
+  3-8 bullet summary via the same tool.
+
+Do NOT use the `Write` tool to edit `Assistant/memory/*.md` files directly.
+The MCP tool maintains the frontmatter `sources: []` array atomically under
+a file lock; direct writes bypass that and can corrupt concurrent edits.
+
+For session dumps to `$WIKI_VAULT/raw/sessions/` and wiki page writes,
+continue using the `Write` tool as before.
