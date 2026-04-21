@@ -35,5 +35,3 @@ fi
 
 # ─── Machine-specific overrides ──────────────────────────────────────
 [ -f ~/.bashrc.local ] && . ~/.bashrc.local
-
-export BROWSER='/mnt/c/Program Files/Google/Chrome/Application/chrome.exe'
