@@ -48,23 +48,26 @@ The install script handles everything:
 | [delta](https://github.com/dandavison/delta) | GitHub releases .deb on apt, package manager elsewhere |
 | [shellcheck](https://www.shellcheck.net/) | System package manager (used by the pre-commit hook) |
 | [mise](https://mise.jdx.dev) | `mise.run` installer on Linux, Homebrew on macOS |
-| All tools in `mise/.config/mise/config.toml` | `mise install` (runs after stowing) |
+| All tools in `packages/mise/.config/mise/config.toml` | `mise install` (runs after stowing) |
 | JetBrains Mono Nerd Font | GitHub releases (auto-registered on WSL) |
 
 Zsh is set as the default shell. Conflicting files are backed up to `~/.dotfiles_backup/` before stowing (safe on re-runs).
 
 ## What's inside
 
+Every stow package lives under `packages/`. Non-package repo content (docs, examples, cursor rules, MCP server sources) sits at the repo root and is invisible to stow.
+
 | Package | Contents |
 |---------|----------|
-| `git/` | `.gitconfig`, `.gitconfig-arialabs`, `.gitignore_global` |
-| `shell/` | `.bashrc`, `.zshrc`, `.commonrc` (shared config), `.aliases` |
-| `ssh/` | Multi-account SSH config (GitHub personal, GitHub Aria Labs, GitLab) with 1Password agent |
-| `nvim/` | `init.lua` with lazy.nvim, catppuccin theme, treesitter, neo-tree |
-| `1password/` | SSH agent config (`agent.toml`) — Personal vault keys, confirmation on use |
-| `mise/` | Global tool versions (`config.toml`) — bun, node, python, claude, gh, bat, eza, ripgrep, fzf, uv, and more |
-| `claude/` | Global Claude Code config — `CLAUDE.md`, `settings.json`, custom commands |
+| `packages/git/` | `.gitconfig`, `.gitconfig-arialabs`, `.gitignore_global` |
+| `packages/shell/` | `.bashrc`, `.zshrc`, `.commonrc` (shared config), `.aliases` |
+| `packages/ssh/` | Multi-account SSH config (GitHub personal, GitHub Aria Labs, GitLab) with 1Password agent |
+| `packages/nvim/` | `init.lua` with lazy.nvim, catppuccin theme, treesitter, neo-tree |
+| `packages/mise/` | Global tool versions (`config.toml`) — bun, node, python, claude, gh, bat, eza, ripgrep, fzf, uv, and more |
+| `packages/claude/` | Global Claude Code config — `CLAUDE.md`, `settings.json`, custom commands |
 | `.githooks/` | Tracked git hooks (pre-commit shellcheck) — repo-level, not stowed |
+| `mcp-servers/` | MCP server manifest + custom server sources; synced into `~/.claude.json` by `install.sh` (not stowed) |
+| `cursor/`, `docs/`, `examples/` | Reference content — not stowed |
 
 Shell config is split into three layers:
 
@@ -180,16 +183,16 @@ cp examples/zshrc.local.example ~/.zshrc.local
 
 ## Adding new dotfiles
 
-1. Create a package directory mirroring the home directory structure:
+1. Create a package directory under `packages/` mirroring the home directory structure:
 
    ```bash
-   mkdir -p tmux
-   mv ~/.tmux.conf tmux/.tmux.conf
+   mkdir -p packages/tmux
+   mv ~/.tmux.conf packages/tmux/.tmux.conf
    ```
 
 2. Stow it: `stow tmux`
 3. Commit.
 
-The stow loop in `install.sh` only iterates over directories matching `*/` (no leading dot), so dotfile directories like `.githooks/` and `.git/` are excluded automatically. Other top-level directories (currently just `examples/`) are excluded via the `NO_STOW` list.
+The stow loop in `install.sh` iterates over every directory under `packages/`. Non-package repo content (`docs/`, `examples/`, `cursor/`, `mcp-servers/`) lives at the repo root and is invisible to the loop by construction — no exclusion list needed.
 
 Conflicting files are automatically backed up on the next `install.sh` run.

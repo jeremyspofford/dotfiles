@@ -36,8 +36,8 @@ Stow packages and what they manage:
 | `cursor` | Cursor IDE config |
 | `scripts` | `~/bin/` scripts |
 
-To re-stow after editing: `stow -d ~/workspace/dotfiles -t ~ <package>`
-To preview without applying: `stow -nv -d ~/workspace/dotfiles -t ~ <package>`
+To re-stow after editing: `stow -d ~/workspace/dotfiles/packages -t ~ <package>`
+To preview without applying: `stow -nv -d ~/workspace/dotfiles/packages -t ~ <package>`
 
 ### Local-only files (not in dotfiles repo)
 

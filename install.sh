@@ -145,7 +145,7 @@ install_shellcheck
 
 # ─── Install wslu (WSL only) ────────────────────────────────────────
 # Provides `wslview`, which opens URLs in the Windows default browser
-# from inside WSL. shell/.commonrc sets BROWSER=wslview on WSL, but
+# from inside WSL. packages/shell/.commonrc sets BROWSER=wslview on WSL, but
 # without the package it silently falls back to a Linux-side browser
 # (e.g. `aws sso login` launching a profile-less Linux Chrome).
 install_wslu() {
@@ -250,7 +250,7 @@ bootstrap_known_hosts
 mirror_ssh_to_windows() {
   [ "$PLATFORM" = "wsl" ] || return 0
 
-  local src="$DOTFILES_DIR/ssh/.ssh/config"
+  local src="$DOTFILES_DIR/packages/ssh/.ssh/config"
   [ -f "$src" ] || return 0
 
   local win_user
@@ -277,26 +277,41 @@ mirror_ssh_to_windows() {
 
 mirror_ssh_to_windows
 
-# ─── Create .stowrc on first run ───────────────────────────────────
-if [ ! -f "$STOWRC" ]; then
-  cat > "$STOWRC" << EOF
---dir=$DOTFILES_DIR
---target=$HOME
-EOF
-  echo "Created ~/.stowrc"
-fi
+# ─── Ensure ~/.stowrc points at the current packages dir ───────────
+# Every stow package lives under packages/. ~/.stowrc pins stow's
+# --dir so `stow <pkg>` from any cwd finds the right tree. On fresh
+# machines we write it; on machines bootstrapped before the packages/
+# restructure we back up the stale file and rewrite — same backup
+# pattern as mirror_ssh_to_windows so nothing is silently lost.
+ensure_stowrc() {
+  local stow_dir="$DOTFILES_DIR/packages"
+  local expected
+  expected="$(printf -- '--dir=%s\n--target=%s\n' "$stow_dir" "$HOME")"
+
+  if [ -f "$STOWRC" ] && [ "$(cat "$STOWRC")" = "$expected" ]; then
+    return 0
+  fi
+
+  if [ -f "$STOWRC" ]; then
+    local backup
+    backup="$BACKUP_DIR/stowrc.$(date +%Y%m%dT%H%M%S)"
+    mkdir -p "$BACKUP_DIR"
+    cp "$STOWRC" "$backup"
+    echo "  Backed up existing ~/.stowrc -> $backup"
+  fi
+
+  printf '%s' "$expected" > "$STOWRC"
+  echo "Wrote ~/.stowrc (--dir=$stow_dir)"
+}
+
+ensure_stowrc
 
 # ─── Back up conflicting files and stow packages ───────────────────
-# Directories that are not stow packages (docs, examples, reference content).
-# These contain files that should NOT be symlinked into $HOME — they're
-# either repo-only docs (examples/scripts) or reference material that lives in
-# per-project locations (cursor rules → .cursor/ inside each project).
-NO_STOW="docs examples cursor mcp-servers"
-
-for dir in "$DOTFILES_DIR"/*/; do
+# Every directory under packages/ is a stow package by convention.
+# Non-package repo content (docs, examples, cursor, mcp-servers) lives
+# at the repo root and is invisible to this loop.
+for dir in "$DOTFILES_DIR"/packages/*/; do
   pkg="$(basename "$dir")"
-  # Skip non-stow directories
-  echo "$NO_STOW" | grep -qw "$pkg" && continue
 
   # Move aside any real files that would conflict with symlinks
   while IFS= read -r -d '' file; do
@@ -311,7 +326,7 @@ for dir in "$DOTFILES_DIR"/*/; do
   done < <(find "$dir" -type f -print0)
 
   echo "Stowing $pkg..."
-  stow -R -v -d "$DOTFILES_DIR" -t "$HOME" "$pkg" 2> >(grep -v "BUG in find_stowed_path" >&2)
+  stow -R -v -d "$DOTFILES_DIR/packages" -t "$HOME" "$pkg" 2> >(grep -v "BUG in find_stowed_path" >&2)
 done
 
 if [ -d "$BACKUP_DIR" ]; then
