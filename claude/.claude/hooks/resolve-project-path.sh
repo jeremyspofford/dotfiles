@@ -5,7 +5,7 @@
 # Strips $HOME/workspace/ prefix to produce the relative domain/project slug.
 # Handles git worktrees by resolving to the main worktree root first.
 
-source ~/.claude/hooks/ignore-patterns.sh
+source $HOME/.claude/hooks/ignore-patterns.sh
 
 # Resolve a potentially worktree path to the main git repo root
 resolve_git_root() {
@@ -29,6 +29,7 @@ resolve_git_root() {
 # Convert an absolute repo path to a domain/project slug
 # ~/workspace/alertventure/ft-quoting -> alertventure/ft-quoting
 # ~/workspace/portfolio              -> portfolio
+# Non-workspace paths (home dir, vault, etc.) -> personal/general (per CLAUDE.md)
 path_to_wiki_slug() {
     local abs_path="$1"
     local workspace="$HOME/workspace"
@@ -36,8 +37,8 @@ path_to_wiki_slug() {
     if [[ "$abs_path" == "$workspace/"* ]]; then
         echo "${abs_path#$workspace/}"
     else
-        # Fallback: use last two path components
-        basename "$(dirname "$abs_path")"/"$(basename "$abs_path")"
+        # CLAUDE.md: non-workspace paths default to personal/general
+        echo "personal/general"
     fi
 }
 
