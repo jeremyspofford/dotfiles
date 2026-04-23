@@ -240,6 +240,13 @@ bootstrap_known_hosts
 # NOT read the Linux-side file that stow links into ~/.ssh/config. So
 # we copy our dotfiles ssh config into the Windows user profile too.
 #
+# The copy is filtered: `Match exec "uname..."` blocks are stripped.
+# They select Linux/macOS 1Password agent sockets that don't exist on
+# Windows (Windows uses the named-pipe agent service), and ssh.exe
+# evaluates `Match exec` by spawning CMD.EXE — producing UNC-path and
+# missing-`uname` warnings on every git operation. Stripping them
+# eliminates the noise without changing the auth path.
+#
 # Copy (not symlink) because NTFS symlinks created from WSL aren't
 # reliably followed by Windows apps like ssh.exe. Re-running install.sh
 # re-copies, keeping the two sides in sync; the dotfiles file remains
@@ -263,7 +270,18 @@ mirror_ssh_to_windows() {
   local dest="/mnt/c/Users/$win_user/.ssh/config"
   mkdir -p "$(dirname "$dest")"
 
-  if [ -f "$dest" ] && ! cmp -s "$src" "$dest"; then
+  local filtered
+  filtered="$(mktemp)"
+  awk '
+    /^Match exec "uname/ { skipping = 1; next }
+    skipping {
+      if (/^[[:space:]]+[^[:space:]]/) next
+      skipping = 0
+    }
+    { print }
+  ' "$src" > "$filtered"
+
+  if [ -f "$dest" ] && ! cmp -s "$filtered" "$dest"; then
     local backup
     backup="$BACKUP_DIR/windows-ssh-config.$(date +%Y%m%dT%H%M%S)"
     mkdir -p "$BACKUP_DIR"
@@ -271,7 +289,8 @@ mirror_ssh_to_windows() {
     echo "  Backed up existing Windows SSH config: $dest -> $backup"
   fi
 
-  cp -f "$src" "$dest"
+  cp -f "$filtered" "$dest"
+  rm -f "$filtered"
   echo "SSH config mirrored to $dest"
 }
 
