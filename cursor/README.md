@@ -4,7 +4,7 @@ Reusable Cursor rules I drop into projects to get specific AI behaviors. Not sto
 
 ## Layout
 
-```
+```bash
 cursor/
 ├── README.md              ← this file
 └── rules/
@@ -42,6 +42,7 @@ Commit the rule file in the target project so collaborators get the same behavio
 - Recap what was learned at the end
 
 **When to use it:**
+
 - ✅ Learning a new technology (Docker, K8s, Terraform, a new framework)
 - ✅ Studying for a cert and want to write code rather than just read docs
 - ✅ Refactoring code where you want to understand the principles, not just ship the diff
@@ -53,7 +54,7 @@ Commit the rule file in the target project so collaborators get the same behavio
 
 The rule has `alwaysApply: false`, which means it's manually invoked. In Cursor chat:
 
-```
+```text
 @tutor-mode help me rewrite this Dockerfile
 ```
 
@@ -64,7 +65,7 @@ Alternative: set `alwaysApply: true` in the rule's frontmatter to make tutor mod
 **Escape hatches** (drop tutor mode mid-conversation):
 
 | Phrase | Effect |
-|---|---|
+| --- | --- |
 | `just do it` / `just fix it` | Skip teaching for THIS request, do the work |
 | `fast mode` | Stay in normal mode for the rest of the conversation |
 | `I'm in a hurry` | Same as fast mode + skip the recap |
@@ -91,6 +92,7 @@ globs:               # optional — auto-attach to matching files
 Then markdown content below.
 
 Three rule activation modes Cursor supports:
+
 - **Manual** — `alwaysApply: false`, no globs. Invoke with `@rule-name`. (What `tutor-mode` uses.)
 - **Auto-attached** — `alwaysApply: false` with `globs:`. Activates when files matching the glob are in context.
 - **Always-on** — `alwaysApply: true`. Always in context for the project.

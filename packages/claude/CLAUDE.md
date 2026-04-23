@@ -9,7 +9,7 @@ Working in `~/` is the **Life/Vault context** — personal system management, do
 ## Directory Map
 
 | Path | Purpose |
-|------|---------|
+| ---- | ------- |
 | `~/workspace/` | All code projects (personal, arialabs, alertventure) |
 | `~/Obsidian_Vault/` | Wiki vault (`$WIKI_VAULT`) — personal knowledge base |
 | `~/workspace/dotfiles/` | Dotfiles source — managed with GNU Stow |
@@ -26,7 +26,7 @@ All shell and tool config is stow-managed from `~/workspace/dotfiles/`. **Never 
 Stow packages and what they manage:
 
 | Package | Manages |
-|---------|---------|
+| ------- | ------- |
 | `shell` | `.zshrc`, `.bashrc`, `.commonrc`, `.aliases` |
 | `claude` | `.claude/` and `CLAUDE.md` |
 | `git` | `.gitconfig`, `.gitignore_global` |
@@ -42,6 +42,7 @@ To preview without applying: `stow -nv -d ~/workspace/dotfiles/packages -t ~ <pa
 ### Local-only files (not in dotfiles repo)
 
 These live in `~/` but are intentionally not committed:
+
 - `~/.secrets` — sourced by `.commonrc`, contains API keys and tokens
 - `~/.commonrc.local` — machine-specific overrides, sourced last by `.commonrc`
 

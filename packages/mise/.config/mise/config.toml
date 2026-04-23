@@ -37,11 +37,11 @@ aws-cli = { version = "latest", symlink_bins = "true" }
 # ============================================================================ #
 # Git & Version Control
 # ============================================================================ #
-# lazygit = "latest"
+lazygit = "latest"
 # delta = "latest"
 # gitconfig = "latest"
 gh = "latest"
-# glab = "latest"
+glab = "latest"
 
 # ============================================================================ #
 # File & Text Tools
@@ -59,14 +59,14 @@ fzf = "latest"
 # Documentation
 # ============================================================================ #
 # terraform-docs = "latest"
-# tlrc = "latest"
+tlrc = "latest"
 
 # ============================================================================ #
 # Linters & Formatters
 # ============================================================================ #
 "npm:markdownlint" = "latest"
-# shellcheck = "latest"
-# shfmt = "latest"
+shellcheck = "latest"
+shfmt = "latest"
 # yamlfmt = "latest"
 # yamllint = "latest"
 # tflint = "latest"
@@ -86,7 +86,7 @@ gitleaks = "latest"
 # ============================================================================ #
 # docker-cli = "latest"
 # docker-compose = "latest"
-# lazydocker = "latest"
+lazydocker = "latest"
 # kubectl = "latest"
 # argocd = "latest"
 
@@ -120,4 +120,4 @@ bun = "latest"
 # ============================================================================ #
 # hcl2json = "latest"
 # direnv = "latest"
-# lazyssh = "latest"
+lazyssh = "latest"

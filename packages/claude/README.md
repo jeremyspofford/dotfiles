@@ -6,7 +6,7 @@ GNU stow package containing all Claude-related config that should follow Jeremy 
 
 This package mirrors `$HOME/.claude/` — when `install.sh` runs `stow claude`, everything under `.claude/` ends up at `~/.claude/`.
 
-```
+```bash
 .claude/
 ├── CLAUDE.md            → ~/.claude/CLAUDE.md            # Global persona/preferences for Claude Code
 ├── settings.json        → ~/.claude/settings.json        # Permissions, hooks, defaults
@@ -44,7 +44,7 @@ ln -sf ~/.claude/cheatsheets ~/Obsidian_Vault/Assistant/cheatsheets
 Files in `.claude/commands/*.md` become Claude Code slash commands. Filename minus `.md` is the command name. The file body is the prompt sent when invoked.
 
 | Command | Purpose |
-|---|---|
+| ------- | ------- |
 | `/init-project` | Scaffold per-project Claude config (extends built-in `/init`) |
 | `/lecture-note` | Read a Udemy transcript and generate study note + SR cards in the vault |
 | `/quiz-me` | Socratic active-recall quiz on a given note or topic |

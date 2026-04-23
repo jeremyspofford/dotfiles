@@ -136,7 +136,7 @@ Life/Vault: captures personal knowledge, not tied to any git repo.
 Repos with `.claude/agents/` run autonomous review agents via GitHub Actions:
 
 | Agent | Focus | Priority |
-|-------|-------|----------|
+| ----- | ----- | -------- |
 | security-audit | Secrets, injection, auth, CVEs, infra security | 1 |
 | performance-review | Bundle size, Web Vitals, rendering, cold starts | 2 |
 | architecture-review | Separation of concerns, code organization, dead code | 3 |

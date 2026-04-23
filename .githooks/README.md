@@ -15,11 +15,13 @@ git config core.hooksPath .githooks
 Lints staged shell scripts with [shellcheck](https://www.shellcheck.net/). Catches real bugs before they hit `main`. Specifically catches `SC2168` (`local` outside function — the bug that broke `install.sh` and motivated this whole hook).
 
 **What it lints:**
+
 - Files with `*.sh` or `*.bash` extension
 - Files named `install.sh`, `bootstrap.sh`, `install`, or `bootstrap`
 - Any other staged file whose first line is a `#!/usr/bin/env bash` (or `sh`) shebang
 
 **What it does NOT lint:**
+
 - `.zshrc`, `.zsh` files (shellcheck has weak zsh support)
 - `.bashrc`, `.bash_profile`, `.aliases`, etc. — opt-in by adding `# shellcheck shell=bash` at the top of the file
 

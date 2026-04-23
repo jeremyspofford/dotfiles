@@ -1,3 +1,5 @@
+#!/env/bin/env bash
+
 # ~/.commonrc — shared config for bash and zsh
 # Sourced by both .bashrc and .zshrc. No shell-specific syntax here.
 
@@ -58,17 +60,17 @@ case "$PLATFORM" in
 esac
 
 # ─── Aliases ──────────────────────────────────────────────────────────
-[ -f ~/.aliases ] && . ~/.aliases
+[ -f ~/.aliases ] && source $HOME/.aliases
 
 # ─── Secrets (never committed) ───────────────────────────────────────
-[ -f ~/.secrets ] && . ~/.secrets
+[ -f ~/.secrets ] && source $HOME/.secrets
 
 # ─── Tool loaders ────────────────────────────────────────────────────
 # mise — manages Node, Python, Ruby, bun, and other runtimes
 command -v mise >/dev/null 2>&1 && eval "$(mise activate "${SHELL##*/}")"
 
 # ─── Machine-specific overrides ──────────────────────────────────────
-[ -f ~/.commonrc.local ] && . ~/.commonrc.local
+[ -f ~/.commonrc.local ] && source $HOME/.commonrc.local
 
 # pnpm
 case "$PLATFORM" in
