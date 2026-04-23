@@ -332,11 +332,15 @@ ensure_stowrc
 for dir in "$DOTFILES_DIR"/packages/*/; do
   pkg="$(basename "$dir")"
 
-  # Move aside any real files that would conflict with symlinks
+  # Move aside any real files that would conflict with symlinks.
+  # The -ef test skips files whose target resolves (through an
+  # already-stowed parent directory symlink — stow tree folding) to
+  # the source file itself; without it, a re-run would mv our source
+  # files out of the repo and into $BACKUP_DIR.
   while IFS= read -r -d '' file; do
     rel="${file#"$dir"}"
     target="$HOME/$rel"
-    if [ -f "$target" ] && [ ! -L "$target" ]; then
+    if [ -f "$target" ] && [ ! -L "$target" ] && ! [ "$target" -ef "$file" ]; then
       backup_path="$BACKUP_DIR/$rel"
       mkdir -p "$(dirname "$backup_path")"
       mv "$target" "$backup_path"
