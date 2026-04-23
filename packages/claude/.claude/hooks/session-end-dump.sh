@@ -2,14 +2,28 @@
 # session-end-dump.sh — SessionEnd hook (command type)
 #
 # Reads hook input JSON from stdin (session_id, transcript_path, cwd),
-# then detaches a headless claude to:
-#   (1) write a session dump to $WIKI_VAULT/raw/sessions/
-#   (2) call the memory-capture MCP append_to_daily_log tool
+# then detaches a headless claude to write a session dump to
+# $WIKI_VAULT/raw/sessions/ for later /wiki ingest processing.
 #
 # The heavy work is detached via nohup+disown so the hook returns in ms —
 # Claude Code can finish exiting cleanly while the dump happens in background.
+#
+# NOTE: This hook no longer writes to Assistant/memory/YYYY-MM-DD.md.
+# Daily memory logs are curated during live conversations, not auto-generated
+# per session — auto-writes turned the file into a monitoring log rather than
+# a knowledge store (see wiki/concepts/claude-setup.md).
 
 set -uo pipefail
+
+# Re-entrance guard — the nohup line below sets CLAUDE_SESSION_END_RUNNING=1
+# so the spawned headless claude (which is itself a Claude Code session and
+# fires SessionEnd on exit) inherits the flag and exits here. Breaks the
+# recursive cascade chain at the source.
+if [ "${CLAUDE_SESSION_END_RUNNING:-}" = "1" ]; then
+  mkdir -p "$HOME/.claude/logs"
+  echo "[$(date)] Re-entrant invocation — skipping to prevent cascade" >> "$HOME/.claude/logs/session-end.log"
+  exit 0
+fi
 
 # Source env — same pattern as run-scout.sh / daily-log-sweep.sh
 for profile in "$HOME/.commonrc" "$HOME/.zshrc" "$HOME/.bash_profile" "$HOME/.bashrc"; do
@@ -80,12 +94,12 @@ echo "[$(date)] Dispatching session-end dump for ${SESSION_ID:-unknown} (cwd: $S
 
 # Detach the heavy work so the hook returns fast. `nohup` + `&` + `disown`
 # ensures the spawned claude survives Claude Code's own process exiting.
-nohup "$CLAUDE_BIN" \
+# CLAUDE_SESSION_END_RUNNING=1 is inherited by the subprocess so its own
+# SessionEnd hook exits at the re-entrance guard above.
+CLAUDE_SESSION_END_RUNNING=1 nohup "$CLAUDE_BIN" \
   --print "A Claude Code session just ended. Read its transcript at $TRANSCRIPT_PATH (JSONL, one object per line — focus on user/assistant text, skip tool_use/tool_result entries). The session was run from: $SESSION_CWD.
 
-Do TWO things:
-
-(1) Use the Write tool to create a session dump at $WIKI_VAULT/raw/sessions/${TIMESTAMP}-session-dump.md with this frontmatter:
+Use the Write tool to create a session dump at $WIKI_VAULT/raw/sessions/${TIMESTAMP}-session-dump.md with this frontmatter:
 ---
 source: session/[infer domain/project from cwd or conversation]
 source_project: [domain/project — e.g. personal/general, alertventure/ft-quoting, arialabs/nova]
@@ -97,13 +111,7 @@ ingested: false
 
 In the body, capture durable content only: key decisions (with reasoning), technical insights, patterns identified, project status changes, corrections worth preserving. Skip trivial/routine exchanges.
 
-(2) Call the memory-capture MCP tool append_to_daily_log with:
-  date=\"$TODAY\"
-  source_tool=\"claude-code-session-end\"
-  session_context=[one line, under 100 chars]
-  content=[3-8 curated bullet points — decisions with reasoning, preferences, patterns, corrections; each 1-3 sentences]
-
-If the transcript has nothing substantive (quick question, trivial task, already captured elsewhere), SKIP both writes — don't manufacture content." \
+If the transcript has nothing substantive (quick question, trivial task, already captured elsewhere), SKIP the write entirely — don't manufacture content. Do not write to Assistant/memory/ — that file is curated during live conversations only, not auto-generated from transcripts." \
   --dangerously-skip-permissions \
   --model sonnet \
   --add-dir "$WIKI_VAULT" \

@@ -20,8 +20,11 @@ log="$WIKI_VAULT/Assistant/memory/$yesterday.md"
 
 [ -f "$log" ] || exit 0
 
-# Structural check: any real append has at least one "## Session:" heading
-if grep -q '^## Session:' "$log" 2>/dev/null; then
+# Structural check: any H2 heading means the log has been curated already.
+# This treats topical H2s ("## Topic — tagline", the 2026-04-16 canonical
+# style) the same as legacy "## Session: ..." entries. Catchup only fires
+# when the log has just the auto-generated skeleton (H1 title only).
+if grep -q '^## ' "$log" 2>/dev/null; then
   exit 0
 fi
 
@@ -47,21 +50,25 @@ transcripts_list=$(printf '%s' "$transcripts" | sed 's/^/- /')
 
 context=$(python3 -c '
 import json, sys
-msg = f"""[catchup-needed] Yesterday'"'"'s log ({sys.argv[1]}) has no session entries yet, but transcripts from that date exist. Please:
+date = sys.argv[1]
+log_path = sys.argv[2]
+transcripts = sys.argv[3]
+msg = f"""[catchup-needed] Yesterday'"'"'s log ({date}) has only the auto-generated skeleton — no curated content. Transcripts from that date exist and may contain durable knowledge worth recording.
 
-1. Read these transcripts briefly
-2. Extract 3-6 durable bullets (decisions, insights, preferences, patterns)
-3. Call append_to_daily_log with:
-     date="{sys.argv[1]}"
-     source_tool="claude-code-catchup"
-     session_context="<inferred from transcript>"
-     content="<3-6 bullets as markdown>"
+Daily log file: {log_path}
+
+Please:
+
+1. Briefly skim the transcripts listed below.
+2. Decide whether anything durable came out of yesterday — decisions with rationale, preferences expressed, project milestones, corrections worth preserving, patterns or insights future sessions should reference.
+3. If yes: use the Edit tool on {log_path} to add topical H2 sections in the Assistant/memory/2026-04-16.md style. Descriptive section titles (e.g. `## Portfolio redesign — warm-document aesthetic`), NOT `## Session: X — claude-code-catchup @ HH:MM`. Prefer bold sub-markers (**Goal:** / **Key decisions:** / **Open questions:**) where they fit. Do NOT call append_to_daily_log — write directly with Edit.
+4. If nothing durable was found, do NOT write. An empty day is fine — Assistant/memory/ is a curated knowledge store, not an activity log.
 
 Transcripts:
-{sys.argv[2]}
+{transcripts}
 """
 print(json.dumps(msg))
-' "$yesterday" "$transcripts_list") || exit 0
+' "$yesterday" "$log" "$transcripts_list") || exit 0
 
 # Defensive: if python3 produced empty output, skip rather than emit malformed JSON
 [ -n "$context" ] || exit 0
