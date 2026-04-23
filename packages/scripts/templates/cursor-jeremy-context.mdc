@@ -1,0 +1,48 @@
+---
+description: Jeremy's personal assistant context and passive wiki capture for this project
+alwaysApply: true
+---
+
+## Who You're Working With
+
+At the start of this session, read these files to load context on Jeremy and his current work:
+
+- `/home/jeremy/Obsidian_Vault/Assistant/USER.md`
+- `/home/jeremy/Obsidian_Vault/Assistant/MEMORY.md`
+
+Apply the context silently — don't narrate the loading.
+
+## Passive Wiki Capture
+
+While working on this project, if something worth preserving comes up — a key decision, a pattern you discovered, a non-obvious fix, a useful insight — write a rough note to the vault.
+
+**File path:**
+```
+/home/jeremy/Obsidian_Vault/raw/[DOMAIN]/[PROJECT]/YYYY-MM-DD-session.md
+```
+
+Replace `[DOMAIN]` and `[PROJECT]` with the workspace path slug. Examples:
+- `~/workspace/alertventure/ft-quoting` → domain `alertventure`, project `ft-quoting`
+- `~/workspace/arialabs/nova` → domain `arialabs`, project `nova`
+
+If today's file already exists, append to it. Keep captures fast and rough — they get processed later.
+
+**Required frontmatter:**
+```yaml
+---
+source_project: [domain]/[project]
+captured_date: YYYY-MM-DD
+session_context: "one line describing what was being worked on"
+ingested: false
+needs-review: false
+---
+```
+
+If you can't determine the project slug, use `unknown/[dirname]` and set `needs-review: true`.
+
+## Memory Updates
+
+If Jeremy expresses a preference, makes a decision, or corrects something important, update:
+`/home/jeremy/Obsidian_Vault/Assistant/MEMORY.md`
+
+Add it under the relevant section. Keep entries brief.
