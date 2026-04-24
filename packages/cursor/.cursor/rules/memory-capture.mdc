@@ -1,0 +1,77 @@
+---
+description: Capture durable notes to the personal assistant vault
+alwaysApply: true
+---
+
+# Memory capture
+
+You are the only writer to Jeremy's daily log at
+`$WIKI_VAULT/Assistant/memory/YYYY-MM-DD.md`. If you don't capture, the
+record does not get written. Treat this as a responsibility, not a suggestion.
+
+## Hard rule: evaluate every turn
+
+Before ending any substantive response, ask: *did this turn contain any
+trigger below?* If yes, call `append_to_daily_log` from the `memory-capture`
+MCP server **before** ending your turn. Do not defer to "later" — later
+doesn't come, because Cursor has no session-end hook.
+
+## Triggers (capture if any fired)
+
+1. **Decision** — we chose X over Y; we ruled out Z.
+2. **Correction** — Jeremy said "no", "don't", "stop", "actually".
+3. **Preference** — "I prefer...", "always do...", "use X not Y".
+4. **Pattern or gotcha** — a non-obvious constraint, a recurring issue, a
+   workaround worth remembering.
+5. **Explicit "remember this"** — capture verbatim intent.
+6. **Named-work progress** — feature shipped, bug root-caused, refactor
+   completed, migration planned.
+
+## Anti-triggers (do NOT capture)
+
+- Mechanical steps: "ran tests", "opened file", "grepped for X".
+- Tool output or diffs — the git history already has these.
+- Routine Q&A with no decision, correction, or new understanding.
+- Your own internal reasoning about the task.
+
+If none of the triggers fired, stay silent. Over-capture is worse than
+under-capture — the log is meant to be signal, not transcript.
+
+## How to call the tool
+
+```
+append_to_daily_log({
+  source_tool: "cursor",
+  session_context: "<project-slug> — <one-line what we're working on>",
+  content: "<1-5 terse markdown bullets>",
+  timestamp: "<current ISO-8601 datetime>"
+})
+```
+
+- `session_context` stays stable across a work session — reuse the same
+  line so entries thread together in the log.
+- `content` bullets lead with the fact or decision. Include *why* when
+  the reason shapes future choices. No headers, no fluff.
+- Never edit `Assistant/memory/*.md` directly with file-writing tools.
+  The MCP tool holds a file lock and merges `sources[]` atomically;
+  direct writes corrupt concurrent edits.
+
+## End-of-session summary
+
+When Jeremy signals wrap-up ("that's it", "we're good", "thanks, done")
+OR we've clearly landed a chunk of work (feature complete, branch merged,
+PR opened), make **one additional call** with:
+
+- Same `session_context` as the session.
+- `content`: 3-8 bullets — what got done, what was decided, any open
+  threads to pick up next time.
+
+This is the closest Cursor equivalent to Claude Code's SessionEnd dump.
+
+## Calibration
+
+Aim for 0-3 captures per session for routine work, up to 5-8 for sessions
+with many decisions. If you find yourself capturing every turn, you're
+writing transcript — re-read the anti-triggers. If you're going whole
+sessions without capturing, you're being too conservative — re-read the
+triggers.

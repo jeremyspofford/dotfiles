@@ -9,7 +9,7 @@
       "Bash(git config --global user.name)",
       "Bash(git config --global user.email)"
     ],
-    "defaultMode": "default"
+    "defaultMode": "auto"
   },
   "hooks": {
     "PostToolUse": [
@@ -55,8 +55,8 @@
           {
             "type": "command",
             "command": "$HOME/.claude/hooks/session-end-dump.sh",
-            "async": true,
-            "timeout": 30
+            "timeout": 30,
+            "async": true
           }
         ]
       }
@@ -132,5 +132,6 @@
     "semgrep@claude-plugins-official": false
   },
   "effortLevel": "medium",
-  "skipDangerousModePermissionPrompt": true
+  "skipDangerousModePermissionPrompt": true,
+  "skipAutoPermissionPrompt": true
 }
