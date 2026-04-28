@@ -428,39 +428,52 @@ install_nerd_font() {
     *)      font_dir="$HOME/.local/share/fonts" ;;
   esac
 
+  local files_present=false
   if ls "$font_dir"/JetBrainsMonoNerd* &>/dev/null; then
+    files_present=true
+  fi
+
+  # Download + install only if the .ttfs aren't already on disk.
+  # Registration (below) runs unconditionally on WSL so a stale state
+  # — files present but not in HKCU — self-heals on the next run.
+  if ! $files_present; then
+    if ! command -v curl &>/dev/null; then
+      echo "curl not found — skipping Nerd Font install."
+      return
+    fi
+    if ! command -v unzip &>/dev/null; then
+      echo "unzip not found — skipping Nerd Font install."
+      return
+    fi
+
+    echo "Installing JetBrains Mono Nerd Font..."
+    local tmp_dir
+    tmp_dir="$(mktemp -d)"
+    trap 'rm -rf "$tmp_dir"' RETURN
+
+    curl -fsSL "https://github.com/ryanoasis/nerd-fonts/releases/latest/download/JetBrainsMono.zip" \
+      -o "$tmp_dir/font.zip"
+    unzip -qo "$tmp_dir/font.zip" "*.ttf" -d "$tmp_dir/font"
+
+    mkdir -p "$font_dir"
+    cp "$tmp_dir"/font/*.ttf "$font_dir/"
+
+    if [ "$PLATFORM" = "linux" ] && command -v fc-cache &>/dev/null; then
+      fc-cache -f "$font_dir"
+    fi
+
+    echo "Nerd Font installed to $font_dir"
+  else
     echo "Nerd Font already installed."
-    return
   fi
 
-  if ! command -v curl &>/dev/null; then
-    echo "curl not found — skipping Nerd Font install."
-    return
-  fi
-  if ! command -v unzip &>/dev/null; then
-    echo "unzip not found — skipping Nerd Font install."
-    return
-  fi
-
-  echo "Installing JetBrains Mono Nerd Font..."
-  local tmp_dir
-  tmp_dir="$(mktemp -d)"
-  trap 'rm -rf "$tmp_dir"' RETURN
-
-  curl -fsSL "https://github.com/ryanoasis/nerd-fonts/releases/latest/download/JetBrainsMono.zip" \
-    -o "$tmp_dir/font.zip"
-  unzip -qo "$tmp_dir/font.zip" "*.ttf" -d "$tmp_dir/font"
-
-  mkdir -p "$font_dir"
-  cp "$tmp_dir"/font/*.ttf "$font_dir/"
-
-  if [ "$PLATFORM" = "linux" ] && command -v fc-cache &>/dev/null; then
-    fc-cache -f "$font_dir"
-  fi
-
-  # Auto-register fonts on WSL (per-user, no admin needed)
+  # Auto-register fonts on WSL (per-user, no admin needed). Idempotent
+  # via Set-ItemProperty, so it runs every time install.sh executes —
+  # this is what self-heals the "files on disk but not in HKCU" case
+  # left behind by older versions of this script that early-returned
+  # before reaching the registration block.
   if [ "$PLATFORM" = "wsl" ]; then
-    local win_font_dir
+    local win_font_dir registered=true
     win_font_dir="$(wslpath -w "$font_dir")"
     powershell.exe -NoProfile -Command "
       \$regPath = 'HKCU:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Fonts'
@@ -468,10 +481,11 @@ install_nerd_font() {
       Get-ChildItem '${win_font_dir}' -Filter '*.ttf' | ForEach-Object {
         Set-ItemProperty -Path \$regPath -Name (\$_.BaseName + ' (TrueType)') -Value \$_.FullName
       }
-    " 2>/dev/null && echo "Fonts registered in Windows." || true
+    " 2>/dev/null || registered=false
+    if $registered && ! $files_present; then
+      echo "Fonts registered in Windows."
+    fi
   fi
-
-  echo "Nerd Font installed to $font_dir"
 }
 
 install_nerd_font
@@ -481,11 +495,32 @@ install_nerd_font
 # user. system_profiler is unreliable right after install (caches lag), so
 # we check the filesystem first and only fall back to system_profiler.
 check_font_registered() {
+  # All branches capture output and pattern-match in bash rather than
+  # piping into `grep -q`. With `set -o pipefail`, `grep -q` exits on
+  # first match and closes its stdin; the upstream (`tr`, `fc-list`,
+  # `system_profiler`) then dies with SIGPIPE (exit 141), which
+  # pipefail propagates as the pipeline's status — falsely flipping
+  # the result to "not found" even on a successful match. Capturing
+  # into a variable removes the pipe-close race entirely.
+  #
+  # The pattern is `JetBrainsMono NFM` (the short-form family name
+  # shipped by current Nerd Fonts releases). The long form
+  # (`Nerd Font Mono`) was retired to fit Windows' font-name length
+  # cap and is no longer present in the .ttf metadata that any of
+  # these tools surface.
   case "$PLATFORM" in
     wsl)
-      powershell.exe -NoProfile -Command \
-        "(New-Object System.Drawing.Text.InstalledFontCollection).Families.Name" 2>/dev/null \
-        | tr -d '\r' | grep -q "JetBrainsMono Nerd Font Mono"
+      # Query the user-scope font registry directly — same path
+      # install_nerd_font writes to. The previous .NET-based check
+      # (`InstalledFontCollection`) silently failed because
+      # System.Drawing isn't loaded by default in modern PowerShell;
+      # `2>/dev/null` masked the assembly-not-loaded error and the
+      # branch always returned non-zero.
+      local registry_props=""
+      registry_props="$(powershell.exe -NoProfile -Command \
+        "(Get-Item 'HKCU:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Fonts').Property" \
+        2>/dev/null | tr -d '\r')" || true
+      [[ "$registry_props" == *"JetBrainsMono NFM"* ]]
       ;;
     macos)
       # Filesystem check is authoritative on macOS — if the .ttf is in
@@ -493,11 +528,14 @@ check_font_registered() {
       if ls "$HOME/Library/Fonts"/JetBrainsMonoNerdFontMono-* &>/dev/null; then
         return 0
       fi
-      # Fallback: check system font registry
-      system_profiler SPFontsDataType 2>/dev/null | grep -q "JetBrainsMono Nerd Font Mono"
+      local font_list=""
+      font_list="$(system_profiler SPFontsDataType 2>/dev/null)" || true
+      [[ "$font_list" == *"JetBrainsMono NFM"* ]]
       ;;
     *)
-      fc-list 2>/dev/null | grep -q "JetBrainsMono Nerd Font Mono"
+      local fc_output=""
+      fc_output="$(fc-list 2>/dev/null)" || true
+      [[ "$fc_output" == *"JetBrainsMono NFM"* ]]
       ;;
   esac
 }
@@ -505,16 +543,15 @@ check_font_registered() {
 if ! check_font_registered; then
   echo ""
   if [ "$PLATFORM" = "wsl" ]; then
-    echo "Nerd Font was registered but may need a terminal restart to take effect."
-    echo "Set your terminal font to 'JetBrainsMono Nerd Font Mono'."
-    echo "If icons still don't render, install the fonts manually:"
+    echo "JetBrainsMono NFM does not appear to be registered with Windows."
+    echo "Install it for terminal/Neovim icons to render correctly:"
   else
-    echo "JetBrainsMono Nerd Font Mono is downloaded but not registered."
+    echo "JetBrainsMono NFM is downloaded but not registered."
     echo "Install it for Neovim icons to render correctly:"
   fi
   echo "  Search for: JetBrainsMonoNerdFontMono-"
   echo "  Select all matches, right-click, and install them."
-  echo "  Then set your terminal font to 'JetBrainsMono Nerd Font Mono'."
+  echo "  Then set your terminal font to 'JetBrainsMono NFM'."
   yn=""
   if [ -t 0 ]; then
     read -rp "Open the font directory now? [y/N] " yn
