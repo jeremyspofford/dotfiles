@@ -133,5 +133,8 @@
   },
   "effortLevel": "medium",
   "skipDangerousModePermissionPrompt": true,
+  "editorMode": "vim",
+  "remoteControlAtStartup": true,
+  "agentPushNotifEnabled": true,
   "skipAutoPermissionPrompt": true
 }

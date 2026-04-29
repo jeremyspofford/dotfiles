@@ -60,3 +60,9 @@
 	clone-aria = "!f() { git clone git@github.com-arialabs:arialabs/$1.git $1; }; f"
 	clone-alertventure = "!f() { git clone git@gitlab.com-alertventure:alertventure/$1.git $1; }; f"
 	clone-vividcloud = "!f() { git clone git@gitlab.com-vividcloud:vividcloud/$1.git $1; }; f"
+[credential "https://github.com"]
+	helper = 
+	helper = !/usr/bin/gh auth git-credential
+[credential "https://gist.github.com"]
+	helper = 
+	helper = !/usr/bin/gh auth git-credential

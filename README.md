@@ -28,14 +28,41 @@ cd ~/workspace/dotfiles
 ./install.sh
 ```
 
-### Install specific packages
+## Daily use
+
+After the first `./install.sh`, the repo is driven through `stow` and direct edits to package files. Three things to know:
+
+1. **Edit the source, never the symlink.** `~/.zshrc`, `~/.gitconfig`, etc. are symlinks into `packages/`. Open `packages/shell/.zshrc` (or whichever package) and edit there — the symlink reflects the change immediately.
+2. **`stow <pkg>` works from anywhere.** `install.sh` writes `~/.stowrc` with `--dir=…/packages --target=$HOME`, so stow finds the right tree no matter your cwd.
+3. **Restow (`-R`) after deleting a tracked file.** Plain `stow` only adds symlinks; `-R` cleans up dead ones too.
+
+### Common operations
+
+| Goal | Command |
+|------|---------|
+| Stow one package | `stow git` |
+| Stow several | `stow shell nvim mise` |
+| Stow everything (fresh machine or after pulling) | `./install.sh` |
+| Restow (re-link, prune dead symlinks) | `stow -R claude` |
+| Unstow (unlink without deleting source) | `stow -D ssh` |
+| Dry run / preview | `stow -nv shell` |
+| List packages | `ls packages/` |
+
+### Typical workflow
 
 ```bash
-stow git          # just git config
-stow shell        # just shell config
-stow -D shell     # unlink shell config
-stow -n -v shell  # dry run (preview only)
+# 1. Edit the source in the repo
+$EDITOR packages/shell/.aliases
+
+# 2. (No restow needed — the symlink already points at the file.)
+#    But if you added or removed a file inside the package:
+stow -R shell
+
+# 3. Commit in the repo root
+git add packages/shell/.aliases && git commit -m "shell: add foo alias"
 ```
+
+Adding a new package is its own short section below — see [Adding new dotfiles](#adding-new-dotfiles).
 
 ## What gets installed
 
