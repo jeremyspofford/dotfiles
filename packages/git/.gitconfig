@@ -1,6 +1,6 @@
 [user]
 	name = Jeremy Spofford
-	email = 235280024+jeremyspofford@users.noreply.github.com
+	email = 23528024+jeremyspofford@users.noreply.github.com
 
 [includeIf "gitdir:~/workspace/arialabs/"]
 	path = ~/.gitconfig-arialabs
