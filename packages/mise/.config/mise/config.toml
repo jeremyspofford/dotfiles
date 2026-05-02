@@ -104,6 +104,7 @@ uv = "latest"
 # ============================================================================ #
 # "npm:@mirohq/cloud-data-import" = "latest"
 # "npm:@shopify/cli" = "latest"
+"aqua:cloudflare/cloudflared" = "latest"
 
 # ============================================================================ #
 # Languages & Runtimes
