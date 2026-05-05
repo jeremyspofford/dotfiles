@@ -46,16 +46,21 @@ branch's text now says.
 The reconciler tries each tier in order. If a tier resolves the conflict,
 stop there. Only escalate to the next tier when the current one cannot.
 
-1. **Cosmetic conflicts** (whitespace, import ordering, formatting-only
-   diffs that don't change semantics) — auto-resolve via `git checkout
-   --theirs` / `--ours` heuristics. Pick the side whose formatting matches
-   the project's prevailing style; document the choice with a short
-   explanation in the merge commit message.
+1. **Cosmetic conflicts** — the textual diff is the only change; *no
+   semantics added or removed* on either side. Examples: whitespace
+   differences, line reordering of equivalent statements, formatting-only
+   diffs (each side reformats existing code), trailing-newline
+   inconsistency. Resolve via `git checkout --theirs` / `--ours`
+   heuristics. Pick the side whose formatting matches the project's
+   prevailing style; document the choice in the merge commit message.
 
-2. **Same-intent conflicts** (both branches added the same dependency,
-   declared the same constant, made the same import line) — pick one,
-   document why. Typically both sides are equivalent at the semantic level
-   and the duplication is just a textual artifact of parallel work.
+2. **Same-intent conflicts** — *both branches added equivalent semantics
+   independently*. The two sides aren't reformattings; they each added
+   real content, but it's the same content duplicated. Examples: both
+   branches added the same new import line, the same `const X = 5`, the
+   same dependency to `package.json` (same name + same version).
+   Distinguished from tier-1 by: real semantic content was added (it's
+   not just formatting). Pick one side, document why.
 
 3. **Semantic conflicts** (both branches modified the same logic with
    different intent — e.g., one branch added validation and the other

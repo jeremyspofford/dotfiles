@@ -10,9 +10,12 @@ description: Use during brainstorm and writing-plans phases. Selects 2-5 relevan
 Ensemble planning has two jobs:
 
 1. **Role selection.** Scan the problem statement and pick 2-5 relevant role
-   agents from the 12 available. The selection is per-problem, not global —
-   a trivial CLI tool gets 1-2 roles; a cloud-deployed app gets 5-7. Rarely
-   all 12.
+   agents from the **10 auto-selectable** roles. (`visionary` and
+   `conflict-reconciler` are never auto-selected — they're event/user
+   triggered.) The selection is per-problem, not global — a trivial CLI tool
+   gets 1-2 roles; a cloud-deployed app may need 5-7 roles, but the default
+   cap is 5; see "Role budget cap" below for how to handle cases that
+   genuinely need 6+.
 2. **Role-flavored contributions.** Invoke each selected role in advisor mode
    during the brainstorm and writing-plans phases so the spec and plan are
    shaped by the right concerns from the start, not retro-fitted later.
@@ -52,7 +55,7 @@ This skill never runs standalone.
 
 The 12 roles and when each is selected:
 
-- **backend** — always selected if any code is involved.
+- **backend** — selected by default for any code change; skip on docs-only or comment-only fixes.
 - **frontend** — UI / CLI / UX surface.
 - **cloud** — deployment target named.
 - **security** — auth, data, secrets, dependencies, IaC, regulated content.
@@ -84,6 +87,26 @@ The cap exists because:
   over-broad problem statement that should be split.
 - The user can always override; this is a conversational checkpoint, not a
   hard block.
+
+## Mode definitions
+
+Three modes determine how a role agent is invoked. The `mode` field in the
+input contract tells the role agent how to behave:
+
+- **advisor** — surface concerns and acceptance criteria during brainstorm
+  and planning. Read-only; does not modify code. Used by `ensemble-planning`.
+  Output: `concerns[]`, `must_have_acceptance_criteria[]`.
+- **implementer** — write code per a task's requirements. Used by
+  `subagent-driven-development` (substituted via role tags from this skill's
+  `task_role_tags` output). Output: `changes_made[]`.
+- **reviewer** — examine a completed task's diff for role-specific concerns.
+  Used by `ensemble-review` after vendored reviews approve. Output:
+  `findings[]`, status, confidence.
+
+Each role agent file under `agents/` declares which modes it supports — some
+are advisor-only (e.g., `ux-designer`, `visionary`), some implementer-only
+(e.g., `conflict-reconciler`), most have multiple. The dispatching skill is
+responsible for invoking the agent with a supported mode.
 
 ## How role contributions are integrated
 

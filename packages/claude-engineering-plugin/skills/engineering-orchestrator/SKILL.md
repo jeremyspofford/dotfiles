@@ -24,7 +24,9 @@ place of the generic ones.
 - Invoked automatically by the `/engineer` slash command.
 - Invoked when a user describes role-aware engineering work that obviously
   needs more than a single role can handle (e.g., "build a calculator app
-  deployed to AWS" — touches frontend, backend, ux, cloud, security, cicd, qa).
+  deployed to AWS" plausibly touches frontend, backend, ux, cloud, security,
+  cicd, qa — 7 roles, which exceeds the default 5-role cap; `ensemble-planning`
+  would surface this and confirm with the user before proceeding).
 - Not appropriate for one-shot single-file edits, simple bug fixes, or
   questions that don't need planning. Defer to the user's normal workflow
   in those cases.
@@ -36,8 +38,11 @@ The full lifecycle (reproduced from the architecture spec) is nine steps:
 1. **`/engineer "<problem statement>"`** — user invokes the slash command,
    which loads this orchestrator and passes the problem statement as input.
 2. **`ensemble-planning` runs role-selection** — scans the problem and picks
-   2-5 relevant role agents from the 12 available (e.g., for a cloud-deployed
-   calculator: frontend, backend, ux-designer, cloud, security, cicd, qa).
+   2-5 relevant role agents from the 10 auto-selectable ones (`visionary` and
+   `conflict-reconciler` are never auto-selected). If the rules of thumb
+   would select more than 5, ensemble-planning pauses to confirm with the
+   user (e.g., a cloud-deployed calculator could plausibly want frontend,
+   backend, ux-designer, cloud, security, cicd, qa — 7 roles, would prompt).
 3. **`brainstorming` (vendored) runs** — produces a spec. During brainstorm,
    `ensemble-planning` re-enters to have each selected role contribute
    concerns and `must_have_acceptance_criteria` so the spec is role-aware
@@ -55,7 +60,12 @@ The full lifecycle (reproduced from the architecture spec) is nine steps:
    substitutions and additions:
    - **a.** Dispatch role-flavored implementer (`agents/frontend.md`,
      `agents/backend.md`, etc.) selected by `task_role_tags`, instead of
-     the generic implementer.
+     the generic implementer. **Mechanism:** when invoking
+     `subagent-driven-development`'s implementer step, the orchestrator
+     resolves the agent file path (e.g., `agents/frontend.md`) from the
+     task's role tag and passes that as the role/persona context the
+     vendored skill dispatches to a fresh subagent. The vendored skill
+     itself is not edited; substitution happens at dispatch time.
    - **b.** Vendored spec-compliance reviewer runs.
    - **c.** Vendored code-quality reviewer runs.
    - **d.** `ensemble-review` fires role-specific reviewers for whichever
@@ -80,18 +90,24 @@ Cross-cutting:
 
 ## Composes with
 
-- **`ensemble-planning`** — for role selection at step 2 and role-flavored
-  contributions at brainstorm (step 3) and plan (step 5).
-- **vendored `brainstorming`** — runs at step 3 with ensemble-planning's
-  contributions injected as role-specific concerns and acceptance criteria.
-- **vendored `writing-plans`** — runs at step 5; tasks are tagged with owning
-  roles via `task_role_tags`.
-- **vendored `subagent-driven-development`** — runs at step 7, with the
-  generic implementer substituted by the role-flavored implementer for each
-  task based on its role tags.
-- **`ensemble-review`** — runs after each task's vendored reviews complete
-  (step 7d/7e), adds role-flavored review passes plus regression review.
-- **`visionary-pass`** — invoked only on user request at step 9.
+- **`ensemble-planning`** — at step 2: input = problem statement; output =
+  `selected_roles[]`, `role_concerns[]`. At step 5: input = approved spec;
+  output = `task_role_tags`, `extra_tasks`. See `ensemble-planning/SKILL.md`
+  for the full contract.
+- **vendored `brainstorming`** — at step 3: input = problem statement +
+  ensemble-planning's `role_concerns[]` (woven in as role-specific
+  acceptance criteria); output = spec document.
+- **vendored `writing-plans`** — at step 5: input = approved spec + the role
+  tags from ensemble-planning; output = plan document with TDD tasks.
+- **vendored `subagent-driven-development`** — at step 7: input = plan +
+  resolved agent file path (per task) for the implementer substitution;
+  output = task commits + spec/quality review approvals.
+- **`ensemble-review`** — at step 7d/7e (per task): input = task text +
+  role tags + diff SHAs + prior review outputs; output = aggregate status +
+  per-role findings + regression review findings (when triggered).
+- **`visionary-pass`** — at step 9 (only on user request): input = project
+  state (recent git log, current spec, optional pain points); output = 3-7
+  starter-spec proposals.
 
 Worktree management is delegated to the vendored `using-git-worktrees`
 skill; merge-back conflicts are delegated to `merge-conflict-reconciler`.

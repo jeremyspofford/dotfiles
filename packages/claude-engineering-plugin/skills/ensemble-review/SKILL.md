@@ -63,10 +63,16 @@ role reviews when the diff touches:
 
 It is **skipped** on:
 
-- Docs-only changes (`*.md`, comments).
-- Comment-only changes (no executable lines moved).
-- Config-only changes that don't affect runtime behavior (e.g., editor
-  configs, lint rule tweaks).
+- Docs-only changes (`*.md`, `*.txt`, `LICENSE`, `README*`, `CHANGELOG*`).
+- Comment-only changes (no executable lines moved — verify with
+  `git diff --stat` showing only whitespace/comment churn).
+- Config-only changes that don't affect runtime. **Skip-eligible examples:**
+  `.editorconfig`, `.eslintrc*` rule tweaks, `.prettierrc`, `.gitignore`,
+  IDE settings. **Counter-examples that DO trigger:** `package.json`,
+  `Cargo.toml`, `pyproject.toml`, lockfiles (`*.lock`), `Dockerfile`, CI
+  YAML (`.github/workflows/*`, `.gitlab-ci.yml`, `Jenkinsfile`),
+  `tsconfig.json`, `vite.config.*`, `webpack.config.*`, build/bundle
+  configs that affect output.
 
 Inspect the diff via `git diff <task-base>..<task-head>` to make this
 determination. When in doubt, run regression review — false positives cost
@@ -79,12 +85,18 @@ a few extra reviewer invocations; false negatives let regressions ship.
   escalating to the user. Past three rounds, either the issue is genuinely
   ambiguous or the implementer/reviewer pair are talking past each other —
   human input resolves it faster than another loop.
-- **Two role reviewers in direct domain conflict** (e.g., security wants X
-  for posture, cloud says X is cost-prohibitive at expected scale) —
-  **ESCALATE** to user. Surface both findings with the conflict made
-  explicit. Do **not** auto-resolve domain trade-offs — those are
-  judgment calls the user owns. Status returns `BLOCKED` with both
-  findings attached.
+- **Two role reviewers in direct domain conflict** — **ESCALATE** to user.
+  **Detection rule:** a direct conflict exists when role A's required fix
+  and role B's required fix are mutually exclusive in code — applying one
+  would undo the other on the same lines/files, OR A wants a behavior
+  enabled and B wants the same behavior disabled. Two reviewers flagging
+  *different aspects* of the same change (e.g., one finds a missing test,
+  another finds a missing log line) are **not** in conflict — both fixes
+  can apply independently. Surface both findings with the conflict made
+  explicit. Do **not** auto-resolve domain trade-offs — those are judgment
+  calls the user owns. Status returns `BLOCKED` with both findings attached.
+  Example: security wants X for posture, cloud says X is cost-prohibitive
+  at expected scale.
 - **Reviewer returns confidence < 0.6** — surface as "low confidence" in
   the aggregate output. The user reviews and decides whether to accept,
   re-run, or override. Confidence under 0.6 usually means the reviewer
