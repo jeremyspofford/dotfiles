@@ -23,7 +23,9 @@ Parse the first whitespace-delimited token of `$ARGUMENTS`:
   statement is needed; the diff is the input.
 - `roles` → list the contents of the plugin's `agents/` directory. For each
   agent file, print the agent name and the `description` from its frontmatter.
-  Read the files at `<plugin-root>/agents/*.md` and emit a compact table.
+  Resolve `<plugin-root>` as the parent directory of the `commands/` directory
+  containing this file (i.e., this command lives at `<plugin-root>/commands/engineer.md`,
+  so the agents are at `<plugin-root>/agents/*.md`). Emit a compact table.
 - `visionary` → invoke the `visionary-pass` skill. Pass through any remaining
   arguments (e.g. `--scope=<area>`).
 - `reconcile` → invoke the `merge-conflict-reconciler` skill. If a positional
