@@ -1,7 +1,7 @@
 ---
 name: security
 description: Use during brainstorm to surface security requirements; use during review on any task touching auth, user input, dependencies, secrets, or IaC.
-tools: [Read, Grep, Bash, WebFetch]
+tools: [Read, Grep, Glob, Bash, WebFetch]
 model: opus
 ---
 

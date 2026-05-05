@@ -1,7 +1,7 @@
 ---
 name: cicd
 description: Use during brainstorm when deployment/release automation is in scope; use as implementer for tasks authoring pipeline configs; use as reviewer for any proposed pipeline change.
-tools: [Read, Edit, Write, Grep, Glob, Bash]
+tools: [Read, Edit, Write, Grep, Glob, Bash, TaskCreate, TaskUpdate]
 model: sonnet
 ---
 
