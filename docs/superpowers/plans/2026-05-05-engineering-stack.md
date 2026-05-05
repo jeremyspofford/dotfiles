@@ -453,7 +453,7 @@ Build the Bash lint script used as the TDD test framework for all subsequent tas
 
   # ---------- Agents ----------
   ALLOWED_MODELS="sonnet|opus|haiku"
-  ALLOWED_TOOLS="Read|Edit|Write|Grep|Glob|Bash|TaskCreate|TaskUpdate|TaskList|TaskGet|TaskOutput|TaskStop|Agent|WebFetch|WebSearch|NotebookEdit|NotebookRead"
+  ALLOWED_TOOLS="Read|Edit|Write|Grep|Glob|Bash|TaskCreate|TaskUpdate|TaskList|TaskGet|TaskOutput|TaskStop|Agent|Skill|ToolSearch|WebFetch|WebSearch|NotebookEdit|NotebookRead|KillShell|BashOutput|Monitor"
 
   check_agents() {
     [ -d "$PLUGIN_ROOT/agents" ] || return
