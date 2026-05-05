@@ -1,0 +1,163 @@
+#!/usr/bin/env bash
+# bin/lint-plugin
+# Structural lint for engineering-stack plugin.
+# Usage: bin/lint-plugin [PLUGIN_ROOT]
+# If PLUGIN_ROOT omitted, defaults to script's parent directory.
+set -euo pipefail
+
+PLUGIN_ROOT="${1:-$(cd "$(dirname "$0")/.." && pwd)}"
+ERRORS=0
+
+err() {
+  echo "ERROR: $*" >&2
+  ERRORS=$((ERRORS + 1))
+}
+
+# ---------- Manifest ----------
+check_manifest() {
+  local manifest="$PLUGIN_ROOT/.claude-plugin/plugin.json"
+  if [ ! -f "$manifest" ]; then
+    err "Missing $manifest"
+    return 0
+  fi
+  if ! python3 -c "import json,sys; json.load(open(sys.argv[1]))" "$manifest" 2>/dev/null; then
+    err "Invalid JSON in $manifest"
+    return 0
+  fi
+  for field in name version description author; do
+    if ! python3 -c "import json,sys; d=json.load(open(sys.argv[1])); sys.exit(0 if '$field' in d else 1)" "$manifest" 2>/dev/null; then
+      err "Manifest missing required field: $field"
+    fi
+  done
+}
+
+# ---------- Frontmatter helpers ----------
+extract_fm() {
+  awk '/^---$/{c++; next} c==1 {print} c==2 {exit}' "$1"
+}
+
+fm_get() {
+  # Returns the scalar value for a top-level frontmatter key.
+  # Strips surrounding double or single quotes so quoted scalars (e.g.,
+  # `model: "sonnet"`) compare equal to their unquoted forms.
+  local content="$1" key="$2"
+  local value
+  value=$(echo "$content" | sed -n "s/^$key:[[:space:]]*//p" | head -1)
+  value="${value#\"}"; value="${value%\"}"
+  value="${value#\'}"; value="${value%\'}"
+  echo "$value"
+}
+
+has_fm_key() {
+  local content="$1" key="$2"
+  echo "$content" | grep -q "^$key:"
+}
+
+# ---------- Skills ----------
+check_skills() {
+  [ -d "$PLUGIN_ROOT/skills" ] || return 0
+  for skill_dir in "$PLUGIN_ROOT"/skills/*/; do
+    [ -d "$skill_dir" ] || continue
+    if [ "$(basename "$skill_dir")" = "superpowers-vendored" ]; then
+      for vskill in "$skill_dir"*/; do
+        check_one_skill "$vskill"
+      done
+    else
+      check_one_skill "$skill_dir"
+    fi
+  done
+}
+
+check_one_skill() {
+  local skill_dir="$1"
+  local skill_md="$skill_dir/SKILL.md"
+  if [ ! -f "$skill_md" ]; then
+    err "Skill directory missing SKILL.md: $skill_dir"
+    return 0
+  fi
+  local fm
+  fm=$(extract_fm "$skill_md")
+  if [ -z "$fm" ]; then
+    err "Skill has no frontmatter: $skill_md"
+    return 0
+  fi
+  has_fm_key "$fm" "name" || err "Skill missing frontmatter 'name': $skill_md"
+  has_fm_key "$fm" "description" || err "Skill missing frontmatter 'description': $skill_md"
+}
+
+# ---------- Agents ----------
+ALLOWED_MODELS="sonnet|opus|haiku"
+ALLOWED_TOOLS="Read|Edit|Write|Grep|Glob|Bash|TaskCreate|TaskUpdate|TaskList|TaskGet|TaskOutput|TaskStop|Agent|Skill|ToolSearch|WebFetch|WebSearch|NotebookEdit|NotebookRead|KillShell|BashOutput|Monitor"
+
+check_agents() {
+  [ -d "$PLUGIN_ROOT/agents" ] || return 0
+  for agent_md in "$PLUGIN_ROOT"/agents/*.md; do
+    [ -f "$agent_md" ] || continue
+    check_one_agent "$agent_md"
+  done
+}
+
+check_one_agent() {
+  local agent_md="$1"
+  local fm
+  fm=$(extract_fm "$agent_md")
+  if [ -z "$fm" ]; then
+    err "Agent has no frontmatter: $agent_md"
+    return 0
+  fi
+  has_fm_key "$fm" "name" || err "Agent missing 'name': $agent_md"
+  has_fm_key "$fm" "description" || err "Agent missing 'description': $agent_md"
+  has_fm_key "$fm" "tools" || err "Agent missing 'tools': $agent_md"
+  has_fm_key "$fm" "model" || err "Agent missing 'model': $agent_md"
+
+  local model
+  model=$(fm_get "$fm" "model")
+  if [ -n "$model" ] && ! echo "$model" | grep -qE "^($ALLOWED_MODELS)$"; then
+    err "Agent has invalid model '$model' (allowed: $ALLOWED_MODELS): $agent_md"
+  fi
+
+  local tools
+  tools=$(fm_get "$fm" "tools")
+  if has_fm_key "$fm" "tools" && [ -z "$tools" ]; then
+    # Key present but value empty — block-list YAML or other unsupported form.
+    err "Agent has empty or block-list 'tools' (use flow style, e.g., 'tools: [Read, Grep]'): $agent_md"
+  elif [ -n "$tools" ]; then
+    local cleaned="${tools#[}"; cleaned="${cleaned%]}"
+    IFS=',' read -ra arr <<< "$cleaned"
+    for t in "${arr[@]}"; do
+      t="${t// /}"
+      t="${t//\"/}"
+      t="${t//\'/}"
+      [ -z "$t" ] && continue
+      if ! echo "$t" | grep -qE "^($ALLOWED_TOOLS)$"; then
+        err "Agent has unknown tool '$t': $agent_md"
+      fi
+    done
+  fi
+}
+
+# ---------- Commands ----------
+check_commands() {
+  [ -d "$PLUGIN_ROOT/commands" ] || return 0
+  for cmd_md in "$PLUGIN_ROOT"/commands/*.md; do
+    [ -f "$cmd_md" ] || continue
+    local fm
+    fm=$(extract_fm "$cmd_md")
+    [ -z "$fm" ] && { err "Command has no frontmatter: $cmd_md"; continue; }
+    has_fm_key "$fm" "description" || err "Command missing 'description': $cmd_md"
+  done
+}
+
+# ---------- Run ----------
+check_manifest
+check_skills
+check_agents
+check_commands
+
+if [ "$ERRORS" -eq 0 ]; then
+  echo "lint-plugin: all checks passed"
+  exit 0
+else
+  echo "lint-plugin: $ERRORS error(s) found" >&2
+  exit 1
+fi

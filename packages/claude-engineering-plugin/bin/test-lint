@@ -1,0 +1,188 @@
+#!/usr/bin/env bash
+# Self-test for bin/lint-plugin
+# Each test creates a fixture, runs lint-plugin against it, asserts result.
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+LINT="$SCRIPT_DIR/lint-plugin"
+TMPDIR="$(mktemp -d)"
+trap 'rm -rf "$TMPDIR"' EXIT
+
+PASS=0
+FAIL=0
+
+assert_pass() {
+  local desc="$1" dir="$2"
+  if "$LINT" "$dir" >/dev/null 2>&1; then
+    echo "  PASS: $desc"; PASS=$((PASS+1))
+  else
+    echo "  FAIL: $desc (expected pass, got fail)"; FAIL=$((FAIL+1))
+  fi
+}
+
+assert_fail() {
+  local desc="$1" dir="$2"
+  if "$LINT" "$dir" >/dev/null 2>&1; then
+    echo "  FAIL: $desc (expected fail, got pass)"; FAIL=$((FAIL+1))
+  else
+    echo "  PASS: $desc"; PASS=$((PASS+1))
+  fi
+}
+
+# Fixture: minimal valid plugin (manifest only)
+mkdir -p "$TMPDIR/min/.claude-plugin"
+cat >"$TMPDIR/min/.claude-plugin/plugin.json" <<EOF
+{"name":"x","version":"0.1.0","description":"x","author":"x"}
+EOF
+assert_pass "minimal plugin (manifest only)" "$TMPDIR/min"
+
+# Fixture: missing manifest
+mkdir -p "$TMPDIR/no-manifest"
+assert_fail "plugin without manifest" "$TMPDIR/no-manifest"
+
+# Fixture: invalid JSON manifest
+mkdir -p "$TMPDIR/bad-json/.claude-plugin"
+echo "not json" >"$TMPDIR/bad-json/.claude-plugin/plugin.json"
+assert_fail "invalid JSON manifest" "$TMPDIR/bad-json"
+
+# Fixture: skill with valid frontmatter
+mkdir -p "$TMPDIR/with-skill/.claude-plugin" "$TMPDIR/with-skill/skills/foo"
+cat >"$TMPDIR/with-skill/.claude-plugin/plugin.json" <<EOF
+{"name":"x","version":"0.1.0","description":"x","author":"x"}
+EOF
+cat >"$TMPDIR/with-skill/skills/foo/SKILL.md" <<EOF
+---
+name: foo
+description: foo skill
+---
+# Foo
+EOF
+assert_pass "skill with valid frontmatter" "$TMPDIR/with-skill"
+
+# Fixture: skill missing frontmatter name
+mkdir -p "$TMPDIR/skill-no-name/.claude-plugin" "$TMPDIR/skill-no-name/skills/foo"
+cat >"$TMPDIR/skill-no-name/.claude-plugin/plugin.json" <<EOF
+{"name":"x","version":"0.1.0","description":"x","author":"x"}
+EOF
+cat >"$TMPDIR/skill-no-name/skills/foo/SKILL.md" <<EOF
+---
+description: skill missing name
+---
+EOF
+assert_fail "skill missing frontmatter name" "$TMPDIR/skill-no-name"
+
+# Fixture: agent with valid frontmatter
+mkdir -p "$TMPDIR/with-agent/.claude-plugin" "$TMPDIR/with-agent/agents"
+cat >"$TMPDIR/with-agent/.claude-plugin/plugin.json" <<EOF
+{"name":"x","version":"0.1.0","description":"x","author":"x"}
+EOF
+cat >"$TMPDIR/with-agent/agents/bar.md" <<EOF
+---
+name: bar
+description: bar agent
+tools: [Read, Grep]
+model: sonnet
+---
+# Bar Agent
+EOF
+assert_pass "agent with valid frontmatter" "$TMPDIR/with-agent"
+
+# Fixture: agent with invalid model value
+mkdir -p "$TMPDIR/agent-bad-model/.claude-plugin" "$TMPDIR/agent-bad-model/agents"
+cat >"$TMPDIR/agent-bad-model/.claude-plugin/plugin.json" <<EOF
+{"name":"x","version":"0.1.0","description":"x","author":"x"}
+EOF
+cat >"$TMPDIR/agent-bad-model/agents/bar.md" <<EOF
+---
+name: bar
+description: bar agent
+tools: [Read]
+model: invalid-model
+---
+EOF
+assert_fail "agent with invalid model value" "$TMPDIR/agent-bad-model"
+
+# Fixture: agent with quoted scalars (should pass — quotes stripped)
+mkdir -p "$TMPDIR/agent-quoted/.claude-plugin" "$TMPDIR/agent-quoted/agents"
+cat >"$TMPDIR/agent-quoted/.claude-plugin/plugin.json" <<EOF
+{"name":"x","version":"0.1.0","description":"x","author":"x"}
+EOF
+cat >"$TMPDIR/agent-quoted/agents/bar.md" <<EOF
+---
+name: bar
+description: bar agent
+tools: ["Read", 'Grep']
+model: "sonnet"
+---
+EOF
+assert_pass "agent with quoted scalars (model + tools)" "$TMPDIR/agent-quoted"
+
+# Fixture: agent with block-list YAML tools (should fail — flow style only)
+mkdir -p "$TMPDIR/agent-blocklist/.claude-plugin" "$TMPDIR/agent-blocklist/agents"
+cat >"$TMPDIR/agent-blocklist/.claude-plugin/plugin.json" <<EOF
+{"name":"x","version":"0.1.0","description":"x","author":"x"}
+EOF
+cat >"$TMPDIR/agent-blocklist/agents/bar.md" <<EOF
+---
+name: bar
+description: bar agent
+tools:
+  - Read
+  - Grep
+model: sonnet
+---
+EOF
+assert_fail "agent with block-list YAML tools" "$TMPDIR/agent-blocklist"
+
+# Fixture: agent with unknown tool name (should fail)
+mkdir -p "$TMPDIR/agent-bad-tool/.claude-plugin" "$TMPDIR/agent-bad-tool/agents"
+cat >"$TMPDIR/agent-bad-tool/.claude-plugin/plugin.json" <<EOF
+{"name":"x","version":"0.1.0","description":"x","author":"x"}
+EOF
+cat >"$TMPDIR/agent-bad-tool/agents/bar.md" <<EOF
+---
+name: bar
+description: bar agent
+tools: [Read, NotARealTool]
+model: sonnet
+---
+EOF
+assert_fail "agent with unknown tool name" "$TMPDIR/agent-bad-tool"
+
+# Fixture: command with valid frontmatter (should pass)
+mkdir -p "$TMPDIR/with-command/.claude-plugin" "$TMPDIR/with-command/commands"
+cat >"$TMPDIR/with-command/.claude-plugin/plugin.json" <<EOF
+{"name":"x","version":"0.1.0","description":"x","author":"x"}
+EOF
+cat >"$TMPDIR/with-command/commands/foo.md" <<EOF
+---
+description: a slash command
+---
+# /foo
+EOF
+assert_pass "command with valid frontmatter" "$TMPDIR/with-command"
+
+# Fixture: command missing description (should fail)
+mkdir -p "$TMPDIR/cmd-no-desc/.claude-plugin" "$TMPDIR/cmd-no-desc/commands"
+cat >"$TMPDIR/cmd-no-desc/.claude-plugin/plugin.json" <<EOF
+{"name":"x","version":"0.1.0","description":"x","author":"x"}
+EOF
+cat >"$TMPDIR/cmd-no-desc/commands/foo.md" <<EOF
+---
+name: foo
+---
+# /foo
+EOF
+assert_fail "command missing description" "$TMPDIR/cmd-no-desc"
+
+# Fixture: vendored sub-skill missing SKILL.md (should fail — recursion check)
+mkdir -p "$TMPDIR/vendored-bad/.claude-plugin" "$TMPDIR/vendored-bad/skills/superpowers-vendored/incomplete"
+cat >"$TMPDIR/vendored-bad/.claude-plugin/plugin.json" <<EOF
+{"name":"x","version":"0.1.0","description":"x","author":"x"}
+EOF
+# incomplete/ has no SKILL.md — lint should descend and flag it
+assert_fail "vendored sub-skill missing SKILL.md" "$TMPDIR/vendored-bad"
+
+echo ""
+echo "Results: $PASS passed, $FAIL failed"
+test "$FAIL" -eq 0
