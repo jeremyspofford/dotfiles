@@ -37,8 +37,15 @@ extract_fm() {
 }
 
 fm_get() {
+  # Returns the scalar value for a top-level frontmatter key.
+  # Strips surrounding double or single quotes so quoted scalars (e.g.,
+  # `model: "sonnet"`) compare equal to their unquoted forms.
   local content="$1" key="$2"
-  echo "$content" | sed -n "s/^$key:[[:space:]]*//p" | head -1
+  local value
+  value=$(echo "$content" | sed -n "s/^$key:[[:space:]]*//p" | head -1)
+  value="${value#\"}"; value="${value%\"}"
+  value="${value#\'}"; value="${value%\'}"
+  echo "$value"
 }
 
 has_fm_key() {
@@ -111,11 +118,16 @@ check_one_agent() {
 
   local tools
   tools=$(fm_get "$fm" "tools")
-  if [ -n "$tools" ]; then
+  if has_fm_key "$fm" "tools" && [ -z "$tools" ]; then
+    # Key present but value empty — block-list YAML or other unsupported form.
+    err "Agent has empty or block-list 'tools' (use flow style, e.g., 'tools: [Read, Grep]'): $agent_md"
+  elif [ -n "$tools" ]; then
     local cleaned="${tools#[}"; cleaned="${cleaned%]}"
     IFS=',' read -ra arr <<< "$cleaned"
     for t in "${arr[@]}"; do
       t="${t// /}"
+      t="${t//\"/}"
+      t="${t//\'/}"
       [ -z "$t" ] && continue
       if ! echo "$t" | grep -qE "^($ALLOWED_TOOLS)$"; then
         err "Agent has unknown tool '$t': $agent_md"
