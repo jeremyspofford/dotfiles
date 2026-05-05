@@ -30,6 +30,14 @@ while IFS= read -r f; do
   [ -z "$f" ] && continue
   [ -f "$f" ] || continue
 
+  # Skip vendored third-party content — its style is not ours to police.
+  # Conventions matched: foo-vendored/, vendor/, third_party/, third-party/.
+  case "$f" in
+    *-vendored/*|*/vendor/*|*/third_party/*|*/third-party/*)
+      continue
+      ;;
+  esac
+
   # Match by extension
   case "$f" in
     *.sh|*.bash)
