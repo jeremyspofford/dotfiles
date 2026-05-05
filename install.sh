@@ -2,7 +2,6 @@
 set -euo pipefail
 
 DOTFILES_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-STOWRC="$HOME/.stowrc"
 BACKUP_DIR="$HOME/.dotfiles_backup"
 
 # ─── Platform detection ─────────────────────────────────────────────
@@ -296,65 +295,11 @@ mirror_ssh_to_windows() {
 
 mirror_ssh_to_windows
 
-# ─── Ensure ~/.stowrc points at the current packages dir ───────────
-# Every stow package lives under packages/. ~/.stowrc pins stow's
-# --dir so `stow <pkg>` from any cwd finds the right tree. On fresh
-# machines we write it; on machines bootstrapped before the packages/
-# restructure we back up the stale file and rewrite — same backup
-# pattern as mirror_ssh_to_windows so nothing is silently lost.
-ensure_stowrc() {
-  local stow_dir="$DOTFILES_DIR/packages"
-  local expected
-  expected="$(printf -- '--dir=%s\n--target=%s\n' "$stow_dir" "$HOME")"
-
-  if [ -f "$STOWRC" ] && [ "$(cat "$STOWRC")" = "$expected" ]; then
-    return 0
-  fi
-
-  if [ -f "$STOWRC" ]; then
-    local backup
-    backup="$BACKUP_DIR/stowrc.$(date +%Y%m%dT%H%M%S)"
-    mkdir -p "$BACKUP_DIR"
-    cp "$STOWRC" "$backup"
-    echo "  Backed up existing ~/.stowrc -> $backup"
-  fi
-
-  printf '%s' "$expected" > "$STOWRC"
-  echo "Wrote ~/.stowrc (--dir=$stow_dir)"
-}
-
-ensure_stowrc
-
-# ─── Back up conflicting files and stow packages ───────────────────
-# Every directory under packages/ is a stow package by convention.
-# Non-package repo content (docs, examples, cursor, mcp-servers) lives
-# at the repo root and is invisible to this loop.
-for dir in "$DOTFILES_DIR"/packages/*/; do
-  pkg="$(basename "$dir")"
-
-  # Move aside any real files that would conflict with symlinks.
-  # The -ef test skips files whose target resolves (through an
-  # already-stowed parent directory symlink — stow tree folding) to
-  # the source file itself; without it, a re-run would mv our source
-  # files out of the repo and into $BACKUP_DIR.
-  while IFS= read -r -d '' file; do
-    rel="${file#"$dir"}"
-    target="$HOME/$rel"
-    if [ -f "$target" ] && [ ! -L "$target" ] && ! [ "$target" -ef "$file" ]; then
-      backup_path="$BACKUP_DIR/$rel"
-      mkdir -p "$(dirname "$backup_path")"
-      mv "$target" "$backup_path"
-      echo "  Backed up: ~/$rel -> ~/.dotfiles_backup/$rel"
-    fi
-  done < <(find "$dir" -type f -print0)
-
-  echo "Stowing $pkg..."
-  stow -R -v -d "$DOTFILES_DIR/packages" -t "$HOME" "$pkg" 2> >(grep -v "BUG in find_stowed_path" >&2)
-done
-
-if [ -d "$BACKUP_DIR" ]; then
-  echo "Originals saved to ~/.dotfiles_backup/"
-fi
+# ─── Stow packages ──────────────────────────────────────────────────
+# Owns ~/.stowrc, the backup-on-conflict logic, and the per-package
+# stow loop. Extracted into stow.sh so day-to-day refreshes don't have
+# to walk every installer above.
+"$DOTFILES_DIR/stow.sh"
 
 # ─── Configure git hooks for the dotfiles repo ──────────────────────
 # Tracked hooks live in .githooks/ but git won't run them until we

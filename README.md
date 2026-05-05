@@ -33,7 +33,7 @@ cd ~/workspace/dotfiles
 After the first `./install.sh`, the repo is driven through `stow` and direct edits to package files. Three things to know:
 
 1. **Edit the source, never the symlink.** `~/.zshrc`, `~/.gitconfig`, etc. are symlinks into `packages/`. Open `packages/shell/.zshrc` (or whichever package) and edit there — the symlink reflects the change immediately.
-2. **`stow <pkg>` works from anywhere.** `install.sh` writes `~/.stowrc` with `--dir=…/packages --target=$HOME`, so stow finds the right tree no matter your cwd.
+2. **`stow <pkg>` works from anywhere.** `stow.sh` writes `~/.stowrc` with `--dir=…/packages --target=$HOME`, so stow finds the right tree no matter your cwd.
 3. **Restow (`-R`) after deleting a tracked file.** Plain `stow` only adds symlinks; `-R` cleans up dead ones too.
 
 ### Common operations
@@ -42,11 +42,14 @@ After the first `./install.sh`, the repo is driven through `stow` and direct edi
 |------|---------|
 | Stow one package | `stow git` |
 | Stow several | `stow shell nvim mise` |
-| Stow everything (fresh machine or after pulling) | `./install.sh` |
+| Stow / restow everything (after pulling, adding files, etc.) | `./stow.sh` |
+| Preview a full restow without changing anything | `./stow.sh -n` |
+| Restow specific packages with conflict-backup | `./stow.sh shell claude` |
 | Restow (re-link, prune dead symlinks) | `stow -R claude` |
 | Unstow (unlink without deleting source) | `stow -D ssh` |
-| Dry run / preview | `stow -nv shell` |
+| Dry run / preview a single package | `stow -nv shell` |
 | List packages | `ls packages/` |
+| Full bootstrap (fresh machine: installs tools + stows) | `./install.sh` |
 
 ### Typical workflow
 
