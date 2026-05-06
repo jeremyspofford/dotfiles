@@ -9,7 +9,7 @@
   "plugins": [
     {
       "name": "engineering-stack",
-      "description": "Role-aware engineering orchestrator. Brainstorm, plan, execute, and review multi-step engineering work with 12 specialized role agents.",
+      "description": "Role-aware engineering orchestrator. Brainstorm, plan, execute, and review multi-step engineering work with 16 specialized role agents.",
       "category": "development",
       "source": "./plugins/engineering-stack"
     }

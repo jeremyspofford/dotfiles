@@ -10,7 +10,7 @@ description: Use during brainstorm and writing-plans phases. Selects 2-5 relevan
 Ensemble planning has two jobs:
 
 1. **Role selection.** Scan the problem statement and pick 2-5 relevant role
-   agents from the **10 auto-selectable** roles. (`visionary` and
+   agents from the **14 auto-selectable** roles. (`visionary` and
    `conflict-reconciler` are never auto-selected — they're event/user
    triggered.) The selection is per-problem, not global — a trivial CLI tool
    gets 1-2 roles; a cloud-deployed app may need 5-7 roles, but the default
@@ -53,17 +53,35 @@ This skill never runs standalone.
 
 ## Role selection rules of thumb
 
-The 12 roles and when each is selected:
+The 16 roles and when each is selected:
 
 - **backend** — selected by default for any code change; skip on docs-only or comment-only fixes.
+- **data** — schema / migrations / queries / retention / replication
+  concerns explicit in the problem statement; OR `backend` selected AND the
+  data layer is non-trivial (multiple tables touched, new query shapes,
+  indexing decisions, retention policy questions). Routine backend changes
+  with shallow data-layer involvement stay with `backend`.
 - **frontend** — UI / CLI / UX surface.
+- **mobile** — iOS / Android / React Native / Flutter named explicitly,
+  or mobile-store policy / lifecycle / offline behavior mentioned.
+- **ux-designer** — user-facing UI.
+- **accessibility** — regulated a11y mandate (WCAG AA contractually, ADA,
+  EAA, Section 508); OR change touches assistive-tech-blocking flows
+  (auth, payment, primary nav, modal / dialog patterns); OR user
+  explicitly asks for a11y conformance review. **Not** auto-selected for
+  routine UI changes — `frontend` covers the a11y baseline, `accessibility`
+  is the deep specialist.
+- **docs** — public API change, breaking change, new oncall-relevant alert,
+  new runbook needed, or ADR-triggering decision (significant pattern
+  change, irreversible schema/protocol decision, new dependency with
+  significant footprint). Internal-only refactors typically don't auto-
+  select `docs`.
 - **cloud** — deployment target named.
 - **security** — auth, data, secrets, dependencies, IaC, regulated content.
 - **cicd** — deployment in scope, OR security/cloud/sre selected (CI/CD
   coordination is almost always needed when those are in play).
 - **sre** — production-running service.
 - **network** — topology / firewall / ACL / VPC mentioned.
-- **ux-designer** — user-facing UI.
 - **qa** — non-trivial multi-component work.
 - **performance** — diff touches executable code / queries / infra / deps /
   build configs (selected at task level, not project level — checked per

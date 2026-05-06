@@ -38,7 +38,7 @@ The full lifecycle (reproduced from the architecture spec) is nine steps:
 1. **`/engineer "<problem statement>"`** — user invokes the slash command,
    which loads this orchestrator and passes the problem statement as input.
 2. **`ensemble-planning` runs role-selection** — scans the problem and picks
-   2-5 relevant role agents from the 10 auto-selectable ones (`visionary` and
+   2-5 relevant role agents from the 14 auto-selectable ones (`visionary` and
    `conflict-reconciler` are never auto-selected). If the rules of thumb
    would select more than 5, ensemble-planning pauses to confirm with the
    user (e.g., a cloud-deployed calculator could plausibly want frontend,
@@ -142,3 +142,9 @@ skill; merge-back conflicts are delegated to `merge-conflict-reconciler`.
   task; if multiple roles own a task, the orchestrator coordinates them.
 - **Composition over modification.** New behavior is added as new skills or
   agents that run alongside vendored ones, never by editing them.
+- **Project-conventions consultation.** Every dispatched implementer
+  receives, as a standing pre-implementation instruction, "read project-
+  level `CLAUDE.md` and any conventions docs near the work area before
+  writing code." This is enforced at dispatch by the orchestrator, not
+  duplicated into each role agent — single source of truth, new roles
+  inherit it automatically.

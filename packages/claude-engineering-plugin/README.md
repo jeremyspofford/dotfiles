@@ -4,7 +4,7 @@ Role-aware engineering orchestrator for Claude Code.
 
 ## What it does
 
-engineering-stack provides 12 specialized role agents (frontend, backend, ux-designer, security, cloud, cicd, sre, network, qa, performance, visionary, conflict-reconciler) and an orchestration spine that runs a brainstorm → plan → execute → review lifecycle, pulling the right specialists into each step. It includes multi-session worktree safety and a merge-conflict reconciler for when parallel work overlaps. The plugin is built on a vendored copy of Anthropic's superpowers plugin so it stays independent of upstream maintenance churn.
+engineering-stack provides 16 specialized role agents (frontend, backend, data, mobile, ux-designer, accessibility, docs, security, cloud, cicd, sre, network, qa, performance, visionary, conflict-reconciler) and an orchestration spine that runs a brainstorm → plan → execute → review lifecycle, pulling the right specialists into each step. It includes multi-session worktree safety and a merge-conflict reconciler for when parallel work overlaps. The plugin is built on a vendored copy of Anthropic's superpowers plugin so it stays independent of upstream maintenance churn.
 
 ## Install
 
@@ -64,7 +64,7 @@ Engineering-stack skills (skills/)
 Vendored superpowers skills (skills/superpowers-vendored/)
   — replaceable foundation
   ↓
-Role agents (agents/) — 12 specialists
+Role agents (agents/) — 16 specialists
 ```
 
 The layering is deliberate: commands are thin entrypoints that hand off to skills; engineering-stack skills carry the orchestration logic and depend on the vendored superpowers layer for primitives (brainstorming, planning, TDD, verification, code review). Role agents are leaf-level workers the orchestrator dispatches into. Vendoring superpowers means upstream maintenance changes never break this plugin's behavior.
