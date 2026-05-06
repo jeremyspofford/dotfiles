@@ -1,4 +1,4 @@
-Ingest a Littlebird daily summary into the wiki: split by project, write/append raw captures, and surface decisions, preferences, and follow-ups for review.
+Ingest a Littlebird daily summary into the wiki: split by project, write/append raw captures, and surface preferences and follow-ups for review. Wiki page creation is left to `/wiki ingest`, which has cross-source context this command does not.
 
 Usage: `/littlebird-daily [--date YYYY-MM-DD]` followed by the pasted summary text.
 
@@ -95,11 +95,7 @@ For each unique destination slug:
 
 Identify and print these for Jeremy's approval. Each section is optional — omit if empty.
 
-### Durable wiki candidates
-
-Architectural decisions, ADRs, tooling choices, or stances that warrant a permanent wiki page (concept/decision/entity in `wiki/`). Format as:
-
-- **<title>** — one-line summary. Suggested type: `decision` / `concept` / `entity`. Suggested project: `<slug>`.
+Do **not** surface "durable wiki candidates" or suggest concept/decision/entity pages. Wiki page creation belongs to `/wiki ingest`, which sees multiple raw captures and can cross-reference them. This command's job is raw capture + operational signals only.
 
 ### MEMORY.md candidates
 
@@ -126,10 +122,10 @@ Tasks paused, debugging unfinished, or known issues to resume. Group by project.
 Print a tight summary:
 
 - Files written (full paths) with create/append status.
-- Counts: N durable candidates, M memory candidates, K open follow-ups.
+- Counts: M memory candidates, D daily-log candidates, K open follow-ups.
 - Any routing failures or `unknown/*` slugs that need review.
 
-Then ask: "Promote any candidates now? (durable / memory / daily-log / none)". On approval, execute the relevant action — `/wiki capture` or direct `Assistant/MEMORY.md` edit for memory items, `append_to_daily_log` MCP tool for daily-log items, draft wiki concept/decision pages for durable items.
+Then ask: "Promote any candidates now? (memory / daily-log / none)". On approval, execute the relevant action — direct `Assistant/MEMORY.md` edit for memory items, `append_to_daily_log` MCP tool for daily-log items. Wiki pages are out of scope here; defer to `/wiki ingest`.
 
 ## Hard rules
 
@@ -137,4 +133,4 @@ Then ask: "Promote any candidates now? (durable / memory / daily-log / none)". O
 - **Never use the `Write` tool** to edit `Assistant/memory/YYYY-MM-DD.md` — use the `append_to_daily_log` MCP tool. (Per `~/.claude/CLAUDE.md`.) `Assistant/MEMORY.md` (capital, no subdir) is fine to edit directly.
 - **Never invent new tags** — only use approved tags from the Tag Registry. Propose new ones via `/wiki tag propose` with explicit approval.
 - **Preserve prose verbatim** in raw captures — do not summarize or rewrite Littlebird's text.
-- **Do not auto-promote** anything past raw captures. Surfacing is enough; Jeremy decides what becomes durable.
+- **No wiki page creation here.** Raw captures + MEMORY.md + daily log are the only durable outputs. Concept/decision/entity pages are `/wiki ingest`'s job — it has multi-source context this command lacks, so promoting from a single daily summary tends to produce thin pages. Don't even surface "durable wiki candidates" — it sets the wrong expectation.

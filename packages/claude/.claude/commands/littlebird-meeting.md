@@ -1,4 +1,4 @@
-Ingest a Littlebird meeting summary into the wiki: parse the structured sections, route by meeting type, append to the day's session capture, optionally archive the transcript, auto-log Jeremy's action items, and surface decisions, durable concepts, entities, and follow-ups for review.
+Ingest a Littlebird meeting summary into the wiki: parse the structured sections, route by meeting type, append to the day's session capture, optionally archive the transcript, auto-log Jeremy's action items, and surface MEMORY.md candidates and other-assigned follow-ups for review. Wiki page creation (concepts/decisions/entities) is left to `/wiki ingest`.
 
 Usage: `/littlebird-meeting [--date YYYY-MM-DD] [--project SLUG] [--with PERSON[,PERSON...]] [--meeting-type 1on1|project] [--include-transcript]` followed by the pasted summary text. The transcript may follow the summary in the same paste; auto-detected by `[Me]:`/`[Others]:` line shape.
 
@@ -19,7 +19,8 @@ If `$ARGUMENTS` is exactly `--help`, `-h`, or the only non-empty token (ignoring
 
 Ingest a Littlebird meeting summary into the wiki: parse sections, route by
 meeting type, append to the day's session capture, optionally archive the
-transcript, auto-log Jeremy's action items, and surface candidates for review.
+transcript, auto-log Jeremy's action items, and surface MEMORY.md and
+follow-up candidates for review. Wiki page creation is /wiki ingest's job.
 
 Usage:
   /littlebird-meeting [OPTIONS]
@@ -53,8 +54,8 @@ Side effects (when not in --help mode):
     with ingested: true (skips /wiki ingest by design).
   - Auto-appends Action Items assigned to "You"/"Me" to Assistant/memory/<date>.md
     via the append_to_daily_log MCP tool. Other-assigned items surface for review.
-  - Surfaces durable wiki, MEMORY.md, entity, and other-assigned follow-up
-    candidates for confirmation. No auto-promotion past the daily log.
+  - Surfaces MEMORY.md candidates and other-assigned follow-ups for review.
+    Does not propose wiki concept/decision/entity pages — defer to /wiki ingest.
 
 Examples:
   # Default — skill prompts for --with
@@ -262,15 +263,11 @@ Never use the `Write` tool to edit `Assistant/memory/<date>.md` directly. The MC
 
 Identify and print these for Jeremy's approval. Each section is optional — omit if empty.
 
-### Durable wiki candidates
-
-Architectural decisions, ADRs, technical patterns, tooling choices, or stances that warrant a permanent wiki page (concept/decision/entity in `wiki/`). Decisions explicitly listed in the summary's `### Decisions` section are strong candidates — but also surface durable patterns from `### Topics` (e.g., "service-oriented Terragrunt refactor", "GCP PAM entitlements") that aren't decisions but are reusable concepts. Format:
-
-- **<title>** — one-line summary. Suggested type: `decision` / `concept` / `entity`. Suggested project: `<slug>`.
+Do **not** surface "durable wiki candidates" or "entity candidates" or suggest concept/decision/entity pages. Wiki page creation belongs to `/wiki ingest`, which sees multiple raw captures and can cross-reference them. This command's job is raw capture + auto-logged action items + MEMORY.md and follow-up signals only.
 
 ### MEMORY.md candidates
 
-Durable preferences, stances, or working-style choices that should land in `Assistant/MEMORY.md` (the curated long-term cache). Format:
+Durable preferences, stances, or working-style choices that should land in `Assistant/MEMORY.md` (the curated long-term cache). MEMORY.md is the assistant's working memory, not the wiki — `/wiki ingest` does not touch it, so this surface is genuinely additive. Format:
 
 - "<verbatim phrase>" — why it matters in one short clause.
 
@@ -282,26 +279,18 @@ Action Items assigned to **Other** participants or **Unassigned**. These aren't 
 
 - **<assignee>**: <follow-up>
 
-### Entity candidates
-
-People, organizations, services, or tools mentioned in the summary that don't yet have a wiki entity page. Use judgment — surface only those that recur or carry context worth preserving (a colleague named twice with role context is a candidate; a one-off "I told Drew" mention is not).
-
-Format:
-
-- **<name>** — short context (role, relationship, why they matter). Suggested type: `entity`. Suggested project: `<slug>`.
-
-Do **not** auto-create entity pages. Surfacing is enough.
+People, organizations, services, or tools mentioned in the summary already land in the raw capture verbatim. `/wiki ingest` will discover and create entity pages for those that recur across captures — don't pre-empt that here.
 
 ## Step 10: Confirm
 
 Print a tight summary:
 
 - Files written (full paths) with create/append status. Include transcript path if applicable.
-- Counts: N durable candidates, M memory candidates, K other-assigned follow-ups, P entity candidates, A action items auto-logged to daily log.
+- Counts: M memory candidates, K other-assigned follow-ups, A action items auto-logged to daily log.
 - Any routing failures or `unknown/*` slugs that need review.
 - Any parse warnings (missing title, schema fallback, transcript detected-but-skipped, etc.).
 
-Then ask: "Promote any candidates now? (durable / memory / entity / follow-ups / none)". On approval, execute the relevant action — `/wiki capture` or direct `Assistant/MEMORY.md` edit for memory items, draft wiki concept/decision/entity pages for durable items, `append_to_daily_log` for follow-ups Jeremy wants to track.
+Then ask: "Promote any candidates now? (memory / follow-ups / none)". On approval, execute the relevant action — direct `Assistant/MEMORY.md` edit for memory items, `append_to_daily_log` for follow-ups Jeremy wants to track. Wiki pages are out of scope here; defer to `/wiki ingest`.
 
 ## Hard rules
 
@@ -311,5 +300,5 @@ Then ask: "Promote any candidates now? (durable / memory / entity / follow-ups /
 - **Preserve prose verbatim** in raw captures and transcripts — do not summarize or rewrite Littlebird's text.
 - **Auto-log only Jeremy's own Action Items** to the daily log — others' commitments surface for review. Vetted commitments by Jeremy bypass the surface-and-wait pattern because they passed both Jeremy's mouth and Littlebird's parser.
 - **Transcripts archive separately** under `raw/<slug>/transcripts/` with `ingested: true` from the start — they are reference material for `/wiki query`, not synthesis input for `/wiki ingest`.
-- **Do not auto-promote durable, memory, or entity candidates** past raw captures and the daily-log auto-append. Surfacing is enough; Jeremy decides what becomes durable.
+- **No wiki page creation here.** Raw captures + transcript archives + MEMORY.md + daily log are the only durable outputs. Concept/decision/entity pages are `/wiki ingest`'s job — it has multi-source context this command lacks. Don't even surface "durable wiki candidates" or "entity candidates" — it sets the wrong expectation.
 - **Route 1:1s by employer relationship, not topic.** A 1:1 between two VC employees that drifts into Dematic talk still routes to `vividcloud/general` — the artifact type is "VC-internal relationship", not "Dematic project work".

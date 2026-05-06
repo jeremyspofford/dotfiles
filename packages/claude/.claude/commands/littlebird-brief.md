@@ -206,7 +206,7 @@ Print a tight summary:
 - Any routing failures or `unknown/*` slugs that need review.
 - Any parse warnings (schema fallback, missing emoji headers, etc.).
 
-Then ask: "Anything to escalate? (file as durable wiki page / append to MEMORY.md / none)". On approval, execute via `/wiki capture` for raw items or direct `Assistant/MEMORY.md` edit for memory items. Default expectation is **none** — briefs are operational, not architectural.
+Then ask: "Anything to escalate? (append to MEMORY.md / none)". On approval, edit `Assistant/MEMORY.md` directly for memory items. Default expectation is **none** — briefs are operational, not architectural. Wiki pages are out of scope; `/wiki ingest` reads raw captures and decides what earns a page.
 
 ## Hard rules
 
@@ -214,5 +214,5 @@ Then ask: "Anything to escalate? (file as durable wiki page / append to MEMORY.m
 - **Never use the `Write` tool** to edit `Assistant/memory/YYYY-MM-DD.md` — use the `append_to_daily_log` MCP tool. (Per `~/.claude/CLAUDE.md`.) `Assistant/MEMORY.md` is fine to edit directly.
 - **Never invent new tags** — only approved tags from the Tag Registry. Propose new ones via `/wiki tag propose`.
 - **Preserve prose verbatim** in raw captures — do not summarize or rewrite Littlebird's text.
-- **Briefs do not auto-promote to wiki/** — they are operational/session-scoped. `/wiki ingest` should skip these by default; only escalate via Step 8 confirmation.
+- **Briefs do not promote to wiki/ from this command.** They are operational/session-scoped. Wiki page creation is `/wiki ingest`'s job — it sees multiple raw captures and can cross-reference them. Don't even surface "wiki page candidates" — it sets the wrong expectation.
 - **Do not auto-append to the daily log.** Briefs are forward-looking — the day's actual work and decisions get captured by `/littlebird-daily` (retrospective) and `/littlebird-meeting` the following day. The brief is the plan, not the record.
