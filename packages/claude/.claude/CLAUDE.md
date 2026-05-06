@@ -150,6 +150,35 @@ safe patch/minor bumps when tests pass.
 
 ---
 
+## Engineering Stack — Review Gates
+
+The `engineering-stack:engineer` orchestrator (and the vendored `brainstorming`
+and `writing-plans` skills it calls) produces spec and plan docs too long to
+review at the file-path gate. At each user-review checkpoint, lead with a
+decision summary — not "file is at `<path>`":
+
+- **Goal / Scope:** one sentence
+- **Approach / Breakdown:** 2-3 bullets
+- **Key decisions made:** 3-5 items where one option was picked over another
+- **Assumptions that couldn't be verified:** things guessed about my environment
+- **What was considered but rejected:** briefly
+- **What's risky:** scope creep, fragile assumptions, uncertainty
+
+Then offer:
+
+1. Approve and continue
+2. Show full doc inline
+3. Show a specific section
+4. Push back on something
+
+Full inline rendering of the doc is opt-in (option 2), not the default.
+
+After the plan is written and the `plan-document-reviewer` subagent approves,
+pause for my review with the same summary shape before starting execution —
+the auto subagent review is not a substitute for my eyes.
+
+---
+
 ## Wiki Vault
 
 `$WIKI_VAULT` is set in `~/.commonrc` as `$HOME/Obsidian_Vault`. If unset, do not
