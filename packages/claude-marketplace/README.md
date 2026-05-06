@@ -8,41 +8,29 @@ A Claude Code plugin marketplace bundled into this dotfiles repo. It registers t
 | ---- | ---------- |
 | `engineering-stack` | Role-aware engineering orchestrator. See [`plugins/engineering-stack/README.md`](plugins/engineering-stack/README.md). |
 
-## Register on a new machine (one-time)
+## Install on a new machine
 
-The marketplace path is machine-specific (absolute path to your dotfiles checkout), so the registration goes into `~/.claude/settings.local.json` — a per-machine file that is **not** in dotfiles. This keeps `~/.claude/settings.json` (which is dotfiles-shared across macOS, Linux, and WSL) free of any one machine's home-dir layout.
+The marketplace registration is pre-baked into `~/.claude/settings.json` (the dotfiles-shared one) using `$HOME` path expansion, so it works on macOS, Linux, and WSL without modification — `git clone` the dotfiles, `stow` the claude package, and the marketplace is auto-registered.
 
-**Step 1.** Add the marketplace registration to `~/.claude/settings.local.json` (creating the file if it doesn't exist):
-
-```json
-{
-  "extraKnownMarketplaces": {
-    "dotfiles-local": {
-      "source": {
-        "source": "directory",
-        "path": "/absolute/path/to/your/dotfiles/packages/claude-marketplace"
-      }
-    }
-  },
-  "enabledPlugins": {
-    "engineering-stack@dotfiles-local": true
-  }
-}
-```
-
-Adjust `path` for the platform: typically `/home/<user>/workspace/dotfiles/...` on Linux/WSL or `/Users/<user>/workspace/dotfiles/...` on macOS. If the file already has other top-level keys (e.g. `permissions`), merge these in alongside them rather than overwriting.
-
-**Step 2.** Restart Claude Code so it re-reads `settings.local.json`.
-
-**Step 3.** Inside Claude Code, install the plugin:
+To populate Claude Code's plugin cache, run inside Claude Code:
 
 ```
 /plugin install engineering-stack@dotfiles-local
 ```
 
-Pick **"Install for you (user scope)"** when prompted. After install, `/engineer`, `/visionary`, and `/reconcile` should be available.
+Pick **"Install for you (user scope)"** when prompted. After install, `/engineer`, `/visionary`, and `/reconcile` are available.
 
-> **Why not use `/plugin marketplace add`?** That command writes the absolute path into `~/.claude/settings.json` — which is dotfiles-shared and would pollute every other machine's config. Adding directly to `settings.local.json` keeps the registration machine-local. If you do run `/plugin marketplace add` and Claude Code writes the entry into `~/.claude/settings.json`, manually move the `extraKnownMarketplaces` and `enabledPlugins["engineering-stack@dotfiles-local"]` keys to `settings.local.json` before committing.
+### Don't run `/plugin marketplace add`
+
+That command resolves `~` and writes a literal absolute path (`/home/<user>/...` or `/Users/<user>/...`) into `settings.json`, which would break portability across machines. The registration is already in `settings.json` using `$HOME`; you don't need to add it.
+
+### If Claude Code rewrites `$HOME` to an absolute path
+
+A plugin operation like `/plugin install --force` or `/plugin uninstall` *might* cause Claude Code to re-serialize `settings.json` and normalize the `$HOME` away. If you see this in `git status` after a plugin op, restore the literal `$HOME` form before committing:
+
+```json
+"path": "$HOME/workspace/dotfiles/packages/claude-marketplace"
+```
 
 ## Layout
 
