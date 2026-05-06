@@ -129,16 +129,7 @@
     "huggingface-skills@claude-plugins-official": true,
     "skill-creator@claude-plugins-official": true,
     "firecrawl@claude-plugins-official": true,
-    "semgrep@claude-plugins-official": false,
-    "engineering-stack@dotfiles-local": true
-  },
-  "extraKnownMarketplaces": {
-    "dotfiles-local": {
-      "source": {
-        "source": "directory",
-        "path": "/home/jeremy/workspace/dotfiles/packages/claude-marketplace"
-      }
-    }
+    "semgrep@claude-plugins-official": false
   },
   "effortLevel": "medium",
   "skipDangerousModePermissionPrompt": true,

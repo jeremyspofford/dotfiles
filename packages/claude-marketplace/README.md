@@ -10,14 +10,39 @@ A Claude Code plugin marketplace bundled into this dotfiles repo. It registers t
 
 ## Register on a new machine (one-time)
 
-Inside Claude Code:
+The marketplace path is machine-specific (absolute path to your dotfiles checkout), so the registration goes into `~/.claude/settings.local.json` — a per-machine file that is **not** in dotfiles. This keeps `~/.claude/settings.json` (which is dotfiles-shared across macOS, Linux, and WSL) free of any one machine's home-dir layout.
+
+**Step 1.** Add the marketplace registration to `~/.claude/settings.local.json` (creating the file if it doesn't exist):
+
+```json
+{
+  "extraKnownMarketplaces": {
+    "dotfiles-local": {
+      "source": {
+        "source": "directory",
+        "path": "/absolute/path/to/your/dotfiles/packages/claude-marketplace"
+      }
+    }
+  },
+  "enabledPlugins": {
+    "engineering-stack@dotfiles-local": true
+  }
+}
+```
+
+Adjust `path` for the platform: typically `/home/<user>/workspace/dotfiles/...` on Linux/WSL or `/Users/<user>/workspace/dotfiles/...` on macOS. If the file already has other top-level keys (e.g. `permissions`), merge these in alongside them rather than overwriting.
+
+**Step 2.** Restart Claude Code so it re-reads `settings.local.json`.
+
+**Step 3.** Inside Claude Code, install the plugin:
 
 ```
-/plugin marketplace add ~/workspace/dotfiles/packages/claude-marketplace
 /plugin install engineering-stack@dotfiles-local
 ```
 
-After install, restart Claude Code if commands aren't visible. Pick "Install for you (user scope)" when prompted unless you want a project- or repo-scoped install.
+Pick **"Install for you (user scope)"** when prompted. After install, `/engineer`, `/visionary`, and `/reconcile` should be available.
+
+> **Why not use `/plugin marketplace add`?** That command writes the absolute path into `~/.claude/settings.json` — which is dotfiles-shared and would pollute every other machine's config. Adding directly to `settings.local.json` keeps the registration machine-local. If you do run `/plugin marketplace add` and Claude Code writes the entry into `~/.claude/settings.json`, manually move the `extraKnownMarketplaces` and `enabledPlugins["engineering-stack@dotfiles-local"]` keys to `settings.local.json` before committing.
 
 ## Layout
 
