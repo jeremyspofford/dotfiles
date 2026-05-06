@@ -1,0 +1,17 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "dotfiles-local",
+  "description": "Claude Code plugins maintained in jeremy's dotfiles repository",
+  "owner": {
+    "name": "Jeremy Spofford",
+    "email": "jeremyspofford@gmail.com"
+  },
+  "plugins": [
+    {
+      "name": "engineering-stack",
+      "description": "Role-aware engineering orchestrator. Brainstorm, plan, execute, and review multi-step engineering work with 12 specialized role agents.",
+      "category": "development",
+      "source": "./plugins/engineering-stack"
+    }
+  ]
+}

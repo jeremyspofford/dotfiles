@@ -8,16 +8,29 @@ engineering-stack provides 12 specialized role agents (frontend, backend, ux-des
 
 ## Install
 
-For v0.1, the plugin is loaded as a local development plugin. Installation as `/plugin install <git-url>` from a remote repo is a v0.2 concern — once the plugin lives in its own remote repository.
-
-To use it now, symlink (or copy) this directory into your Claude Code plugins directory, typically `~/.claude/plugins/`:
+In v0.1 the plugin is distributed via a local Claude Code marketplace bundled in this dotfiles repo at `packages/claude-marketplace/`. Once registered, Claude Code installs the plugin like any other.
 
 ```bash
-# From inside this directory:
-ln -s "$PWD" ~/.claude/plugins/engineering-stack
+# Run these as slash commands inside Claude Code (one-time per machine):
+/plugin marketplace add ~/workspace/dotfiles/packages/claude-marketplace
+/plugin install engineering-stack@dotfiles-local
 ```
 
-After Claude Code reloads, the `/engineer`, `/visionary`, and `/reconcile` commands will be available.
+After install, `/engineer`, `/visionary`, and `/reconcile` are available. Restart Claude Code if they don't appear right away.
+
+> **Caveat — cache copy.** `/plugin install` *copies* the plugin into `~/.claude/plugins/cache/dotfiles-local/engineering-stack/<version>/`. Edits made afterward to the source in `packages/claude-engineering-plugin/` won't propagate until you re-run `/plugin install --force engineering-stack@dotfiles-local` (or uninstall + reinstall).
+
+### Active development (live edits)
+
+When you're iterating on the plugin's commands, agents, or skills, skip the marketplace and launch Claude Code with `--plugin-dir` so changes are read live from disk:
+
+```bash
+claude --plugin-dir ~/workspace/dotfiles/packages/claude-engineering-plugin
+```
+
+Use `/reload-plugins` mid-session to pick up file changes without restarting. Marketplace install and `--plugin-dir` can coexist on the same machine — use the marketplace path for normal use, `--plugin-dir` when actively editing.
+
+Remote-git installation (`/plugin install` from a public repo URL) is a v0.2 concern — once this plugin lives in its own remote repository.
 
 ## Usage
 

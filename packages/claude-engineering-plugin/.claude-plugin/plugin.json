@@ -2,6 +2,9 @@
   "name": "engineering-stack",
   "version": "0.1.0",
   "description": "Role-aware engineering orchestrator for Claude Code",
-  "author": "Jeremy Spofford",
+  "author": {
+    "name": "Jeremy Spofford",
+    "email": "jeremyspofford@gmail.com"
+  },
   "credits": "Built on superpowers (Anthropic claude-plugins-official) — vendored and extended"
 }
