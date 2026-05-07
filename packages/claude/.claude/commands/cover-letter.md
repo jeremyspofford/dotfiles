@@ -5,9 +5,9 @@ Usage: `/cover-letter [application-slug-or-path]`
 - `prompt-health-senior-devops` — slug
 - `wiki/projects/applications/prompt-health-senior-devops.md` — full path
 - `[[prompt-health-senior-devops]]` — wikilink
-- No arg: list all files in `$WIKI_VAULT/wiki/projects/applications/` (excluding `index.md` and `*-cover-letter.md`). If exactly one with `application_status` not in (`rejected|declined|withdrawn|accepted`), use it. If multiple, ask which.
+- No arg: list all files in `$WIKI_VAULT/wiki/projects/applications/` (excluding `index.md`). If exactly one with `application_status` not in (`rejected|declined|withdrawn|accepted`), use it. If multiple, ask which.
 
-If a cover letter already exists at `wiki/projects/applications/{slug}-cover-letter.md`, **warn and ask** before overwriting — cover letters often get hand-edited after generation.
+If a cover letter already exists at `wiki/projects/cover-letters/{slug}-cover-letter.md`, **warn and ask** before overwriting — cover letters often get hand-edited after generation.
 
 ## 1. Preflight — locate pandoc
 
@@ -101,7 +101,9 @@ From the application page frontmatter:
 
 ## 6. Write outputs
 
-**Markdown source** → `$WIKI_VAULT/wiki/projects/applications/{page-slug}-cover-letter.md`:
+**Markdown source** → `$WIKI_VAULT/wiki/projects/cover-letters/{page-slug}-cover-letter.md`:
+
+Create the `wiki/projects/cover-letters/` directory if it does not exist (`mkdir -p`).
 
 ```yaml
 ---
@@ -174,7 +176,7 @@ Print a concise summary:
 ```
 Cover letter generated for {Company} — {Role}
 
-Source:    wiki/projects/applications/{page-slug}-cover-letter.md
+Source:    wiki/projects/cover-letters/{page-slug}-cover-letter.md
 DOCX:      {DOWNLOADS}/jeremy-spofford-{company}-{role}.docx
 PDF:       {DOWNLOADS}/jeremy-spofford-{company}-{role}.pdf  (or "skipped — no PDF backend")
 Word count: N
@@ -194,4 +196,4 @@ Then surface 1-2 specific things worth Jeremy reviewing before sending — e.g.,
 
 ## Tag registry
 
-`cover-letter` is a new `type:` value. Don't worry about adding it to the Tag Registry — cover letters are deliverables, not wiki knowledge, and don't get ingested into concept/project/entity pages. They live in `wiki/projects/applications/` purely for vault-local discoverability.
+`cover-letter` is a new `type:` value. Don't worry about adding it to the Tag Registry — cover letters are deliverables, not wiki knowledge, and don't get ingested into concept/project/entity pages. They live in `wiki/projects/cover-letters/` (separated from `wiki/projects/applications/` so the application Dataview tables stay clean and so the cover-letter index can stand on its own).
