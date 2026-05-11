@@ -71,6 +71,16 @@ ensure_stowrc() {
 
 ensure_stowrc
 
+# ─── Conflict-resolution disclaimer ────────────────────────────────
+# Heads-up to the user before we touch their $HOME on a fresh machine.
+# Skipped under --dry-run since nothing mutates.
+if ! $DRY_RUN; then
+  echo "Resolving conflicts at managed dotfile paths:"
+  echo "  - Regular files will be MOVED to ~/.dotfiles_backup/ (preserving structure)."
+  echo "  - Foreign symlinks (older dotfiles tools, oh-my-zsh, etc.) will be REMOVED."
+  echo "  - Paths already linked to this dotfiles repo are left alone."
+fi
+
 # ─── Stow each package ────────────────────────────────────────────
 # -v on real runs surfaces what got linked; under -n it floods output
 # with UNLINK/LINK pairs that cancel out (stow's restow simulation),
@@ -88,16 +98,25 @@ for pkg in "${PACKAGES[@]}"; do
     continue
   fi
 
-  # Move aside real files that would conflict with symlinks. The -ef
-  # test skips files whose target resolves (through an already-stowed
-  # parent directory symlink — stow tree folding) to the source file
-  # itself; without it, a re-run would mv source files out of the repo
-  # and into $BACKUP_DIR. Skipped under --dry-run since it mutates.
+  # Resolve conflicts before stow runs. Three cases per file:
+  #   - target -ef source → already linked to our source (possibly
+  #     via a tree-folded parent symlink). Skip; the -ef test prevents
+  #     re-runs from moving our own source files into $BACKUP_DIR.
+  #   - any other symlink → foreign (older dotfiles tool, oh-my-zsh,
+  #     broken link). Remove it; user was warned at the top of the run.
+  #   - regular file → move to $BACKUP_DIR preserving structure.
+  # Skipped under --dry-run since it mutates.
   if ! $DRY_RUN; then
     while IFS= read -r -d '' file; do
       rel="${file#"$dir"}"
       target="$HOME/$rel"
-      if [ -f "$target" ] && [ ! -L "$target" ] && ! [ "$target" -ef "$file" ]; then
+      if [ "$target" -ef "$file" ]; then
+        continue
+      elif [ -L "$target" ]; then
+        link_target="$(readlink "$target")"
+        rm "$target"
+        echo "  Removed foreign symlink: ~/$rel (was -> $link_target)"
+      elif [ -f "$target" ]; then
         backup_path="$BACKUP_DIR/$rel"
         mkdir -p "$(dirname "$backup_path")"
         mv "$target" "$backup_path"
