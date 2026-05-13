@@ -201,6 +201,62 @@ While working anywhere, if something worth preserving comes up, write a rough
 note to `$WIKI_VAULT/raw/[domain]/[project]/[YYYY-MM-DD]-session.md`.
 Append if today's file exists. Keep captures fast and rough.
 
+#### Code pattern capture
+
+When you write non-trivial code, evaluate whether it represents a generalizable
+pattern worth keeping. If yes, append to today's raw session note.
+
+**Capture when the code:**
+- Uses a non-obvious approach that beats the obvious one ("the trick is X")
+- Solves a recurring problem in a reusable way (retry logic, auth flow, polling,
+  rate limiting, data transformation, error wrapping)
+- Reflects a deliberate tradeoff with a reason that matters
+- Contains a gotcha or constraint a future reader would need to know
+
+**Skip for:** boilerplate, framework-prescribed patterns, single-use domain logic,
+anything already in `wiki/concepts/`.
+
+Append this format to the raw session note:
+
+```markdown
+## [Pattern name — short, reusable label]
+**Problem:** what category of problem this solves
+**Approach:** generalized description of the solution
+**Example:**
+\`\`\`[language]
+// Stripped of project-specific details — 5–15 lines
+// Comments explain WHY, not WHAT
+\`\`\`
+**Why not [obvious alternative]:** one sentence rationale
+```
+
+Keep examples generic — replace project-specific names with placeholders.
+
+#### Blog post idea capture
+
+When something blog-worthy surfaces, append to
+`$WIKI_VAULT/Assistant/blog-ideas.md`.
+
+**Capture when the session involved:**
+- Solving a non-obvious problem others would hit
+- A counterintuitive design decision with good rationale
+- A lesson learned the hard way (gotcha, debugging story, wrong assumption)
+- A technique or tool combination that isn't well-documented elsewhere
+
+**Skip for:** routine implementation, work too project-specific to generalize,
+topics with no fresh angle.
+
+Append this format:
+
+```markdown
+## YYYY-MM-DD — [topic: short descriptive title]
+**Triggered by:** what we were working on when this surfaced
+**Angle:** what makes this interesting or non-obvious to a reader
+**Draft-ready:** no
+```
+
+Do not draft the post — just log the idea. Drafting happens via `/blog`.
+
 **Project resolution:**
 
 - Strip `~/workspace/` prefix to get the slug: `alertventure/ft-quoting`, `arialabs/nova`, etc.

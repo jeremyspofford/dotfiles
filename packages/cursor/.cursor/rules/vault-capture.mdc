@@ -1,0 +1,114 @@
+---
+description: Proactive capture of code patterns and blog ideas into the Obsidian vault
+alwaysApply: true
+---
+
+# Vault capture — code patterns and blog ideas
+
+Two proactive captures happen during sessions: generalizable code patterns and
+blog post ideas. Both write directly to the vault — no MCP tool needed.
+
+Vault root: `/home/jeremy/Obsidian_Vault`
+
+---
+
+## Code pattern capture
+
+When you write non-trivial code, evaluate whether it represents a generalizable
+pattern worth keeping. If yes, append a stripped-down example to today's raw
+session note.
+
+### What qualifies
+
+Capture when the code:
+
+- Uses a non-obvious approach that beats the obvious one ("the trick is X")
+- Solves a recurring problem in a reusable way (retry logic, auth flow, polling,
+  rate limiting, data transformation, error wrapping)
+- Reflects a deliberate tradeoff between two valid approaches — and the reason matters
+- Contains a gotcha or constraint a future reader would need to know
+
+### What does NOT qualify
+
+Skip for:
+
+- Boilerplate: CRUD endpoints, config files, standard imports
+- Framework-prescribed patterns (just follow the docs)
+- Single-use domain logic not generalizable beyond this project
+- Anything already captured in the wiki (`wiki/concepts/`)
+
+### How to capture
+
+1. Determine the project slug from the current workspace path:
+   - `~/workspace/alertventure/ft-quoting` → `alertventure/ft-quoting`
+   - `~/workspace/arialabs/nova` → `arialabs/nova`
+   - Non-workspace paths → `personal/general`
+2. Read today's raw note at
+   `/home/jeremy/Obsidian_Vault/raw/[slug]/YYYY-MM-DD-session.md` if it exists,
+   then append. If it doesn't exist, create it with this frontmatter:
+
+```yaml
+---
+source_project: [slug]
+captured_date: YYYY-MM-DD
+session_context: "one line describing what you were working on"
+ingested: false
+needs-review: false
+---
+```
+
+3. Append the pattern entry:
+
+```markdown
+## [Pattern name — short, reusable label]
+**Problem:** what category of problem this solves
+**Approach:** generalized description of the solution
+**Example:**
+```[language]
+// Stripped of project-specific details — 5–15 lines
+// Comments explain WHY, not WHAT
+```
+**Why not [obvious alternative]:** one sentence rationale
+```
+
+Keep the example generic. Replace project-specific names with placeholder names.
+Aim for something a future reader could copy into a different project.
+
+---
+
+## Blog post idea capture
+
+When something blog-worthy surfaces during a session, append an entry to:
+`/home/jeremy/Obsidian_Vault/Assistant/blog-ideas.md`
+
+### What qualifies
+
+Capture a blog idea when the session involved:
+
+- Solving a non-obvious problem that others would hit
+- Making a counterintuitive architectural or design decision with good rationale
+- Building something with an interesting tradeoff that's worth explaining
+- A lesson learned the hard way (gotcha, debugging story, wrong assumption)
+- A technique or tool combination that isn't well-documented elsewhere
+
+### What does NOT qualify
+
+Skip for:
+
+- Routine implementation (adding a CRUD endpoint, standard config)
+- Work that's too project-specific to generalize
+- Topics already covered by a thousand existing posts (unless the angle is genuinely fresh)
+
+### How to capture
+
+Read `/home/jeremy/Obsidian_Vault/Assistant/blog-ideas.md`, then append:
+
+```markdown
+## YYYY-MM-DD — [topic: short descriptive title]
+**Triggered by:** what we were working on when this surfaced
+**Angle:** what makes this interesting or non-obvious to a reader
+**Draft-ready:** no
+```
+
+Do not draft the post — just log the idea. Drafting happens separately via the
+`/blog` skill when Jeremy decides to promote an idea.
