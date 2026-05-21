@@ -9,13 +9,12 @@ return {
   },
 
   {
-    -- nvim-treesitter v1.0 (the `main` branch) removed the `configs` module
-    -- and changed the entire setup API. Pin to the `master` branch which
-    -- still ships the legacy `require("nvim-treesitter.configs").setup{}`
-    -- API. When you're ready to migrate to the new API, switch to `main`
-    -- and rewrite the config.
+    -- Pin nvim-treesitter to the known-good commit that still exposes
+    -- require("nvim-treesitter.configs").setup(...). A newer checkout on this
+    -- mini-pc drifted forward and removed that module, which breaks startup.
     "nvim-treesitter/nvim-treesitter",
     branch = "master",
+    commit = "cf12346a3414fa1b06af75c79faebe7f76df080a",
     build = ":TSUpdate",
     config = function()
       require("nvim-treesitter.configs").setup({
