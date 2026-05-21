@@ -28,6 +28,7 @@ aws-cli = { version = "latest", symlink_bins = "true" }
 # "npm:opencode-ai" = "latest"
 # "pipx:aider-chat" = "latest"
 # "pipx:ralph-orchestrator" = "latest"
+"pipx:hermes-agent" = "latest"
 # "npm:@ralph-orchestrator/ralph-cli" = "latest"
 # "npm:@beads/bd" = "latest"
 # "npm:beads-ui" = "latest"
@@ -123,3 +124,12 @@ bun = "latest"
 # direnv = "latest"
 lazyssh = "latest"
 pandoc = "latest"
+
+# ============================================================================ #
+# Hooks
+# ============================================================================ #
+[hooks]
+postinstall = "hermes postinstall"
+
+[settings]
+experimental = true

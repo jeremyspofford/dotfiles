@@ -27,3 +27,29 @@ venv/
 
 # Worktrees (engineering-stack and similar)
 .worktrees/
+
+# Claude/Hermes runtime artifacts
+packages/claude/.claude/backups/
+packages/claude/.claude/cache/
+packages/claude/.claude/history.jsonl
+packages/claude/.claude/projects/
+packages/claude/.claude/.last-cleanup
+packages/claude/.claude/chrome/chrome-native-host
+packages/claude/.claude/chrome/
+packages/claude/.claude/policy-limits.json
+packages/claude/.claude/hooks/
+packages/claude/.claude/commands/
+packages/claude/.claude/cheatsheets/
+packages/claude/.claude/**/*.jsonl
+packages/claude/.claude/**/.orphaned_at
+packages/claude/.claude/**/.in_use/
+packages/claude/.claude/**/cache/
+packages/claude/.claude/**/backups/
+packages/claude/.claude/**/.last-cleanup
+packages/claude/.claude/**/chrome-native-host
+packages/claude/.claude/**/changelog.md
+packages/claude/.claude/**/plugins/cache/
+packages/claude/.claude/plugins/installed_plugins.json
+packages/claude/.claude/plugins/known_marketplaces.json
+packages/claude/.claude/plugins/
+packages/claude/.claude/plugins/marketplaces/
