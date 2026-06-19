@@ -26,9 +26,10 @@ aws-cli = { version = "latest", symlink_bins = "true" }
 # gemini = "latest"
 # codex = "latest"
 # "npm:opencode-ai" = "latest"
+"opencode" = "latest"
 # "pipx:aider-chat" = "latest"
 # "pipx:ralph-orchestrator" = "latest"
-"pipx:hermes-agent" = "latest"
+# "pipx:hermes-agent" = "latest"
 # "npm:@ralph-orchestrator/ralph-cli" = "latest"
 # "npm:@beads/bd" = "latest"
 # "npm:beads-ui" = "latest"
@@ -128,8 +129,8 @@ pandoc = "latest"
 # ============================================================================ #
 # Hooks
 # ============================================================================ #
-[hooks]
-postinstall = "hermes postinstall"
+# [hooks]
+# postinstall = "hermes postinstall"
 
 [settings]
 experimental = true

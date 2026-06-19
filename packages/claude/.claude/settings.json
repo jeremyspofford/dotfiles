@@ -11,7 +11,7 @@
     ],
     "defaultMode": "auto"
   },
-  "model": "fable",
+  "model": "qwen3:8b",
   "hooks": {
     "PostToolUse": [
       {
@@ -141,7 +141,7 @@
       }
     }
   },
-  "effortLevel": "high",
+  "effortLevel": "low",
   "skipDangerousModePermissionPrompt": true,
   "editorMode": "vim",
   "remoteControlAtStartup": true,

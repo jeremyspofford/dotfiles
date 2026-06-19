@@ -76,6 +76,7 @@ Never write to a folder that doesn't exist without confirmation.
 ## 2. Fix issues
 
 - **Frontmatter:** Ensure required fields are present (type, course, section, date_watched, status, confidence, cert, platform). `lecture` and `instructor` are optional — `lecture: null` is valid for unnumbered lectures, and `instructor` is omitted entirely when not visible on the source page. Fill in any missing required fields from context; do not fabricate `instructor` or `lecture`.
+  - **No colons inside values (critical):** A colon (`:`) inside a frontmatter value makes invalid YAML — Quartz's parser reads it as a key/value separator, rejects the file, and the entire site build fails. Do **not** quote the value to work around this; instead replace the colon with a dash or another separator character. Udemy `section` and `course` values are the common offenders — e.g. `section: Section 6: EC2 - Solutions Architect Associate Level` must be written as `section: Section 6 - EC2 - Solutions Architect Associate Level`. Apply the same substitution to any frontmatter value that contains a colon.
 - **Tags:** Behavior depends on `cert:`:
   - **Cert content (`cert ≠ unknown`):** Remove any tags not in the vault's tag registry or standard cert tags. Fix formatting.
   - **Non-cert content (`cert: unknown`):** Accept the topic tags as-is. Still validate against the vault tag registry — flag (don't reject) unrecognized tags so the user can decide whether to propose them via `/wiki tag propose`.
