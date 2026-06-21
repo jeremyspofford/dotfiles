@@ -47,7 +47,7 @@ install_base() {
     echo "Installing base packages..."
     if command -v apt-get &>/dev/null; then
       sudo apt-get update -qq
-      pkg_install stow curl unzip zsh libnotify-bin
+      pkg_install stow curl unzip zsh libnotify-bin pkg-config build-essential
     else
       pkg_install stow curl unzip zsh
     fi
@@ -154,7 +154,7 @@ install_wslu() {
   pkg_install wslu
 }
 
-install_wslu
+# install_wslu
 
 # ─── Install mise ───────────────────────────────────────────────────
 install_mise() {
@@ -333,6 +333,7 @@ if [ -x "$_mise_bin" ]; then
   echo "Installing global mise tools..."
   "$_mise_bin" install --yes 2>/dev/null || true
 fi
+
 unset _mise_bin
 
 # ─── Register Claude Code MCP servers ───────────────────────────────
