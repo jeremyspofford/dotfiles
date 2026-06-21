@@ -4,6 +4,17 @@ set -euo pipefail
 DOTFILES_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BACKUP_DIR="$HOME/.dotfiles_backup"
 
+# ─── Ensure dotfiles origin uses SSH ────────────────────────────────
+if git -C "$DOTFILES_DIR" remote get-url origin >/dev/null 2>&1; then
+  origin_url="$(git -C "$DOTFILES_DIR" remote get-url origin)"
+  if printf '%s\n' "$origin_url" | grep -q '^https://github.com/'; then
+    ssh_url="$(printf '%s\n' "$origin_url" \
+      | sed -E 's#^https://github.com/#git@github.com:#')"
+    echo "Switching dotfiles origin to SSH: $ssh_url"
+    git -C "$DOTFILES_DIR" remote set-url origin "$ssh_url"
+  fi
+fi
+
 # ─── Platform detection ─────────────────────────────────────────────
 case "$(uname -s)" in
   Darwin) PLATFORM="macos" ;;
