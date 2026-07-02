@@ -112,7 +112,7 @@ uv = "latest"
 # Languages & Runtimes
 # ============================================================================ #
 node = "latest"
-python = "3.12"
+python = "3.14"
 pnpm = "latest"
 bun = "latest"
 # go = "latest"
