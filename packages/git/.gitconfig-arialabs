@@ -1,3 +1,8 @@
 [user]
   name = Nova
   email = nova@arialabs.ai
+
+# Rewrite plain github.com SSH URLs to the arialabs host alias so
+# 1Password's SSH agent offers the Aria Labs key instead of personal.
+[url "git@github.com-arialabs:"]
+  insteadOf = git@github.com:

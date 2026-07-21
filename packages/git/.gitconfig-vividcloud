@@ -1,0 +1,7 @@
+[user]
+  email = jspofford@vividcloud.com
+
+# Rewrite plain gitlab.com SSH URLs to the vividcloud host alias so
+# 1Password's SSH agent offers the VividCloud key instead of personal.
+[url "git@gitlab.com-vividcloud:"]
+  insteadOf = git@gitlab.com:

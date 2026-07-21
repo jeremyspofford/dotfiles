@@ -1,0 +1,9 @@
+[user]
+  email = jspofford@vividcloud.com
+
+# TEMPORARY: no dedicated Teradyne GitLab access yet — Teradyne repos
+# currently live under the vividcloud namespace, so reuse that key.
+# Once Teradyne gets its own GitLab account/key, point this at a
+# gitlab.com-teradyne host alias instead.
+[url "git@gitlab.com-vividcloud:"]
+  insteadOf = git@gitlab.com:
