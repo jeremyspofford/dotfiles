@@ -22,11 +22,11 @@ aws-cli = { version = "latest", symlink_bins = "true" }
 # ============================================================================ #
 # AI & Coding Assistants
 # ============================================================================ #
-"aqua:anthropics/claude-code" = "latest"
-"npm:@google/gemini-cli" = "latest"
+# "aqua:anthropics/claude-code" = "latest"
+# "npm:@google/gemini-cli" = "latest"
 # codex = "latest"
 # "npm:opencode-ai" = "latest"
-"opencode" = "latest"
+# "opencode" = "latest"
 # "pipx:aider-chat" = "latest"
 # "pipx:ralph-orchestrator" = "latest"
 # "pipx:hermes-agent" = "latest"
@@ -35,7 +35,7 @@ aws-cli = { version = "latest", symlink_bins = "true" }
 # "npm:beads-ui" = "latest"
 # "npm:agent-browser" = "latest"
 # taskwarrior = "latest"
-"npm:@earendil-works/pi-coding-agent" = "latest"
+# "npm:@earendil-works/pi-coding-agent" = "latest"
 
 # ============================================================================ #
 # Git & Version Control

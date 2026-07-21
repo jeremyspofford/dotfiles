@@ -44,8 +44,8 @@ After the first `./install.sh`, the repo is driven through `stow` and direct edi
 | Stow several | `stow shell nvim mise` |
 | Stow / restow everything (after pulling, adding files, etc.) | `./stow.sh` |
 | Preview a full restow without changing anything | `./stow.sh -n` |
-| Restow specific packages with conflict-backup | `./stow.sh shell claude` |
-| Restow (re-link, prune dead symlinks) | `stow -R claude` |
+| Restow specific packages with conflict-backup | `./stow.sh shell nvim` |
+| Restow (re-link, prune dead symlinks) | `stow -R nvim` |
 | Unstow (unlink without deleting source) | `stow -D ssh` |
 | Dry run / preview a single package | `stow -nv shell` |
 | List packages | `ls packages/` |
@@ -85,7 +85,7 @@ Zsh is set as the default shell. Conflicting files are backed up to `~/.dotfiles
 
 ## What's inside
 
-Every stow package lives under `packages/`. Non-package repo content (docs, examples, cursor rules, MCP server sources) sits at the repo root and is invisible to stow.
+Every stow package lives under `packages/`. Non-package repo content (examples) sits at the repo root and is invisible to stow.
 
 | Package | Contents |
 |---------|----------|
@@ -93,50 +93,15 @@ Every stow package lives under `packages/`. Non-package repo content (docs, exam
 | `packages/shell/` | `.bashrc`, `.zshrc`, `.commonrc` (shared config), `.aliases` |
 | `packages/ssh/` | Multi-account SSH config (GitHub personal, GitHub Aria Labs, GitLab) with 1Password agent |
 | `packages/nvim/` | `init.lua` with lazy.nvim, catppuccin theme, treesitter, neo-tree |
-| `packages/mise/` | Global tool versions (`config.toml`) — bun, node, python, claude, gh, bat, eza, ripgrep, fzf, uv, and more |
-| `packages/claude/` | Global Claude Code config — `CLAUDE.md`, `settings.json`, custom commands |
+| `packages/mise/` | Global tool versions (`config.toml`) — bun, node, python, gh, bat, eza, ripgrep, fzf, uv, and more |
 | `.githooks/` | Tracked git hooks (pre-commit shellcheck) — repo-level, not stowed |
-| `mcp-servers/` | MCP server manifest + custom server sources; synced into `~/.claude.json` by `install.sh` (not stowed) |
-| `cursor/`, `docs/`, `examples/` | Reference content — not stowed |
+| `examples/` | Reference content — not stowed |
 
 Shell config is split into three layers:
 
 - `.commonrc` — platform detection, PATH, 1Password SSH integration, mise activation. Sourced by both `.bashrc` and `.zshrc`.
 - `.bashrc` / `.zshrc` — shell-specific settings (prompt, completion, keybindings).
 - `.aliases` — aliases for git, docker, k8s, terraform, etc.
-
-## Claude Code config
-
-The `claude/` package sets up a global Claude Code environment:
-
-- **`CLAUDE.md`** — global context: who I am, work contexts (personal vs Aria Labs), preferences, working style
-- **`settings.json`** — permissions (`dontAsk` mode), global tool allows, hooks
-- **`commands/init-project.md`** — `/init-project` command: scaffolds a project-specific `CLAUDE.md` + `.claude/settings.json` with hooks tuned to the project's actual toolchain
-- **`commands/lecture-note.md`** — `/lecture-note`: turns a Udemy transcript into an Obsidian study note + spaced repetition cards
-- **`commands/quiz-me.md`** — `/quiz-me`: Socratic active-recall quiz on study notes
-- **`commands/weak-spots-drill.md`** — `/weak-spots-drill`: high-pressure drill on cert weak spots
-- **`commands/exam-eve.md`** — `/exam-eve`: calm pre-exam refresh session
-
-### MCP servers
-
-Custom and third-party Model Context Protocol servers are declared in
-[`mcp-servers/manifest.json`](./mcp-servers/manifest.json) and applied to
-Claude Code's user scope by [`mcp-servers/register.sh`](./mcp-servers/register.sh)
-(called automatically from `install.sh`). The manifest is a true source of
-truth — `register.sh` is a sync, so removing a server from the manifest
-unregisters it on the next run. See [mcp-servers/README.md](./mcp-servers/README.md)
-for the why and the how, including why `.mcp.json` at user scope doesn't work.
-
-Custom server implementations also live under `mcp-servers/` (e.g.
-[`memory-capture/`](./mcp-servers/memory-capture/) — the cross-tool daily-log
-writer for `$WIKI_VAULT/Assistant/memory/`).
-
-### Global hooks
-
-| Event | Hook |
-|-------|------|
-| `PreToolUse/Bash` | Logs all bash commands with timestamps to `~/.claude/bash-log.txt` (async) |
-| `Notification` | Desktop notification via `notify-send` (Linux) or `osascript` (macOS) |
 
 ## Pre-commit hook
 
@@ -223,6 +188,6 @@ cp examples/zshrc.local.example ~/.zshrc.local
 2. Stow it: `stow tmux`
 3. Commit.
 
-The stow loop in `install.sh` iterates over every directory under `packages/`. Non-package repo content (`docs/`, `examples/`, `cursor/`, `mcp-servers/`) lives at the repo root and is invisible to the loop by construction — no exclusion list needed.
+The stow loop in `install.sh` iterates over every directory under `packages/`. Non-package repo content (`examples/`) lives at the repo root and is invisible to the loop by construction — no exclusion list needed.
 
 Conflicting files are automatically backed up on the next `install.sh` run.

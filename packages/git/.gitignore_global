@@ -43,3 +43,5 @@ __pycache__/
 
 # ─── Claude Skills ──────────────────────────────────────────────────────
 superpowers/
+
+**/.claude/settings.local.json

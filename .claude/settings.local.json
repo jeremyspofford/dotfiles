@@ -1,34 +1,8 @@
 {
   "permissions": {
     "allow": [
-      "Bash(git config:*)",
-      "Bash(find /home/jeremy/workspace/dotfiles -type d -not -path */.git/*)",
-      "Bash(git -C /home/jeremy/workspace/dotfiles log --oneline -5)",
-      "Bash(zsh -c 'source ~/.zshrc')",
-      "Bash(echo \"exit: $?\")",
-      "Bash(zsh -ic 'echo \"\"ok\"\"')",
-      "WebFetch(domain:developer.1password.com)",
-      "Bash(ssh.exe -T git@github.com)",
-      "Bash(timeout 10 ssh.exe -o ConnectTimeout=5 -T git@github.com)",
-      "Bash(echo \"EXIT: $?\")",
-      "Bash(stow -R -v -t \"$HOME\" ssh shell git)",
-      "WebFetch(domain:1password.community)",
-      "WebFetch(domain:app-updates.agilebits.com)",
-      "WebFetch(domain:releases.1password.com)",
-      "WebFetch(domain:1password.com)",
-      "WebFetch(domain:www.google.com)",
-      "WebFetch(domain:github.com)",
-      "Bash(dpkg -l)",
-      "Bash(snap list:*)",
-      "Read(//opt/**)",
-      "Read(//usr/bin/**)",
-      "Bash(systemctl --user status 1password)",
-      "Bash(ssh.exe -T git@gitlab.com)",
-      "Bash(git:*)",
-      "Bash(ssh.exe -T -p 443 git@altssh.gitlab.com 2>&1)",
-      "Bash(ssh.exe -vT git@gitlab.com)",
-      "Bash(ssh-keyscan:*)",
-      "Bash(timeout 15 ssh.exe -vvvT git@gitlab.com 2>&1)"
+      "Bash(shellcheck --severity=warning install.sh stow.sh)",
+      "Bash(echo \"shellcheck exit: $?\")"
     ]
   }
 }

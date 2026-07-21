@@ -4,7 +4,7 @@ set -euo pipefail
 # Stow (or restow) dotfiles packages.
 #
 #   ./stow.sh                  # restow every package under packages/
-#   ./stow.sh shell claude     # restow only the named packages
+#   ./stow.sh shell nvim       # restow only the named packages
 #   ./stow.sh -n               # dry-run preview, no filesystem changes
 #
 # Re-runnable: real files in $HOME that would conflict with a symlink

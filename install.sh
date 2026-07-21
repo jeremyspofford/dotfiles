@@ -347,30 +347,6 @@ fi
 
 unset _mise_bin
 
-# ─── Register Claude Code MCP servers ───────────────────────────────
-# Sync mcp-servers/manifest.json into ~/.claude.json's user-scope
-# mcpServers. See mcp-servers/README.md for the design. Gated on the
-# claude CLI being present — mise installs it above, but bail cleanly
-# if it's somehow missing so install.sh still completes.
-register_mcp_servers() {
-  local register="$DOTFILES_DIR/mcp-servers/register.sh"
-  [ -x "$register" ] || return 0
-  if ! command -v claude >/dev/null 2>&1; then
-    echo "Skipping MCP registration — claude CLI not on PATH."
-    return 0
-  fi
-  for dep in jq envsubst; do
-    if ! command -v "$dep" >/dev/null 2>&1; then
-      echo "Skipping MCP registration — missing $dep."
-      return 0
-    fi
-  done
-  echo "Registering MCP servers from manifest..."
-  "$register" || echo "MCP registration exited non-zero; continuing."
-}
-
-register_mcp_servers
-
 # ─── Nerd Font install ──────────────────────────────────────────────
 install_nerd_font() {
   local font_dir

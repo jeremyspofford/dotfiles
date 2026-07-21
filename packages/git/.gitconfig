@@ -8,6 +8,9 @@
 [includeIf "gitdir:~/workspace/vividcloud/"]
     path = ~/.gitconfig-vividcloud
 
+[includeIf "gitdir:~/workspace/teradyne/"]
+    path = ~/.gitconfig-teradyne
+
 [includeIf "gitdir:~/workspace/alertventure/"]
     path = ~/.gitconfig-alertventure
 
