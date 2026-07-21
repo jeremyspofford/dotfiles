@@ -7,6 +7,10 @@
 vim.g.loaded_netrw = 1
 vim.g.loaded_netrwPlugin = 1
 
+-- Leader key
+vim.g.mapleader = ' '
+vim.g.maplocalleader = ' '
+
 require('config.lazy')
 
 -- Options
@@ -31,10 +35,6 @@ vim.opt.splitbelow = true
 vim.opt.scrolloff = 10
 vim.opt.clipboard = 'unnamedplus'
 vim.opt.undofile = true
-
--- Leader key
-vim.g.mapleader = ' '
-vim.g.maplocalleader = ' '
 
 -- Basic keymaps
 vim.keymap.set('n', '<Esc>', '<cmd>nohlsearch<CR>')
