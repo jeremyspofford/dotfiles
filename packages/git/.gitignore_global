@@ -24,7 +24,11 @@ desktop.ini
 .secrets
 
 # ─── Claude Code ──────────────────────────────────────────────────────
-.claude/settings.local.json
+# Per-repo Claude config is personal tooling, not team-shared. Repos that
+# already track a CLAUDE.md are unaffected — gitignore does not apply to
+# files that are already tracked.
+.claude/
+CLAUDE.md
 
 # ─── Cursor personal rules ────────────────────────────────────────────
 .cursor/rules/jeremy-context.mdc
@@ -44,4 +48,3 @@ __pycache__/
 # ─── Claude Skills ──────────────────────────────────────────────────────
 superpowers/
 
-**/.claude/settings.local.json
