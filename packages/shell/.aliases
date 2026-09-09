@@ -132,14 +132,18 @@ command -v bat >/dev/null 2>&1 && alias cat='bat --pager=never --style=plain'
 alias v='nvim'
 alias vim='nvim'
 
-# AWS SSO login + export credentials into the current shell.
-# Defined as a function (not `bash script.sh`) so the exports persist.
+# AWS SSO: select a profile for the current shell. Requires an explicit
+# profile - there is deliberately no default, so no shell ever lands on an
+# account nobody named.
+#
+# Sets AWS_PROFILE rather than exporting static keys: the SSO token cache in
+# ~/.aws/sso/cache/ is resolved per-command, so subprocesses and fresh shells
+# stay authenticated without re-running the browser login.
 sso() {
-  local profile="${1:-vc-experimental}"
-  aws sso login --profile "$profile" || return 1
-  eval "$(aws configure export-credentials --profile "$profile" --format env)"
-  unset AWS_PROFILE
-  echo "Exported credentials for profile: $profile (expires $AWS_CREDENTIAL_EXPIRATION)"
+  local profile="${1:?usage: sso <profile>   (e.g. sso gk-dev)}"
+  aws sts get-caller-identity --profile "$profile" >/dev/null 2>&1 \
+    || aws sso login --profile "$profile" || return 1
+  export AWS_PROFILE="$profile"
   aws sts get-caller-identity --query 'Arn' --output text
 }
 
