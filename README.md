@@ -6,8 +6,10 @@ Personal dotfiles managed with [GNU Stow](https://www.gnu.org/software/stow/). W
 
 On a fresh machine (macOS, Ubuntu/Debian, Fedora, Arch, or WSL2):
 
+The repo is private, so authenticate first: install [GitHub CLI](https://cli.github.com) (`brew install gh`, `sudo apt install gh`, …) and run `gh auth login`. Then:
+
 ```bash
-bash <(curl -fsSL https://raw.githubusercontent.com/jeremyspofford/dotfiles/main/bootstrap.sh)
+bash <(gh api repos/jeremyspofford/dotfiles/contents/bootstrap.sh -H "Accept: application/vnd.github.raw")
 ```
 
 This installs prerequisites, clones the repo to `~/workspace/dotfiles`, runs `install.sh`, and installs all global tools via mise. Restart your shell afterward.
@@ -23,7 +25,7 @@ This installs prerequisites, clones the repo to `~/workspace/dotfiles`, runs `in
 ### Manual install
 
 ```bash
-git clone https://github.com/jeremyspofford/dotfiles.git ~/workspace/dotfiles
+gh repo clone jeremyspofford/dotfiles ~/workspace/dotfiles
 cd ~/workspace/dotfiles
 ./install.sh
 ```

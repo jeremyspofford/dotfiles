@@ -2,7 +2,7 @@
 set -euo pipefail
 
 DOTFILES_DIR="$HOME/workspace/dotfiles"
-REPO="https://github.com/jeremyspofford/dotfiles.git"
+REPO_SLUG="jeremyspofford/dotfiles"   # private repo: needs gh auth or an SSH key
 
 # ─── Platform detection ─────────────────────────────────────────────
 case "$(uname -s)" in
@@ -47,7 +47,11 @@ if [ -d "$DOTFILES_DIR" ]; then
 else
   echo "==> Cloning dotfiles..."
   mkdir -p "$(dirname "$DOTFILES_DIR")"
-  git clone "$REPO" "$DOTFILES_DIR"
+  if command -v gh >/dev/null 2>&1 && gh auth status >/dev/null 2>&1; then
+    gh repo clone "$REPO_SLUG" "$DOTFILES_DIR"
+  else
+    git clone "git@github.com:$REPO_SLUG.git" "$DOTFILES_DIR"
+  fi
 fi
 
 echo "==> Running install..."
