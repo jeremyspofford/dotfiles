@@ -1,0 +1,32 @@
+# Personal config for github.com/jeremyspofford/ai-toolkit (stowed to ~/.config/ai-toolkit/config.yml).
+# Private: client names live here, never in the public repo.
+
+identity:
+  name: Jeremy Spofford
+  author_matches: [spofford, jspofford, spoffordj]
+  email: jspofford@vividcloud.com
+  timezone: America/New_York
+
+timecard:
+  workspace: ~/workspace
+  skip_folders: [dotfiles, archive, personal]
+  worklog: ~/workspace/worklog.md
+  window: since-last-submission
+  submission_days: [friday, last-weekday-of-month]
+  output: per-client-per-day
+
+resume:
+  repo: ~/workspace/personal/portfolio
+  source: ~/workspace/personal/portfolio/resume/resume.yml
+  long_form: [~/workspace/personal/portfolio/src/data/experience]
+  evidence_log: ~/workspace/personal/portfolio/evidence/log.md
+  applications_dir: ~/workspace/personal/portfolio/applications
+  build: python3 ~/workspace/personal/portfolio/resume/build.py
+
+jira:
+  site: alertventure.atlassian.net
+  default_project: VC
+  projects: [VC, FT]
+  base_branch: origin/dev
+  branch_pattern: "{key-lower}-{slug}"
+  in_progress_status: In Progress
