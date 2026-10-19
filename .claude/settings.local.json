@@ -1,8 +1,0 @@
-{
-  "permissions": {
-    "allow": [
-      "Bash(shellcheck --severity=warning install.sh stow.sh)",
-      "Bash(echo \"shellcheck exit: $?\")"
-    ]
-  }
-}

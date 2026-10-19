@@ -1,0 +1,62 @@
+# Workbench zsh defaults.
+setopt histignorealldups histignorespace histreduceblanks sharehistory interactive_comments
+HISTSIZE=10000
+SAVEHIST=10000
+HISTFILE="$HOME/.zsh_history"
+bindkey -e
+. "$HOME/.config/workbench/shell/common.sh"
+if command -v mise >/dev/null 2>&1; then eval "$(mise activate zsh)"; fi
+
+# Native completion: ignore case, group candidates, select with arrow keys.
+typeset -U fpath
+for _wb_prefix in /opt/homebrew /usr/local; do
+  [[ -d "$_wb_prefix/share/zsh/site-functions" ]] && fpath=("$_wb_prefix/share/zsh/site-functions" $fpath)
+done
+autoload -Uz compinit
+_wb_cache="${XDG_CACHE_HOME:-$HOME/.cache}/workbench/zsh"
+mkdir -p "$_wb_cache"
+compinit -d "$_wb_cache/zcompdump-$ZSH_VERSION"
+zstyle ':completion:*' menu select
+zstyle ':completion:*' matcher-list 'm:{a-zA-Z}={A-Za-z}'
+zstyle ':completion:*' group-name ''
+zstyle ':completion:*:descriptions' format '%F{cyan}%d%f'
+zstyle ':completion:*' list-colors 'di=34' 'ln=36' 'ex=32'
+autoload -Uz up-line-or-beginning-search down-line-or-beginning-search
+zle -N up-line-or-beginning-search
+zle -N down-line-or-beginning-search
+bindkey '^[[A' up-line-or-beginning-search
+bindkey '^[[B' down-line-or-beginning-search
+bindkey '^[[Z' reverse-menu-complete
+
+# Branch name only: avoid scanning large client working trees on each prompt.
+autoload -Uz vcs_info add-zsh-hook
+zstyle ':vcs_info:*' enable git
+zstyle ':vcs_info:git:*' formats '%b'
+zstyle ':vcs_info:git:*' actionformats '%b|%a'
+_workbench_prompt() {
+  vcs_info
+  PROMPT='%F{cyan}%n@%m%f %F{blue}%~%f'
+  [[ -n "$vcs_info_msg_0_" ]] && PROMPT+=" %F{magenta}[${vcs_info_msg_0_//\%/%%}]%f"
+  PROMPT+=$'\n''%(?.%F{green}.%F{red})%#%f '
+}
+add-zsh-hook precmd _workbench_prompt
+_workbench_prompt
+
+if command -v fzf >/dev/null 2>&1; then source <(fzf --zsh); fi
+ZSH_AUTOSUGGEST_USE_ASYNC=1
+ZSH_AUTOSUGGEST_HIGHLIGHT_STYLE='fg=8'
+for _wb_prefix in /opt/homebrew/share /usr/local/share /usr/share; do
+  if [[ -r "$_wb_prefix/zsh-autosuggestions/zsh-autosuggestions.zsh" ]]; then
+    source "$_wb_prefix/zsh-autosuggestions/zsh-autosuggestions.zsh"
+    break
+  fi
+done
+
+# Highlighting must follow all other widgets and integrations.
+for _wb_prefix in /opt/homebrew/share /usr/local/share /usr/share; do
+  if [[ -r "$_wb_prefix/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh" ]]; then
+    source "$_wb_prefix/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh"
+    break
+  fi
+done
+unset _wb_prefix _wb_cache

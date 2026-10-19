@@ -1,0 +1,2 @@
+# Reestablish tool paths after macOS /etc/zprofile runs path_helper.
+. "$HOME/.config/workbench/shell/env.sh"

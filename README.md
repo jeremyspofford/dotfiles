@@ -1,195 +1,70 @@
-# dotfiles
+# Workbench dotfiles
 
-Personal dotfiles managed with [GNU Stow](https://www.gnu.org/software/stow/). Works on macOS, Linux, and WSL2.
-
-## Quick install
-
-On a fresh machine (macOS, Ubuntu/Debian, Fedora, Arch, or WSL2):
-
-The repo is private, so authenticate first: install [GitHub CLI](https://cli.github.com) (`brew install gh`, `sudo apt install gh`, …) and run `gh auth login`. Then:
-
-```bash
-bash <(gh api repos/jeremyspofford/dotfiles/contents/bootstrap.sh -H "Accept: application/vnd.github.raw")
-```
-
-This installs prerequisites, clones the repo to `~/workspace/dotfiles`, runs `install.sh`, and installs all global tools via mise. Restart your shell afterward.
-
-> **macOS:** Homebrew must be installed first ([brew.sh](https://brew.sh)).
-
-> **WSL2:** Before dotfiles are installed, git can't reach 1Password. If you need to clone a repo first, prefix the command:
->
-> ```bash
-> GIT_SSH_COMMAND=ssh.exe git clone git@gitlab.com:org/repo.git
-> ```
-
-### Manual install
-
-```bash
-gh repo clone jeremyspofford/dotfiles ~/workspace/dotfiles
-cd ~/workspace/dotfiles
-./install.sh
-```
+A small, chezmoi-based setup for daily work on this Mac: zsh/Bash, Git identities,
+mise tools, Neovim, tmux, and Herdr. `chezmoi/` is the configuration source.
 
 ## Daily use
 
-After the first `./install.sh`, the repo is driven through `stow` and direct edits to package files. Three things to know:
-
-1. **Edit the source, never the symlink.** `~/.zshrc`, `~/.gitconfig`, etc. are symlinks into `packages/`. Open `packages/shell/.zshrc` (or whichever package) and edit there — the symlink reflects the change immediately.
-2. **`stow <pkg>` works from anywhere.** `stow.sh` writes `~/.stowrc` with `--dir=…/packages --target=$HOME`, so stow finds the right tree no matter your cwd.
-3. **Restow (`-R`) after deleting a tracked file.** Plain `stow` only adds symlinks; `-R` cleans up dead ones too.
-
-### Common operations
-
-| Goal | Command |
-|------|---------|
-| Stow one package | `stow git` |
-| Stow several | `stow shell nvim mise` |
-| Stow / restow everything (after pulling, adding files, etc.) | `./stow.sh` |
-| Preview a full restow without changing anything | `./stow.sh -n` |
-| Restow specific packages with conflict-backup | `./stow.sh shell nvim` |
-| Restow (re-link, prune dead symlinks) | `stow -R nvim` |
-| Unstow (unlink without deleting source) | `stow -D ssh` |
-| Dry run / preview a single package | `stow -nv shell` |
-| List packages | `ls packages/` |
-| Full bootstrap (fresh machine: installs tools + stows) | `./install.sh` |
-
-### Typical workflow
-
-```bash
-# 1. Edit the source in the repo
-$EDITOR packages/shell/.aliases
-
-# 2. (No restow needed — the symlink already points at the file.)
-#    But if you added or removed a file inside the package:
-stow -R shell
-
-# 3. Commit in the repo root
-git add packages/shell/.aliases && git commit -m "shell: add foo alias"
+```sh
+workbench doctor
+workbench plan --existing replace
+workbench apply --existing replace --plan <reviewed-hash>
+workbench checkpoints
 ```
 
-Adding a new package is its own short section below — see [Adding new dotfiles](#adding-new-dotfiles).
+Open a new terminal after shell changes. Use `./bin/workbench` from this checkout
+before installation or during recovery. It requires Python 3.9+ and chezmoi.
 
-## What gets installed
+Every replacement gets a checkpoint. Apply requires the exact reviewed plan hash
+and refuses stale plans. Existing files are skipped unless `--existing replace`
+is specified. The wrapper changes only its explicitly listed configuration files;
+it never moves, cleans, or resets client repositories.
 
-The install script handles everything:
-
-| Tool | Method |
-|------|--------|
-| stow, zsh, curl, unzip, libnotify-bin | System package manager |
-| [Neovim 0.11](https://neovim.io) | GitHub releases on apt/x86_64 (pinned to `NVIM_VERSION`), package manager elsewhere |
-| [delta](https://github.com/dandavison/delta) | GitHub releases .deb on apt, package manager elsewhere |
-| [shellcheck](https://www.shellcheck.net/) | System package manager (used by the pre-commit hook) |
-| [mise](https://mise.jdx.dev) | `mise.run` installer on Linux, Homebrew on macOS |
-| All tools in `packages/mise/.config/mise/config.toml` | `mise install` (runs after stowing) |
-| JetBrains Mono Nerd Font | GitHub releases (auto-registered on WSL) |
-
-Zsh is set as the default shell. Conflicting files are backed up to `~/.dotfiles_backup/` before stowing (safe on re-runs).
-
-## What's inside
-
-Every stow package lives under `packages/`. Non-package repo content (examples) sits at the repo root and is invisible to stow.
-
-| Package | Contents |
-|---------|----------|
-| `packages/git/` | `.gitconfig`, `.gitconfig-arialabs`, `.gitignore_global` |
-| `packages/shell/` | `.bashrc`, `.zshrc`, `.commonrc` (shared config), `.aliases` |
-| `packages/ssh/` | Multi-account SSH config (GitHub personal, GitHub Aria Labs, GitLab) with 1Password agent |
-| `packages/nvim/` | `init.lua` with lazy.nvim, catppuccin theme, treesitter, neo-tree |
-| `packages/mise/` | Global tool versions (`config.toml`) — bun, node, python, gh, bat, eza, ripgrep, fzf, uv, and more |
-| `.githooks/` | Tracked git hooks (pre-commit shellcheck) — repo-level, not stowed |
-| `examples/` | Reference content — not stowed |
-
-Shell config is split into three layers:
-
-- `.commonrc` — platform detection, PATH, 1Password SSH integration, mise activation. Sourced by both `.bashrc` and `.zshrc`.
-- `.bashrc` / `.zshrc` — shell-specific settings (prompt, completion, keybindings).
-- `.aliases` — aliases for git, docker, k8s, terraform, etc.
-
-## Pre-commit hook
-
-The repo has a tracked `pre-commit` hook in `.githooks/` that runs [shellcheck](https://www.shellcheck.net/) on staged shell scripts. `install.sh` activates it for you on a fresh clone via `git config core.hooksPath .githooks`.
-
-**What it lints:** files matching `*.sh`, `*.bash`, `install.sh`, `bootstrap.sh`, plus any other staged file with a `#!/usr/bin/env bash` (or `sh`) shebang.
-
-**Severity:** `--severity=warning` — catches real bugs including `SC2168` (`local` outside function), `SC2086` (unquoted expansions), `SC2155` (declare-and-assign masking exit codes), and `SC2064` (trap quoting).
-
-**To bypass:** `git commit --no-verify`
-
-**To test:** introduce a deliberate bug and try to commit:
-
-```bash
-echo 'local foo=bar' >> install.sh
-git add install.sh
-git commit -m "test"
-# → blocked by hook with shellcheck error
-git checkout install.sh   # undo
+```sh
+workbench --color always plan --existing replace | less -R
+workbench plan --existing replace --format html > /tmp/workbench-review.html
+workbench rollback <checkpoint-id>
+workbench rollback <checkpoint-id> --plan <reviewed-rollback-hash>
 ```
 
-If the hook ever isn't running, check:
+`chezmoi diff`, `chezmoi status`, and `chezmoi verify` inspect the installed state.
+Use Workbench for apply/rollback so changes retain checkpoints.
 
-```bash
-git config --get core.hooksPath          # should print .githooks
-ls -l .githooks/pre-commit               # should be executable
+## What's here
+
+| Path | Purpose |
+| --- | --- |
+| `chezmoi/` | The active configuration, including explicit Git identities |
+| `bin/workbench` | File preview, checkpoint, apply, rollback, and doctor |
+| `manifests/Brewfile.core` | Core Homebrew package list |
+| `tests/` | Transaction, shell/editor, and isolated Herdr checks |
+| `docs/` | Shortcuts, Herdr usage, and recovery |
+
+Homebrew owns OS-level tools; `chezmoi/dot_config/mise/config.toml` pins development
+tools. Package installation is separate from configuration changes.
+
+Personal Git identity is the default, including Alert Venture. Client overrides
+are explicit in `chezmoi/.chezmoidata.toml`. SSH configuration and credentials stay
+local and are not managed by this repository.
+
+The legacy Stow packages, AI workflows, old installers, and machine migration
+records have been archived outside this checkout. The active shell does not source
+legacy aliases, secrets, or local override files. Multi-machine bootstrap and
+optional tool profiles are deferred until this Mac's daily workflow is settled.
+
+## Guides and checks
+
+- [Shell, tmux, and Neovim shortcuts](docs/workbench-shortcuts.md)
+- [Using Herdr](docs/herdr.md)
+- [Checkpoints and legacy recovery](docs/recovery.md)
+
+```sh
+python3 -m unittest discover -s tests -p 'test_*.py' -v
+python3 tests/baseline_smoke.py
+python3 tests/baseline_smoke.py --live
+python3 tests/herdr_smoke.py ~/workspace/alertventure/ft-quoting
+chezmoi verify
 ```
 
-Re-run `./install.sh` to fix both.
-
-## 1Password SSH
-
-SSH keys live in 1Password — no private keys on disk. The `.commonrc` configures the agent per platform:
-
-| Platform | How it works |
-|----------|-------------|
-| **macOS** | `SSH_AUTH_SOCK` points to `~/Library/Group Containers/2BUA8C4S2C.com.1password/t/agent.sock` |
-| **Linux** | `SSH_AUTH_SOCK` points to `~/.1password/agent.sock` |
-| **WSL2** | `GIT_SSH_COMMAND="ssh.exe"` — git calls the Windows SSH binary, which talks to 1Password natively. |
-
-### Setup
-
-1. In 1Password > **Settings > Developer**, enable **"Use the SSH agent"**
-2. On WSL2, also enable **"WSL integration"**
-3. Create SSH keys in 1Password (or import existing ones)
-4. Add the public keys to your GitHub/GitLab accounts
-5. Test: `ssh.exe -T git@github.com` (WSL2) or `ssh -T git@github.com` (macOS/Linux)
-
-## Multi-account Git/SSH
-
-The SSH config uses host aliases for multi-account GitHub access. Clone Aria Labs repos with:
-
-```bash
-git clone-aria <repo-name>
-```
-
-This clones `git@github.com-arialabs:arialabs/<repo>.git` into `~/workspace/arialabs/`. The `.gitconfig` conditionally loads `.gitconfig-arialabs` (different name/email) for anything in `~/workspace/arialabs/`.
-
-## Machine-specific overrides
-
-Drop a `.local` file next to any config to add machine-specific settings without touching the repo:
-
-- `~/.commonrc.local` — extra PATH entries, env vars, optional tools (gcloud, etc.)
-- `~/.bashrc.local` / `~/.zshrc.local` — shell-specific overrides and completions
-- `~/.aliases.local` — extra aliases
-- `~/.secrets` — API keys, tokens (git-ignored by `.gitignore_global`)
-
-The `examples/` directory has commented starter files for common setups:
-
-```bash
-cp examples/commonrc.local.example ~/.commonrc.local
-cp examples/zshrc.local.example ~/.zshrc.local
-```
-
-## Adding new dotfiles
-
-1. Create a package directory under `packages/` mirroring the home directory structure:
-
-   ```bash
-   mkdir -p packages/tmux
-   mv ~/.tmux.conf packages/tmux/.tmux.conf
-   ```
-
-2. Stow it: `stow tmux`
-3. Commit.
-
-The stow loop in `install.sh` iterates over every directory under `packages/`. Non-package repo content (`examples/`) lives at the repo root and is invisible to the loop by construction — no exclusion list needed.
-
-Conflicting files are automatically backed up on the next `install.sh` run.
+Smoke scripts currently target this Apple Silicon Mac and its installed tools.
+Herdr's smoke check uses a separate server and read-only repository commands.

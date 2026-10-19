@@ -1,0 +1,3 @@
+# Workbench bash login shell.
+. "$HOME/.profile"
+. "$HOME/.bashrc"

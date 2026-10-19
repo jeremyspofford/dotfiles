@@ -1,0 +1,5 @@
+# Workbench owns checkpointed apply/rollback. Use chezmoi directly for inspection.
+sourceDir = {{ .chezmoi.sourceDir | quote }}
+destDir = {{ .chezmoi.destDir | quote }}
+mode = "file"
+umask = 0o022

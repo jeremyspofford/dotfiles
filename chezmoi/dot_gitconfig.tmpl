@@ -1,0 +1,31 @@
+# Workbench Git baseline. Alert Venture uses the default personal identity.
+[user]
+    name = {{ .identity.name | quote }}
+    email = {{ .identity.email | quote }}
+[init]
+    defaultBranch = main
+[core]
+    editor = nvim
+    excludesFile = ~/.config/git/ignore
+[color]
+    ui = auto
+[pull]
+    ff = only
+[push]
+    default = simple
+[fetch]
+    prune = true
+[merge]
+    conflictStyle = zdiff3
+[credential "https://github.com"]
+    helper =
+    helper = !gh auth git-credential
+[credential "https://gist.github.com"]
+    helper =
+    helper = !gh auth git-credential
+[includeIf "gitdir:~/workspace/arialabs/"]
+    path = ~/.config/git/identities/arialabs.gitconfig
+[includeIf "gitdir:~/workspace/vividcloud/"]
+    path = ~/.config/git/identities/vividcloud.gitconfig
+[includeIf "gitdir:~/workspace/teradyne/"]
+    path = ~/.config/git/identities/teradyne.gitconfig

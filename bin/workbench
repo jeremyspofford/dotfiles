@@ -1,0 +1,380 @@
+#!/usr/bin/env python3
+"""Small, file-only transaction layer around chezmoi's rendered target state."""
+import argparse
+import base64
+import contextlib
+import datetime
+import difflib
+import fcntl
+import hashlib
+import html
+import io
+import json
+import os
+from pathlib import Path
+import shutil
+import stat
+import subprocess
+import sys
+import tarfile
+import tempfile
+import uuid
+
+REPO = Path(__file__).resolve().parent.parent
+COMPONENTS = {
+    "shell": [".zshenv", ".zprofile", ".zshrc", ".profile", ".bash_profile", ".bashrc",
+              ".config/workbench/shell/env.sh", ".config/workbench/shell/common.sh"],
+    "git": [".gitconfig", ".config/git/ignore", ".config/git/identities/arialabs.gitconfig",
+            ".config/git/identities/vividcloud.gitconfig", ".config/git/identities/teradyne.gitconfig"],
+    "mise": [".config/mise/config.toml"],
+    "herdr": [".config/herdr/config.toml"],
+    "tmux": [".tmux.conf"],
+    "nvim": [".config/nvim/init.lua"],
+    "workbench": [".local/bin/workbench", ".config/chezmoi/chezmoi.toml"],
+}
+ALLOWED = {p for paths in COMPONENTS.values() for p in paths}
+
+
+def digest(value):
+    return hashlib.sha256(json.dumps(value, sort_keys=True).encode()).hexdigest()
+
+
+def file_state(path):
+    if not os.path.lexists(path):
+        return {"kind": "absent"}
+    mode = stat.S_IMODE(path.lstat().st_mode)
+    if path.is_symlink():
+        result = {"kind": "symlink", "link": os.readlink(path)}
+        # Keep both the link and its contents; never restore through the link.
+        if path.is_file():
+            result["resolved"] = base64.b64encode(path.read_bytes()).decode()
+        return result
+    if not path.is_file():
+        raise ValueError(f"Refusing non-file target: {path}")
+    return {"kind": "file", "mode": mode,
+            "data": base64.b64encode(path.read_bytes()).decode()}
+
+
+def checked_path(home, name):
+    if name not in ALLOWED:
+        raise ValueError(f"Target is not allowed: {name}")
+    path = home / name
+    for parent in path.parents:
+        if parent == home:
+            break
+        if parent.is_symlink() or (parent.exists() and not parent.is_dir()):
+            raise ValueError(f"Refusing redirected parent: {parent}")
+    return path
+
+
+def render(home, names):
+    if not shutil.which("chezmoi"):
+        raise ValueError("chezmoi is required; on macOS: brew install chezmoi")
+    with tempfile.TemporaryDirectory(prefix="workbench-render-") as tmp:
+        tmp = Path(tmp)
+        # Rendering must not depend on the caller's umask (checkpoints use 077).
+        (tmp / "config.toml").write_text("umask = 0o022\n")
+        command = ["chezmoi", "--source", str(REPO / "chezmoi"),
+                   "--destination", str(home), "--config", str(tmp / "config.toml"),
+                   "--cache", str(tmp / "cache"), "--persistent-state", str(tmp / "state.boltdb"),
+                   "--no-tty", "archive", "--format", "tar", "--exclude", "scripts",
+                   *[str(home / n) for n in names]]
+        result = subprocess.run(command, check=True, capture_output=True)
+        desired = {}
+        with tarfile.open(fileobj=io.BytesIO(result.stdout)) as archive:
+            for entry in archive:
+                name = entry.name.removeprefix("./")
+                if entry.isdir():
+                    continue
+                if name not in names or not entry.isfile():
+                    raise ValueError(f"Unexpected archive entry: {name}")
+                desired[name] = {"kind": "file", "mode": entry.mode & 0o777,
+                                 "data": base64.b64encode(archive.extractfile(entry).read()).decode()}
+        if set(desired) != set(names):
+            raise ValueError("Rendered targets do not match the selected component manifest")
+        return desired
+
+
+def make_plan(home, names, existing):
+    desired = render(home, names)
+    before = {n: file_state(checked_path(home, n)) for n in names}
+    changes = {n: desired[n] for n in names if before[n] != desired[n]
+               and (existing == "replace" or before[n]["kind"] == "absent")}
+    return {"destination": str(home), "existing": existing,
+            "before": before, "desired": desired, "changes": changes}
+
+
+def contents(state):
+    data = state.get("data", state.get("resolved", ""))
+    return base64.b64decode(data).decode("utf-8", errors="replace").splitlines(keepends=True)
+
+
+def show_plan(plan, color="auto", output_format="text"):
+    output = []
+    for name, desired in plan["desired"].items():
+        before = plan["before"][name]
+        action = "UNCHANGED" if before == desired else "SKIP existing"
+        if name in plan["changes"]:
+            action = "REMOVE" if desired["kind"] == "absent" else (
+                "CREATE" if before["kind"] == "absent" else "REPLACE")
+        output.append(f"{action:14} {name}\n")
+        if name in plan["changes"]:
+            if before["kind"] == "symlink":
+                output.append(f"  Detach symlink {before['link']}; its source stays untouched.\n")
+            if desired["kind"] == "symlink":
+                output.append(f"  Restore symlink -> {desired['link']}\n")
+            elif desired["kind"] == "file" and before.get("mode") != desired["mode"]:
+                output.append(f"  File mode: {desired['mode']:04o}\n")
+            output.extend(difflib.unified_diff(contents(before), contents(desired),
+                                             fromfile=f"before/{name}", tofile=f"after/{name}"))
+    output.append(f"\nPlan: {digest(plan)}\n")
+    text = "".join(output)
+
+    def style(line):
+        if line.startswith(("---", "+++", "@@")):
+            return "meta"
+        if line.startswith("+"):
+            return "added"
+        if line.startswith("-"):
+            return "removed"
+        if line.startswith(("CREATE ", "REPLACE ", "REMOVE ", "UNCHANGED ", "SKIP existing", "Plan:")):
+            return "heading"
+        return "context"
+
+    if output_format == "html":
+        rows = "".join(f'<span class="{style(line)}">{html.escape(line)}</span>'
+                       for line in text.splitlines(keepends=True))
+        print('''<!doctype html>
+<html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Workbench configuration diff</title>
+<style>
+:root { color-scheme: dark; }
+body { background: #111827; color: #e5e7eb; margin: 0; padding: 28px; font: 16px system-ui, sans-serif; }
+h1 { font-size: 24px; margin: 0 0 12px; }
+p { color: #cbd5e1; }
+pre { background: #0b1220; border: 1px solid #334155; border-radius: 8px; padding: 20px; overflow-x: auto;
+      font: 14px/1.6 ui-monospace, SFMono-Regular, Menlo, monospace; tab-size: 4; }
+.added { color: #86efac; background: #123023; }
+.removed { color: #fda4af; background: #381b25; }
+.meta { color: #7dd3fc; }
+.heading { color: #fde68a; font-weight: bold; }
+</style><h1>Workbench configuration diff</h1>
+<p>Review only — these changes have not been applied.</p>
+<p><span class="added">+ Additions</span> &nbsp; <span class="removed">− Removals</span>
+ &nbsp; <span class="meta">File and section markers</span></p><pre>''' + rows + '</pre></html>')
+        return
+    enabled = color == "always" or (color == "auto" and sys.stdout.isatty()
+                                     and not os.environ.get("NO_COLOR") and os.environ.get("TERM") != "dumb")
+    if enabled:
+        colors = {"added": "32", "removed": "31", "meta": "36", "heading": "1;33"}
+        text = "".join(f"\033[{colors[style(line)]}m{line.rstrip(chr(10))}\033[0m" + ("\n" if line.endswith("\n") else "")
+                       if style(line) in colors else line for line in text.splitlines(keepends=True))
+    print(text, end="", flush=True)
+
+
+def atomic_json(path, value):
+    atomic_write(path, json.dumps(value, indent=2).encode() + b"\n", 0o600)
+
+
+def atomic_write(path, data, mode):
+    fd, tmp = tempfile.mkstemp(prefix=".workbench-", dir=path.parent)
+    try:
+        with os.fdopen(fd, "wb") as stream:
+            stream.write(data)
+            stream.flush()
+            os.fsync(stream.fileno())
+            os.fchmod(stream.fileno(), mode)
+        os.replace(tmp, path)
+    finally:
+        if os.path.lexists(tmp):
+            os.unlink(tmp)
+
+
+def install_state(path, state):
+    path.parent.mkdir(parents=True, exist_ok=True)
+    if state["kind"] == "absent":
+        if os.path.lexists(path):
+            path.unlink()
+    elif state["kind"] == "symlink":
+        tmp = path.parent / (".workbench-" + uuid.uuid4().hex)
+        try:
+            tmp.symlink_to(state["link"])
+            os.replace(tmp, path)
+        finally:
+            if os.path.lexists(tmp):
+                tmp.unlink()
+    else:
+        atomic_write(path, base64.b64decode(state["data"]), state["mode"])
+
+
+@contextlib.contextmanager
+def locked(root):
+    root.mkdir(mode=0o700, parents=True, exist_ok=True)
+    if root.resolve() != root or root.stat().st_mode & 0o077:
+        raise ValueError(f"State directory must be private (0700), not a symlink: {root}")
+    with (root / "lock").open("a") as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        yield
+
+
+def checkpoint(root, home, before, after, label):
+    ident = datetime.datetime.now(datetime.timezone.utc).strftime("%Y%m%dT%H%M%SZ") + "-" + uuid.uuid4().hex[:8]
+    directory = root / "checkpoints" / ident
+    directory.mkdir(parents=True, mode=0o700)
+    missing = set()
+    for name in before:
+        for parent in (home / name).parents:
+            if parent == home:
+                break
+            if not parent.exists():
+                missing.add(str(parent.relative_to(home)))
+    commit = subprocess.run(["git", "-C", str(REPO), "rev-parse", "HEAD"], capture_output=True, text=True)
+    entry = {"version": 1, "id": ident, "label": label, "destination": str(home),
+             "source_commit": commit.stdout.strip(), "before": before, "after": after,
+             "created_directories": sorted(missing), "status": "prepared"}
+    atomic_json(directory / "checkpoint.json", entry)
+    print(f"Checkpoint: {directory}", flush=True)
+    return directory, entry
+
+
+def rollback_plan(home, entry, replace_edits=False):
+    if entry["destination"] != str(home):
+        raise ValueError("Checkpoint belongs to a different destination")
+    allowed_dirs = {str(p) for n in entry["before"] for p in Path(n).parents if str(p) != "."}
+    if not set(entry["created_directories"]).issubset(allowed_dirs):
+        raise ValueError("Checkpoint contains unexpected directory cleanup paths")
+    current = {n: file_state(checked_path(home, n)) for n in entry["before"]}
+    for name, state in current.items():
+        if not replace_edits and state not in (entry["before"][name], entry["after"][name]):
+            raise ValueError(f"{name} changed since the transaction; preserve/merge that edit before rollback")
+        previous = entry["before"][name]
+        if previous["kind"] == "symlink" and "resolved" in previous:
+            link = Path(previous["link"])
+            target = link if link.is_absolute() else (home / name).parent / link
+            if not target.is_file() or base64.b64encode(target.read_bytes()).decode() != previous["resolved"]:
+                raise ValueError(f"Original symlink source changed: {name}; checkpoint includes its saved contents")
+    return {"checkpoint": entry["id"], "destination": str(home), "before": current,
+            "desired": entry["before"], "changes": {n: s for n, s in entry["before"].items() if current[n] != s}}
+
+
+def restore(home, entry, replace_edits=False):
+    # Validate every path and drift condition before restoring any file.
+    plan = rollback_plan(home, entry, replace_edits)
+    for name, state in plan["changes"].items():
+        install_state(checked_path(home, name), state)
+    for name in sorted(entry["created_directories"], key=lambda n: n.count("/"), reverse=True):
+        directory = home / name
+        if directory.is_symlink():
+            raise ValueError(f"Refusing changed directory: {directory}")
+        try:
+            directory.rmdir()
+        except OSError:
+            pass  # Never remove a nonempty directory or unrelated contents.
+
+
+def main():
+    os.umask(0o077)
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--destination", type=Path, default=Path.home())
+    parser.add_argument("--state-dir", type=Path, default=Path.home() / ".local/state/workbench")
+    parser.add_argument("--color", choices=["auto", "always", "never"], default="auto",
+                        help="color terminal diffs; auto respects NO_COLOR and redirected output")
+    commands = parser.add_subparsers(dest="command", required=True)
+    for name in ("plan", "apply", "checkpoint"):
+        sub = commands.add_parser(name)
+        sub.add_argument("--components", nargs="+", choices=COMPONENTS, default=list(COMPONENTS))
+        sub.add_argument("--existing", choices=["skip", "replace"], default="skip")
+        if name == "apply":
+            sub.add_argument("--plan", required=True, help="exact hash printed by plan")
+        elif name == "plan":
+            sub.add_argument("--format", choices=["text", "html"], default="text",
+                             help="export a readable color diff with --format html")
+    sub = commands.add_parser("rollback")
+    sub.add_argument("id")
+    sub.add_argument("--plan", help="omit to preview; supply preview hash to restore")
+    sub.add_argument("--replace-edits", action="store_true", help="explicitly preview/restore over later edits")
+    commands.add_parser("checkpoints")
+    commands.add_parser("doctor")
+    args = parser.parse_args()
+    home = args.destination.expanduser().absolute()
+    if home.is_symlink() or not home.is_dir() or home.resolve() != home:
+        raise ValueError("Destination must be an existing directory with no symlink ancestors")
+    root = args.state_dir.expanduser().absolute()
+    if args.command == "doctor":
+        print(f"Source: {REPO / 'chezmoi'}\nDestination: {home}\nState: {root}")
+        for name in ("chezmoi", "mise", "herdr", "tmux", "nvim", "git"):
+            print(f"{name}: {shutil.which(name) or 'not installed'}")
+        print("Configuration transactions only; package installation/rollback is separate.")
+        return
+    if args.command == "checkpoints":
+        for path in sorted((root / "checkpoints").glob("*/checkpoint.json")):
+            entry = json.loads(path.read_text())
+            print(entry["id"], entry["status"], entry["label"])
+        return
+    if args.command == "rollback":
+        if not args.id or Path(args.id).name != args.id or args.id in (".", ".."):
+            raise ValueError("Invalid checkpoint id")
+        with locked(root):
+            path = root / "checkpoints" / args.id / "checkpoint.json"
+            entry = json.loads(path.read_text())
+            plan = rollback_plan(home, entry, args.replace_edits)
+            show_plan(plan, args.color)
+            if args.plan is None:
+                return
+            if args.plan != digest(plan):
+                raise ValueError("Rollback plan is stale; preview it again")
+            if plan["changes"]:
+                recovery_path, recovery = checkpoint(root, home, plan["before"], plan["desired"], "before-rollback")
+                restore(home, entry, args.replace_edits)
+                recovery["status"] = "applied"
+                atomic_json(recovery_path / "checkpoint.json", recovery)
+            entry["status"] = "rolled-back"
+            atomic_json(path, entry)
+        return
+    names = sorted({n for c in args.components for n in COMPONENTS[c]})
+    if args.command == "plan":
+        show_plan(make_plan(home, names, args.existing), args.color, args.format)
+        return
+    with locked(root):
+        plan = make_plan(home, names, args.existing)
+        if args.command == "checkpoint":
+            checkpoint(root, home, plan["before"], plan["before"], "manual")
+            return
+        if args.plan != digest(plan):
+            raise ValueError("Plan is stale or options differ; run plan again before applying")
+        show_plan(plan, args.color)
+        if not plan["changes"]:
+            print("No changes.")
+            return
+        before = {n: plan["before"][n] for n in plan["changes"]}
+        directory, entry = checkpoint(root, home, before, plan["changes"], "before-apply")
+        try:
+            for name, desired in plan["changes"].items():
+                path = checked_path(home, name)
+                if file_state(path) != before[name]:
+                    raise ValueError(f"Target changed during apply: {name}")
+                install_state(path, desired)
+            if any(file_state(home / n) != s for n, s in plan["changes"].items()):
+                raise ValueError("Post-apply verification failed")
+            entry["status"] = "applied"
+        except BaseException:
+            try:
+                restore(home, entry)
+                entry["status"] = "failed-restored"
+            except Exception as error:
+                entry["status"] = "recovery-required"
+                print(f"Automatic restore stopped: {error}; use checkpoint {entry['id']}", file=sys.stderr)
+            raise
+        finally:
+            atomic_json(directory / "checkpoint.json", entry)
+        print("Applied and verified. Rollback id:", entry["id"])
+
+
+if __name__ == "__main__":
+    try:
+        main()
+    except (ValueError, OSError, subprocess.CalledProcessError) as error:
+        print(f"workbench: {error}", file=sys.stderr)
+        if isinstance(error, subprocess.CalledProcessError) and error.stderr:
+            print(error.stderr.decode() if isinstance(error.stderr, bytes) else error.stderr, file=sys.stderr)
+        sys.exit(1)

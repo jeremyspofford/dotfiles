@@ -1,0 +1,9 @@
+# Core Homebrew packages. Installation is explicit; Workbench apply manages files.
+brew "chezmoi"
+brew "mise"
+brew "herdr"
+brew "tmux"
+brew "neovim"
+brew "git"
+brew "zsh-autosuggestions"
+brew "zsh-syntax-highlighting"

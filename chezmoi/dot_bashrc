@@ -1,0 +1,14 @@
+# Workbench bash defaults.
+case $- in *i*) ;; *) return ;; esac
+HISTCONTROL=ignoreboth
+HISTSIZE=10000
+HISTFILESIZE=20000
+shopt -s histappend checkwinsize
+PS1='\[\e[36m\]\u@\h\[\e[0m\] \[\e[34m\]\w\[\e[0m\]\$ '
+. "$HOME/.config/workbench/shell/common.sh"
+if command -v mise >/dev/null 2>&1; then eval "$(mise activate bash)"; fi
+bind '"\e[A": history-search-backward'
+bind '"\e[B": history-search-forward'
+bind 'set completion-ignore-case on'
+bind 'set show-all-if-ambiguous on'
+if command -v fzf >/dev/null 2>&1; then eval "$(fzf --bash)"; fi

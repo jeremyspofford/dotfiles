@@ -1,0 +1,14 @@
+# Personal identity is the default. Client overrides are explicit, not inferred.
+[identity]
+name = "Jeremy Spofford"
+email = "23528024+jeremyspofford@users.noreply.github.com"
+
+[clients.arialabs]
+name = "Nova"
+email = "nova@arialabs.ai"
+
+[clients.vividcloud]
+email = "jspofford@vividcloud.com"
+
+[clients.teradyne]
+email = "jspofford@vividcloud.com"

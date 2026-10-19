@@ -1,0 +1,14 @@
+# Workbench: Herdr manages terminal sessions; repositories stay in ~/workspace.
+[terminal]
+shell_mode = "auto"
+new_cwd = "follow"
+
+[update]
+# Homebrew owns upgrades on this Mac.
+version_check = false
+
+[ui]
+confirm_close = true
+
+[experimental]
+pane_history = false

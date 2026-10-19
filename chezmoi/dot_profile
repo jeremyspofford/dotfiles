@@ -1,0 +1,2 @@
+# Workbench POSIX login environment.
+. "$HOME/.config/workbench/shell/env.sh"

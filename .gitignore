@@ -1,55 +1,27 @@
-# Secrets
+# Local credentials and machine state
+.env
+.env.*
+!.env.example
 .secrets
 *.secret
 *.local
+*.pem
+*.key
+id_rsa*
+id_ed25519*
 
-# SSH private keys (only .pub files and config are tracked)
-ssh/.ssh/id_*
-ssh/.ssh/keys/*
-!ssh/.ssh/keys/*.pub
-ssh/.ssh/*.pem
-
-# OS
+# Editor and OS files
 .DS_Store
-
-# Editor
+.vscode/
+.claude/
 *~
 *.swp
 *.swo
-.*.swp
 
-# Runtime
-node_modules/
+# Generated files
 __pycache__/
-*.pyc
+*.py[cod]
 .venv/
 venv/
-
-# Worktrees (engineering-stack and similar)
+node_modules/
 .worktrees/
-
-# Claude/Hermes runtime artifacts
-packages/claude/.claude/backups/
-packages/claude/.claude/cache/
-packages/claude/.claude/history.jsonl
-packages/claude/.claude/projects/
-packages/claude/.claude/.last-cleanup
-packages/claude/.claude/chrome/chrome-native-host
-packages/claude/.claude/chrome/
-packages/claude/.claude/policy-limits.json
-packages/claude/.claude/hooks/
-packages/claude/.claude/commands/
-packages/claude/.claude/cheatsheets/
-packages/claude/.claude/**/*.jsonl
-packages/claude/.claude/**/.orphaned_at
-packages/claude/.claude/**/.in_use/
-packages/claude/.claude/**/cache/
-packages/claude/.claude/**/backups/
-packages/claude/.claude/**/.last-cleanup
-packages/claude/.claude/**/chrome-native-host
-packages/claude/.claude/**/changelog.md
-packages/claude/.claude/**/plugins/cache/
-packages/claude/.claude/plugins/installed_plugins.json
-packages/claude/.claude/plugins/known_marketplaces.json
-packages/claude/.claude/plugins/
-packages/claude/.claude/plugins/marketplaces/
