@@ -104,6 +104,29 @@ def make_plan(home, names, existing):
             "before": before, "desired": desired, "changes": changes}
 
 
+def doctor(home, root):
+    print(f"Source: {REPO / 'chezmoi'}\nDestination: {home}\nState: {root}")
+    tools = {name: shutil.which(name)
+             for name in ("chezmoi", "mise", "herdr", "tmux", "nvim", "git")}
+    for name, path in tools.items():
+        print(f"{name}: {path or 'not installed'}")
+    print("Configuration transactions only; package installation/rollback is separate.")
+    if not tools["chezmoi"]:
+        print("Configuration: unable to check without chezmoi.")
+        return 1
+    plan = make_plan(home, sorted(ALLOWED), "replace")
+    for name in plan["changes"]:
+        status = "MISSING" if plan["before"][name]["kind"] == "absent" else "DRIFT"
+        print(f"{status:14} {name}")
+    if plan["changes"]:
+        print(f"Configuration: {len(plan['changes'])} managed file(s) need attention.")
+        print("Review with workbench plan --existing replace"
+              " (use the same --destination if checking another directory).")
+    else:
+        print("Configuration: all managed files match.")
+    return int(bool(plan["changes"]) or not all(tools.values()))
+
+
 def contents(state):
     data = state.get("data", state.get("resolved", ""))
     return base64.b64decode(data).decode("utf-8", errors="replace").splitlines(keepends=True)
@@ -301,11 +324,7 @@ def main():
         raise ValueError("Destination must be an existing directory with no symlink ancestors")
     root = args.state_dir.expanduser().absolute()
     if args.command == "doctor":
-        print(f"Source: {REPO / 'chezmoi'}\nDestination: {home}\nState: {root}")
-        for name in ("chezmoi", "mise", "herdr", "tmux", "nvim", "git"):
-            print(f"{name}: {shutil.which(name) or 'not installed'}")
-        print("Configuration transactions only; package installation/rollback is separate.")
-        return
+        return doctor(home, root)
     if args.command == "checkpoints":
         for path in sorted((root / "checkpoints").glob("*/checkpoint.json")):
             entry = json.loads(path.read_text())
@@ -372,7 +391,7 @@ def main():
 
 if __name__ == "__main__":
     try:
-        main()
+        sys.exit(main())
     except (ValueError, OSError, subprocess.CalledProcessError) as error:
         print(f"workbench: {error}", file=sys.stderr)
         if isinstance(error, subprocess.CalledProcessError) and error.stderr:

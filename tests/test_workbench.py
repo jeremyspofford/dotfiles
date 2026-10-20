@@ -54,6 +54,63 @@ class WorkbenchTests(unittest.TestCase):
         token = self.token("rollback", ident)
         self.run_cli("rollback", ident, "--plan", token)
 
+    def test_doctor_matches_applied_configuration(self):
+        self.apply()
+        result = self.run_cli("doctor")
+        self.assertIn("Configuration: all managed files match.", result.stdout)
+
+    def test_doctor_reports_drift_without_changing_files_or_checkpoints(self):
+        self.apply()
+        herdr = self.home / ".config/herdr/config.toml"
+        herdr.write_text(herdr.read_text() + "\n# private local preference\n")
+        (self.home / ".zshrc").unlink()
+        (self.home / ".tmux.conf").chmod(0o600)
+        profile = self.home / ".profile"
+        original = self.root / "original-profile"
+        profile.rename(original)
+        profile.symlink_to(original)
+        before = {name: wb.file_state(self.home / name) for name in wb.ALLOWED}
+        checkpoint_files = {p.relative_to(self.state): p.read_bytes()
+                            for p in self.state.rglob("*") if p.is_file()}
+        result = self.run_cli("doctor", ok=False)
+        self.assertEqual(result.returncode, 1)
+        self.assertRegex(result.stdout, r"DRIFT\s+\.config/herdr/config.toml")
+        self.assertRegex(result.stdout, r"MISSING\s+\.zshrc")
+        self.assertRegex(result.stdout, r"DRIFT\s+\.tmux.conf")
+        self.assertRegex(result.stdout, r"DRIFT\s+\.profile")
+        self.assertIn("4 managed file(s) need attention", result.stdout)
+        self.assertIn("workbench plan --existing replace", result.stdout)
+        self.assertNotIn("private local preference", result.stdout + result.stderr)
+        self.assertEqual(before, {name: wb.file_state(self.home / name) for name in wb.ALLOWED})
+        self.assertEqual(checkpoint_files, {p.relative_to(self.state): p.read_bytes()
+                                           for p in self.state.rglob("*") if p.is_file()})
+
+    def test_doctor_missing_tool_fails_even_when_configuration_matches(self):
+        self.apply()
+        real_which = wb.shutil.which
+        output = io.StringIO()
+        with patch.object(wb.shutil, "which", side_effect=lambda name: None if name == "herdr" else real_which(name)), contextlib.redirect_stdout(output):
+            self.assertEqual(wb.doctor(self.home, self.state), 1)
+        self.assertIn("herdr: not installed", output.getvalue())
+        self.assertIn("Configuration: all managed files match.", output.getvalue())
+
+    def test_doctor_without_chezmoi_reports_unchecked_configuration(self):
+        output = io.StringIO()
+        with patch.object(wb.shutil, "which", return_value=None), patch.object(wb, "render") as render, contextlib.redirect_stdout(output):
+            self.assertEqual(wb.doctor(self.home, self.state), 1)
+        render.assert_not_called()
+        self.assertIn("Configuration: unable to check without chezmoi.", output.getvalue())
+        self.assertFalse(self.state.exists())
+
+    def test_doctor_refuses_redirected_parent(self):
+        outside = self.root / "outside"
+        outside.mkdir()
+        (self.home / ".config").symlink_to(outside)
+        result = self.run_cli("doctor", ok=False)
+        self.assertIn("Refusing redirected parent", result.stderr)
+        self.assertEqual(list(outside.iterdir()), [])
+        self.assertFalse(self.state.exists())
+
     def test_fresh_apply_idempotence_rollback_preserves_unrelated(self):
         workspace = self.home / "workspace/client"
         workspace.mkdir(parents=True)

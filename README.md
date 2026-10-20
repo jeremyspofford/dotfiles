@@ -12,6 +12,13 @@ workbench apply --existing replace --plan <reviewed-hash>
 workbench checkpoints
 ```
 
+`workbench doctor` checks core tool availability and compares every managed file
+with the rendered source, including permissions and symlinks. It lists `MISSING`
+or `DRIFT` paths without printing file contents or changing installed files.
+It exits 0 when tools are available and configuration matches, or 1 when a tool
+is missing, configuration differs, or the check cannot complete. Review drift
+with `workbench plan --existing replace` before deciding what to preserve or apply.
+
 Open a new terminal after shell changes. Use `./bin/workbench` from this checkout
 before installation or during recovery. It requires Python 3.9+ and chezmoi.
 
