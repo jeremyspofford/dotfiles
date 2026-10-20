@@ -50,3 +50,12 @@ checkpoints remain usable without the legacy source tree.
 Git history remains intact; the clean slate replaces the current tree without
 rewriting previous commits. Client repositories and workspace paths are outside
 this cleanup.
+
+## Terminal application cleanup
+
+The switch to the system terminal keeps a private recovery archive under
+`~/.local/state/workbench/terminal-cleanup-<timestamp>/`. Its `manifest.json`
+records the original paths, saved copies, and locations of retired user files.
+Inspect that manifest before recovering individual settings. Package removal
+was handled separately through Homebrew; Workbench rollback does not reinstall
+applications or restore these retired settings.

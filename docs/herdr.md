@@ -1,7 +1,7 @@
 # Herdr on this Mac
 
-Herdr is the persistent terminal workspace for daily project work. Start it from
-your terminal:
+Herdr is the persistent terminal workspace for daily project work. Use the
+operating system's built-in terminal: **Terminal** on this Mac. Start Herdr there:
 
 ```sh
 cd ~/workspace/alertventure/ft-quoting
