@@ -102,6 +102,23 @@ class WorkbenchTests(unittest.TestCase):
         self.assertIn("Configuration: unable to check without chezmoi.", output.getvalue())
         self.assertFalse(self.state.exists())
 
+    @unittest.skipUnless(wb.shutil.which("brew"), "Homebrew is not installed")
+    def test_doctor_reports_missing_brewfile_package(self):
+        self.apply()
+        brewfile = self.root / "Brewfile"
+        brewfile.write_text('brew "workbench-test-absent-formula"\n')
+        output = io.StringIO()
+        with patch.object(wb, "BREWFILE", brewfile), contextlib.redirect_stdout(output):
+            self.assertEqual(wb.doctor(self.home, self.state), 1)
+        self.assertRegex(output.getvalue(), r"MISSING\s+Formula workbench-test-absent-formula")
+        self.assertIn("Configuration: all managed files match.", output.getvalue())
+
+    def test_doctor_without_homebrew_skips_package_check(self):
+        output = io.StringIO()
+        with patch.object(wb.shutil, "which", return_value=None), contextlib.redirect_stdout(output):
+            wb.doctor(self.home, self.state)
+        self.assertIn("Packages: unable to check without Homebrew.", output.getvalue())
+
     def test_doctor_refuses_redirected_parent(self):
         outside = self.root / "outside"
         outside.mkdir()

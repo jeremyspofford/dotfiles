@@ -21,6 +21,7 @@ import tempfile
 import uuid
 
 REPO = Path(__file__).resolve().parent.parent
+BREWFILE = REPO / "manifests/Brewfile.core"
 COMPONENTS = {
     "shell": [".zshenv", ".zprofile", ".zshrc", ".profile", ".bash_profile", ".bashrc",
               ".config/workbench/shell/env.sh", ".config/workbench/shell/common.sh",
@@ -112,6 +113,7 @@ def doctor(home, root):
     for name, path in tools.items():
         print(f"{name}: {path or 'not installed'}")
     print("Configuration transactions only; package installation/rollback is separate.")
+    packages_ok = check_packages()
     if not tools["chezmoi"]:
         print("Configuration: unable to check without chezmoi.")
         return 1
@@ -125,7 +127,25 @@ def doctor(home, root):
               " (use the same --destination if checking another directory).")
     else:
         print("Configuration: all managed files match.")
-    return int(bool(plan["changes"]) or not all(tools.values()))
+    return int(bool(plan["changes"]) or not all(tools.values()) or packages_ok is False)
+
+
+def check_packages():
+    """Report Brewfile entries that are not installed; newer upstream versions are not drift."""
+    brew = shutil.which("brew")
+    if not brew:
+        print("Packages: unable to check without Homebrew.")
+        return None
+    result = subprocess.run([brew, "bundle", "check", "--no-upgrade", "--verbose", "--file", str(BREWFILE)],
+                            capture_output=True, text=True)
+    if result.returncode == 0:
+        print(f"Packages: all {BREWFILE.name} entries are installed.")
+        return True
+    for line in (result.stdout + result.stderr).splitlines():
+        if line.startswith("→"):
+            print(f"MISSING        {line.lstrip('→ ').split(' needs')[0]}")
+    print(f"Packages: install with brew bundle install --file {BREWFILE}")
+    return False
 
 
 def contents(state):
