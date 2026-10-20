@@ -9,7 +9,7 @@ export LESS=FRX
 # Explicit convenience commands; standard ls/cat keep their normal behavior.
 if command -v eza >/dev/null 2>&1; then
   alias ll='eza --long --all --group-directories-first --git'
-  alias lt='eza --tree --level=2 --group-directories-first'
+  alias lt="eza --tree --level=2 --group-directories-first --ignore-glob='node_modules|__pycache__|venv|dist|build|target'"
 fi
 export FZF_DEFAULT_OPTS='--height=45% --layout=reverse --border=rounded --info=inline'
 if command -v fd >/dev/null 2>&1; then
