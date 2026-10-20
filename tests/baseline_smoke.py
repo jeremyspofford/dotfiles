@@ -4,6 +4,7 @@ import argparse
 import json
 import os
 from pathlib import Path
+import pty
 import re
 import subprocess
 import tempfile
@@ -12,10 +13,10 @@ REPO = Path(__file__).resolve().parents[1]
 CLI = REPO / "bin/workbench"
 
 
-def run(command, **kwargs):
+def run(command, *, check_stderr=False, **kwargs):
     result = subprocess.run([str(x) for x in command], capture_output=True, text=True,
                             timeout=45, **kwargs)
-    if result.returncode:
+    if result.returncode or (check_stderr and result.stderr):
         raise RuntimeError(f"{command}:\n{result.stdout}\n{result.stderr}")
     return result.stdout.strip()
 
@@ -81,6 +82,8 @@ printf 'WORKBENCH_SHELL_OK\\n'
 '''
         report = {"mode": "live" if args.live else "isolated"}
         for shell in ("/bin/zsh", "/bin/bash"):
+            if shell == "/bin/zsh":
+                run([shell, "-lic", ":"], env=env, cwd=home, check_stderr=True)
             output = run([shell, "-lic", check], env=dict(env, SHELL=shell), cwd=home)
             assert "v24.14.1" in output and "Python 3.14.5" in output, output
             assert "WORKBENCH_SHELL_OK" in output, output
@@ -111,8 +114,13 @@ printf 'WORKBENCH_SHELL_OK\\n'
         # Integrations must coexist in a real interactive shell, including the
         # prompt inside a repository and safe handling of prompt metacharacters.
         run([git, "-C", directory, "symbolic-ref", "HEAD", "refs/heads/qol-%F{red}"], env=git_env)
-        report["zsh_qol"] = run(["/bin/zsh", "-lic", '''
+        # ZLE integrations require terminal input. Keep command-only startup
+        # above separate so warnings cannot hide behind a successful exit code.
+        master, slave = pty.openpty()
+        try:
+            report["zsh_qol"] = run(["/bin/zsh", "-lic", '''
 set -e
+[[ -t 0 ]]
 (( $+functions[compdef] && $+functions[_zsh_highlight] && $+functions[_zsh_autosuggest_start] ))
 [[ ${widgets[fzf-history-widget]} == user:* ]]
 [[ $(bindkey '^R') == *fzf-history-widget* ]]
@@ -122,7 +130,10 @@ _workbench_prompt
 ll >/dev/null
 lt >/dev/null
 printf 'completion, highlighting, suggestions, fzf, listings, escaped Git branch: passed\\n'
-'''], env=env, cwd=directory)
+'''], env=env, cwd=directory, stdin=slave, check_stderr=True)
+        finally:
+            os.close(slave)
+            os.close(master)
         editor_check = ('assert(vim.o.number and vim.o.expandtab and vim.o.shiftwidth == 2); '
                         'assert(vim.g.colors_name == "habamax"); '
                         'assert(package.loaded["lazy"] == nil and package.loaded["avante"] == nil)')

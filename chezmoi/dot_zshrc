@@ -42,7 +42,8 @@ _workbench_prompt() {
 add-zsh-hook precmd _workbench_prompt
 _workbench_prompt
 
-if command -v fzf >/dev/null 2>&1; then source <(fzf --zsh); fi
+# Command-only shells (including agent commands) have no terminal for ZLE.
+if [[ -t 0 ]] && command -v fzf >/dev/null 2>&1; then source <(fzf --zsh); fi
 ZSH_AUTOSUGGEST_USE_ASYNC=1
 ZSH_AUTOSUGGEST_HIGHLIGHT_STYLE='fg=8'
 for _wb_prefix in /opt/homebrew/share /usr/local/share /usr/share; do
