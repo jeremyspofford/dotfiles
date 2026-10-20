@@ -1,6 +1,7 @@
 # Shared by login, interactive, and non-interactive shells. No subprocesses.
 for _wb_bin in /usr/local/sbin /usr/local/bin /opt/homebrew/sbin /opt/homebrew/bin \
-  "$HOME/.local/bin" "$HOME/.local/share/mise/shims"; do
+  "$HOME/.local/bin" "$HOME/.local/share/mise/shims" \
+  "/Applications/ChatGPT.app/Contents/Resources/codex-cli/CodexCLI.app/Contents/MacOS"; do
   if [ -d "$_wb_bin" ]; then
     # Move each managed path to the front even after macOS path_helper reorders it.
     _wb_rest=$PATH

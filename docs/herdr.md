@@ -8,6 +8,14 @@ cd ~/workspace/alertventure/ft-quoting
 herdr
 ```
 
+The prepared default session has an **Alert — ft-quoting** workspace, a **Work**
+tab, and **Agent** / **Shell** panes. Both start in the existing repo. In the Agent
+pane, run `codex` or `claude` when ready. This Mac uses the Codex CLI bundled with
+the installed ChatGPT app; its binary directory takes precedence over old mise
+shims. App updates own that CLI's version. Claude uses the existing installation
+available to this project.
+No agent tasks are started automatically.
+
 Running `herdr` attaches to the default session, or starts it if absent. The
 server keeps pane processes alive when you detach or close the terminal. It does
 not survive a reboot as a running process. See the upstream

@@ -48,8 +48,9 @@ def main():
             # Reuse installed binaries while keeping test shell/config/state isolated.
             shims = home / ".local/share/mise/shims"
             shims.mkdir(parents=True)
-            for name in ("node", "python3", "gh", "glab", "uv", "rg", "fd", "bat", "fzf", "jq", "eza"):
+            for name in ("node", "python3", "gh", "glab", "uv", "rg", "fd", "bat", "fzf", "jq", "eza", "codex"):
                 (shims / name).symlink_to("/opt/homebrew/bin/mise")
+            # The stale Codex shim must not shadow the app-bundled CLI.
         env = {
             "HOME": str(home), "USER": os.environ.get("USER", "workbench"),
             "LOGNAME": os.environ.get("LOGNAME", "workbench"), "SHELL": "/bin/zsh",
@@ -72,6 +73,8 @@ python3 --version
 gh --version | head -1
 glab --version
 rg --version | head -1
+codex --version
+test "$(command -v codex)" = /Applications/ChatGPT.app/Contents/Resources/codex-cli/CodexCLI.app/Contents/MacOS/codex
 git --version
 command -v herdr tmux nvim chezmoi mise
 printf 'WORKBENCH_SHELL_OK\\n'
@@ -82,7 +85,7 @@ printf 'WORKBENCH_SHELL_OK\\n'
             assert "v24.14.1" in output and "Python 3.14.5" in output, output
             assert "WORKBENCH_SHELL_OK" in output, output
             report[Path(shell).name] = output
-        report["noninteractive_zsh"] = run(["/bin/zsh", "-c", "node --version; python3 --version"], env=env, cwd=home)
+        report["noninteractive_zsh"] = run(["/bin/zsh", "-ec", "node --version; python3 --version; codex --version"], env=env, cwd=home)
         assert "v24.14.1" in report["noninteractive_zsh"] and "3.14.5" in report["noninteractive_zsh"]
         # Re-sourcing the environment must not duplicate paths.
         run(["/bin/zsh", "-c", '. "$HOME/.config/workbench/shell/env.sh"; before=$PATH; '
