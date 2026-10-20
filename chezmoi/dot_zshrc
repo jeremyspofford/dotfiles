@@ -16,6 +16,7 @@ autoload -Uz compinit
 _wb_cache="${XDG_CACHE_HOME:-$HOME/.cache}/workbench/zsh"
 mkdir -p "$_wb_cache"
 compinit -d "$_wb_cache/zcompdump-$ZSH_VERSION"
+. "$HOME/.config/workbench/shell/completion.zsh"
 zstyle ':completion:*' menu select
 zstyle ':completion:*' matcher-list 'm:{a-zA-Z}={A-Za-z}'
 zstyle ':completion:*' group-name ''

@@ -23,7 +23,8 @@ import uuid
 REPO = Path(__file__).resolve().parent.parent
 COMPONENTS = {
     "shell": [".zshenv", ".zprofile", ".zshrc", ".profile", ".bash_profile", ".bashrc",
-              ".config/workbench/shell/env.sh", ".config/workbench/shell/common.sh"],
+              ".config/workbench/shell/env.sh", ".config/workbench/shell/common.sh",
+              ".config/workbench/shell/completion.zsh"],
     "git": [".gitconfig", ".config/git/ignore", ".config/git/identities/arialabs.gitconfig",
             ".config/git/identities/vividcloud.gitconfig", ".config/git/identities/teradyne.gitconfig"],
     "mise": [".config/mise/config.toml"],

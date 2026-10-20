@@ -122,6 +122,8 @@ printf 'WORKBENCH_SHELL_OK\\n'
 set -e
 [[ -t 0 ]]
 (( $+functions[compdef] && $+functions[_zsh_highlight] && $+functions[_zsh_autosuggest_start] ))
+[[ ${_comps[workbench]} == _workbench ]]
+(( $+functions[_workbench] ))
 [[ ${widgets[fzf-history-widget]} == user:* ]]
 [[ $(bindkey '^R') == *fzf-history-widget* ]]
 [[ $(bindkey '^[[A') == *up-line-or-beginning-search* ]]

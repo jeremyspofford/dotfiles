@@ -70,6 +70,12 @@ completion; language-server completion is a later addition.
 
 ## Reviewing configuration changes
 
+In zsh, Tab completes Workbench commands, options, component names, and rollback
+checkpoint IDs. For example, type `workbench plan --components ` then press Tab,
+or type `workbench rollback ` then press Tab. Checkpoint completion also respects
+`workbench --state-dir <directory> rollback `. Tab only offers candidates; it
+does not execute a transaction. Paste the reviewed hash explicitly for `--plan`.
+
 ```sh
 workbench --color always plan --existing replace | less -R
 workbench plan --existing replace --format html > /tmp/workbench-review.html
