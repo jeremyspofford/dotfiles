@@ -67,6 +67,7 @@ optional tool profiles are deferred until this Mac's daily workflow is settled.
 - [Shell, tmux, and Neovim shortcuts](docs/workbench-shortcuts.md)
 - [Using Herdr](docs/herdr.md)
 - [Checkpoints and legacy recovery](docs/recovery.md)
+- [Next steps and open work](docs/next-steps.md)
 
 ```sh
 python3 -m unittest discover -s tests -p 'test_*.py' -v
