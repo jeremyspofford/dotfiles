@@ -25,3 +25,6 @@ __pycache__/
 venv/
 node_modules/
 .worktrees/
+
+# Tool state written into the checkout
+.herdr-web-ui/
