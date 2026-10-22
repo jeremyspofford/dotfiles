@@ -1,7 +1,5 @@
-# Workbench Git baseline. Alert Venture uses the default personal identity.
-[user]
-    name = {{ .identity.name | quote }}
-    email = {{ .identity.email | quote }}
+# Workbench Git baseline. Identity lives in ~/.config/git/local.gitconfig,
+# which is machine-local and included last so it can override anything here.
 [init]
     defaultBranch = main
 [core]
@@ -28,9 +26,5 @@
 [credential "https://gist.github.com"]
     helper =
     helper = !gh auth git-credential
-[includeIf "gitdir:~/workspace/arialabs/"]
-    path = ~/.config/git/identities/arialabs.gitconfig
-[includeIf "gitdir:~/workspace/vividcloud/"]
-    path = ~/.config/git/identities/vividcloud.gitconfig
-[includeIf "gitdir:~/workspace/teradyne/"]
-    path = ~/.config/git/identities/teradyne.gitconfig
+[include]
+    path = ~/.config/git/local.gitconfig

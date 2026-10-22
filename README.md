@@ -1,6 +1,6 @@
 # Workbench dotfiles
 
-A small, chezmoi-based setup for daily work on this Mac: zsh/Bash, Git identities,
+A small, chezmoi-based setup for daily work on this Mac: zsh/Bash, Git,
 mise tools, Neovim, tmux, and Herdr. `chezmoi/` is the configuration source.
 
 ## Daily use
@@ -44,7 +44,7 @@ Use Workbench for apply/rollback so changes retain checkpoints.
 
 | Path | Purpose |
 | --- | --- |
-| `chezmoi/` | The active configuration, including explicit Git identities |
+| `chezmoi/` | The active configuration (no personal data) |
 | `bin/workbench` | File preview, checkpoint, apply, rollback, and doctor |
 | `manifests/Brewfile.core` | Core Homebrew package list |
 | `tests/` | Transaction, shell/editor, and isolated Herdr checks |
@@ -53,9 +53,12 @@ Use Workbench for apply/rollback so changes retain checkpoints.
 Homebrew owns OS-level tools; `chezmoi/dot_config/mise/config.toml` pins development
 tools. Package installation is separate from configuration changes.
 
-Personal Git identity is the default, including Alert Venture. Client overrides
-are explicit in `chezmoi/.chezmoidata.toml`. SSH configuration and credentials stay
-local and are not managed by this repository.
+Git identity is machine-local. The shared `.gitconfig` ends by including
+`~/.config/git/local.gitconfig`, which holds your name, email, and any
+per-directory `includeIf` identities. Start from
+[`docs/examples/local.gitconfig`](docs/examples/local.gitconfig); `workbench doctor`
+fails until it exists and sets `user.email`. That file, SSH configuration, and
+credentials stay local and are never committed.
 
 The legacy Stow packages, AI workflows, old installers, and machine migration
 records have been archived outside this checkout. The active shell does not source
@@ -73,7 +76,7 @@ optional tool profiles are deferred until this Mac's daily workflow is settled.
 python3 -m unittest discover -s tests -p 'test_*.py' -v
 python3 tests/baseline_smoke.py
 python3 tests/baseline_smoke.py --live
-python3 tests/herdr_smoke.py ~/workspace/alertventure/ft-quoting
+python3 tests/herdr_smoke.py ~/workspace/<project>
 chezmoi verify
 ```
 

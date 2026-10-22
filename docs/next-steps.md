@@ -2,26 +2,15 @@
 
 Open work, in priority order. Remove items as they land.
 
-## 1. Generalize the repository for sharing
+## 1. Decide on Git history before sharing
 
-The repository should hold only reusable configuration. Personal and client
-values currently appear in tracked files:
-
-- `chezmoi/.chezmoidata.toml`: name, default email, per-client identities.
-- `chezmoi/dot_gitconfig.tmpl` and `chezmoi/dot_config/git/private_identities/`:
-  client directory `includeIf` rules and identity files.
-- `docs/herdr.md`, `README.md`: client project names and paths in examples.
-- `tests/baseline_smoke.py`: asserts specific identities.
-- `bin/workbench`, `chezmoi/dot_config/private_workbench/private_shell/env.sh`:
-  smaller references.
-
-Planned approach: move personal values into the machine-local chezmoi config
-(`~/.config/chezmoi/chezmoi.toml`, `[data]` section, never committed) and have
-templates read them, with a list of identities driving the `includeIf` rules.
-`render()` in `bin/workbench` passes its own temporary `--config`, so it must
-learn to merge local data before templates can use it. Tests should use
-placeholder identities. Git history was scanned with gitleaks (230 commits, no
-leaks), so this is about content, not credentials.
+Tracked files no longer contain personal or client data: Git identity moved to
+the machine-local `~/.config/git/local.gitconfig` (see
+`docs/examples/local.gitconfig`). Earlier commits still contain names, emails,
+and client directory names. Before making the repository public, publish a fresh
+repository with a single initial commit and keep this one private as the archive.
+Sharing privately needs no history change. Git history was scanned with gitleaks
+(230 commits, no credentials).
 
 ## 2. Update the local CLAUDE.md files on each machine
 
@@ -41,7 +30,8 @@ component list from `COMPONENTS` in `bin/workbench`, and the shell chain
 ## Bringing up another machine
 
 Multi-machine bootstrap is not built yet. Install Homebrew packages from
-`manifests/Brewfile.core`, then run `./bin/workbench doctor` and
+`manifests/Brewfile.core`, copy `docs/examples/local.gitconfig` to
+`~/.config/git/local.gitconfig` (mode 600) and fill in the identity, then run `./bin/workbench doctor` and
 `./bin/workbench plan --existing replace` from this checkout and review before
 applying. Existing Stow symlinks are left untouched unless `--existing replace`
 is used. Smoke tests currently assume Apple Silicon macOS paths.

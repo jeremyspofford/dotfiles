@@ -22,12 +22,12 @@ import uuid
 
 REPO = Path(__file__).resolve().parent.parent
 BREWFILE = REPO / "manifests/Brewfile.core"
+LOCAL_GITCONFIG = ".config/git/local.gitconfig"
 COMPONENTS = {
     "shell": [".zshenv", ".zprofile", ".zshrc", ".profile", ".bash_profile", ".bashrc",
               ".config/workbench/shell/env.sh", ".config/workbench/shell/common.sh",
               ".config/workbench/shell/completion.zsh"],
-    "git": [".gitconfig", ".config/git/ignore", ".config/git/identities/arialabs.gitconfig",
-            ".config/git/identities/vividcloud.gitconfig", ".config/git/identities/teradyne.gitconfig"],
+    "git": [".gitconfig", ".config/git/ignore"],
     "mise": [".config/mise/config.toml"],
     "herdr": [".config/herdr/config.toml"],
     "tmux": [".tmux.conf"],
@@ -114,6 +114,7 @@ def doctor(home, root):
         print(f"{name}: {path or 'not installed'}")
     print("Configuration transactions only; package installation/rollback is separate.")
     packages_ok = check_packages()
+    identity_ok = check_identity(home, tools["git"])
     if not tools["chezmoi"]:
         print("Configuration: unable to check without chezmoi.")
         return 1
@@ -127,7 +128,26 @@ def doctor(home, root):
               " (use the same --destination if checking another directory).")
     else:
         print("Configuration: all managed files match.")
-    return int(bool(plan["changes"]) or not all(tools.values()) or packages_ok is False)
+    return int(bool(plan["changes"]) or not all(tools.values()) or packages_ok is False
+               or identity_ok is False)
+
+
+def check_identity(home, git):
+    """The local Git include carries the identity; the shared config has none."""
+    path = home / LOCAL_GITCONFIG
+    if not path.is_file():
+        print(f"Identity: MISSING {path}; copy docs/examples/local.gitconfig")
+        return False
+    if not git:
+        print("Identity: unable to check without git.")
+        return None
+    result = subprocess.run([git, "config", "--file", str(path), "user.email"],
+                            capture_output=True, text=True)
+    if result.returncode or not result.stdout.strip():
+        print(f"Identity: user.email is not set in {path}")
+        return False
+    print(f"Identity: {path} sets user.email.")
+    return True
 
 
 def check_packages():

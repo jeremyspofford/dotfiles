@@ -51,6 +51,8 @@ def main():
             shims.mkdir(parents=True)
             for name in ("node", "python3", "gh", "glab", "uv", "rg", "fd", "bat", "fzf", "jq", "eza", "codex"):
                 (shims / name).symlink_to("/opt/homebrew/bin/mise")
+            # Doctor requires a machine-local identity; the live home has its own.
+            (home / ".config/git/local.gitconfig").write_text('[user]\n    email = "you@example.com"\n')
             # The stale Codex shim must not shadow the app-bundled CLI.
         env = {
             "HOME": str(home), "USER": os.environ.get("USER", "workbench"),
@@ -98,12 +100,18 @@ printf 'WORKBENCH_SHELL_OK\\n'
         fixture_home.mkdir()
         # Evaluate actual includeIf patterns against disposable client repos.
         git_env = dict(env, HOME=str(fixture_home), GIT_CONFIG_GLOBAL=str(home / ".gitconfig"))
-        (fixture_home / ".config").symlink_to(home / ".config")
+        # Identity is machine-local; resolve placeholder identities shaped like
+        # docs/examples/local.gitconfig inside the fixture home, never the real one.
+        (fixture_home / ".config/git/identities").mkdir(parents=True)
+        (fixture_home / ".config/git/local.gitconfig").write_text(
+            '[user]\n    email = "you@example.com"\n'
+            '[includeIf "gitdir:~/workspace/client-a/"]\n'
+            '    path = ~/.config/git/identities/client-a.gitconfig\n')
+        (fixture_home / ".config/git/identities/client-a.gitconfig").write_text(
+            '[user]\n    email = "you@client-a.example"\n')
         identities = {}
-        for client, expected in (("alertventure", "23528024+jeremyspofford@users.noreply.github.com"),
-                                 ("vividcloud", "jspofford@vividcloud.com"),
-                                 ("teradyne", "jspofford@vividcloud.com"),
-                                 ("arialabs", "nova@arialabs.ai")):
+        for client, expected in (("personal", "you@example.com"),
+                                 ("client-a", "you@client-a.example")):
             directory = fixture_home / "workspace" / client / "fixture"
             directory.mkdir(parents=True)
             run([git, "init", "-q", directory], env=git_env)

@@ -1,20 +1,20 @@
-# Herdr on this Mac
+# Herdr
 
 Herdr is the persistent terminal workspace for daily project work. Use the
-operating system's built-in terminal: **Terminal** on this Mac. Start Herdr there:
+operating system's built-in terminal (**Terminal** on macOS). Start Herdr from a
+project directory:
 
 ```sh
-cd ~/workspace/alertventure/ft-quoting
+cd ~/workspace/<project>
 herdr
 ```
 
-The prepared default session has an **Alert — ft-quoting** workspace, a **Work**
-tab, and **Agent** / **Shell** panes. Both start in the existing repo. In the Agent
-pane, run `codex` or `claude` when ready. This Mac uses the Codex CLI bundled with
-the installed ChatGPT app; its binary directory takes precedence over old mise
-shims. App updates own that CLI's version. Claude uses the existing installation
-available to this project.
-No agent tasks are started automatically.
+A useful layout per project is a **Work** tab with an **Agent** pane and a
+**Shell** pane, both in the repo; Herdr keeps whatever layout you build. In the
+Agent pane, run `codex` or `claude` when ready. On macOS the shell prefers the
+Codex CLI bundled with the ChatGPT app when it is installed; its binary
+directory takes precedence over old mise shims, and app updates own that CLI's
+version. No agent tasks are started automatically.
 
 Running `herdr` attaches to the default session, or starts it if absent. The
 server keeps pane processes alive when you detach or close the terminal. It does

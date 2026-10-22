@@ -54,10 +54,38 @@ class WorkbenchTests(unittest.TestCase):
         token = self.token("rollback", ident)
         self.run_cli("rollback", ident, "--plan", token)
 
+    def write_local_identity(self, text='[user]\n    email = "you@example.com"\n'):
+        path = self.home / wb.LOCAL_GITCONFIG
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(text)
+
     def test_doctor_matches_applied_configuration(self):
         self.apply()
+        self.write_local_identity()
         result = self.run_cli("doctor")
         self.assertIn("Configuration: all managed files match.", result.stdout)
+        self.assertIn("sets user.email", result.stdout)
+
+    def test_doctor_requires_local_identity(self):
+        self.apply()
+        result = self.run_cli("doctor", ok=False)
+        self.assertIn("Identity: MISSING", result.stdout)
+        self.assertIn("docs/examples/local.gitconfig", result.stdout)
+        self.write_local_identity("[core]\n    editor = nvim\n")
+        result = self.run_cli("doctor", ok=False)
+        self.assertIn("user.email is not set", result.stdout)
+
+    def test_example_local_identity_parses(self):
+        example = wb.REPO / "docs/examples/local.gitconfig"
+        result = subprocess.run(["git", "config", "--file", str(example), "user.email"],
+                                capture_output=True, text=True, check=True)
+        self.assertEqual(result.stdout.strip(), "you@example.com")
+
+    def test_shared_git_config_includes_local_identity_last(self):
+        gitconfig = wb.render(self.home, [".gitconfig"])[".gitconfig"]
+        text = wb.base64.b64decode(gitconfig["data"]).decode()
+        self.assertNotIn("[user]", text)
+        self.assertTrue(text.rstrip().endswith("[include]\n    path = ~/.config/git/local.gitconfig"))
 
     def test_doctor_reports_drift_without_changing_files_or_checkpoints(self):
         self.apply()
@@ -87,6 +115,7 @@ class WorkbenchTests(unittest.TestCase):
 
     def test_doctor_missing_tool_fails_even_when_configuration_matches(self):
         self.apply()
+        self.write_local_identity()
         real_which = wb.shutil.which
         output = io.StringIO()
         with patch.object(wb.shutil, "which", side_effect=lambda name: None if name == "herdr" else real_which(name)), contextlib.redirect_stdout(output):
@@ -105,6 +134,7 @@ class WorkbenchTests(unittest.TestCase):
     @unittest.skipUnless(wb.shutil.which("brew"), "Homebrew is not installed")
     def test_doctor_reports_missing_brewfile_package(self):
         self.apply()
+        self.write_local_identity()
         brewfile = self.root / "Brewfile"
         brewfile.write_text('brew "workbench-test-absent-formula"\n')
         output = io.StringIO()

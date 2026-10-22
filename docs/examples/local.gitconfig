@@ -1,0 +1,18 @@
+# Copy to ~/.config/git/local.gitconfig (chmod 600) and edit. This file is
+# machine-local: Workbench never manages it and it is never committed.
+[user]
+    name = "Your Name"
+    email = "you@example.com"
+
+# Optional: a different identity for every repository under a directory.
+# The trailing slash matters: it matches all repositories beneath it.
+[includeIf "gitdir:~/workspace/client-a/"]
+    path = ~/.config/git/identities/client-a.gitconfig
+
+# ~/.config/git/identities/client-a.gitconfig might contain:
+#
+#   [user]
+#       email = "you@client-a.example"
+#   # Route this client's SSH remotes through a Host alias in ~/.ssh/config.
+#   [url "git@github.com-client-a:"]
+#       insteadOf = git@github.com:
