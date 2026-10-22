@@ -20,3 +20,8 @@ auto_switch = false
 
 [ui.toast]
 delivery = "herdr"
+
+# Keybindings
+# [keys]
+# prefix = "ctrl+w"
+

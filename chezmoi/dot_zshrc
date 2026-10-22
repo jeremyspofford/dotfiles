@@ -62,3 +62,6 @@ for _wb_prefix in /opt/homebrew/share /usr/local/share /usr/share; do
   fi
 done
 unset _wb_prefix _wb_cache
+
+# bun completions
+[ -s "$HOME/.bun/_bun" ] && source "$HOME/.bun/_bun"
