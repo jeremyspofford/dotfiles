@@ -18,6 +18,7 @@ herdr = "0.9.5"
 chezmoi = "2.73.3"
 delta = "0.20.1"
 shellcheck = "0.11.0"
+"github:furkankly/zoetrope" = "0.2.0"
 
 [settings]
 idiomatic_version_file_enable_tools = ["node", "python"]
