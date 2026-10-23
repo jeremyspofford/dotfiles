@@ -26,11 +26,13 @@ def main():
     config = root / "config.toml"
     config.write_text('[terminal]\ndefault_shell = "/bin/sh"\nshell_mode = "non_login"\n'
                       '[update]\nversion_check = false\nmanifest_check = false\n')
+    # Isolated XDG dirs hide mise's trust state, so resolve the real binary first.
+    herdr = subprocess.run(["mise", "which", "herdr"], capture_output=True, text=True).stdout.strip() or "herdr"
     env = dict(os.environ, HERDR_CONFIG_PATH=str(config),
                HERDR_SOCKET_PATH=str(root / "herdr.sock"),
                XDG_CONFIG_HOME=str(root / "config"), XDG_STATE_HOME=str(root / "state"))
     def call(*args):
-        result = subprocess.run(["herdr", *args], env=env, capture_output=True, text=True, timeout=20)
+        result = subprocess.run([herdr, *args], env=env, capture_output=True, text=True, timeout=20)
         if result.returncode:
             raise RuntimeError(result.stderr)
         return result.stdout
@@ -38,7 +40,7 @@ def main():
         return json.loads(call(*args))["result"]
     evidence = {"repo": str(repo), "before": before, "version": call("--version").strip()}
     with (root / "server.log").open("w") as log:
-        server = subprocess.Popen(["herdr", "server"], cwd=repo, env=env, stdout=log, stderr=subprocess.STDOUT)
+        server = subprocess.Popen([herdr, "server"], cwd=repo, env=env, stdout=log, stderr=subprocess.STDOUT)
         try:
             for _ in range(50):
                 if server.poll() is not None:

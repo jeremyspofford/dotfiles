@@ -6,11 +6,20 @@ import os
 from pathlib import Path
 import pty
 import re
+import shutil
 import subprocess
 import tempfile
 
 REPO = Path(__file__).resolve().parents[1]
 CLI = REPO / "bin/workbench"
+
+
+def tool(name):
+    """Resolve the real binary, not a shim, so isolated environments can run it."""
+    found = subprocess.run(["mise", "which", name], capture_output=True, text=True)
+    path = found.stdout.strip() if found.returncode == 0 else shutil.which(name)
+    assert path, f"{name} is not installed"
+    return path
 
 
 def run(command, *, check_stderr=False, **kwargs):
@@ -49,8 +58,9 @@ def main():
             # Reuse installed binaries while keeping test shell/config/state isolated.
             shims = home / ".local/share/mise/shims"
             shims.mkdir(parents=True)
-            for name in ("node", "python3", "gh", "glab", "uv", "rg", "fd", "bat", "fzf", "jq", "eza", "codex"):
-                (shims / name).symlink_to("/opt/homebrew/bin/mise")
+            for name in ("node", "python3", "gh", "glab", "uv", "rg", "fd", "bat", "fzf", "jq", "eza", "codex",
+                         "nvim", "herdr", "chezmoi", "delta", "shellcheck"):
+                (shims / name).symlink_to(tool("mise"))
             # Doctor requires a machine-local identity; the live home has its own.
             (home / ".config/git/local.gitconfig").write_text('[user]\n    email = "you@example.com"\n')
             # The stale Codex shim must not shadow the app-bundled CLI.
@@ -95,7 +105,7 @@ printf 'WORKBENCH_SHELL_OK\\n'
         # Re-sourcing the environment must not duplicate paths.
         run(["/bin/zsh", "-c", '. "$HOME/.config/workbench/shell/env.sh"; before=$PATH; '
              '. "$HOME/.config/workbench/shell/env.sh"; test "$before" = "$PATH"'], env=env, cwd=home)
-        git = "/opt/homebrew/bin/git"
+        git = tool("git")
         fixture_home = root / "git-home"
         fixture_home.mkdir()
         # Evaluate actual includeIf patterns against disposable client repos.
@@ -149,11 +159,11 @@ printf 'completion, highlighting, suggestions, fzf, listings, escaped Git branch
                         'assert(package.loaded["lazy"] == nil and package.loaded["avante"] == nil)')
         editor_check = ('local ok, err = pcall(function() ' + editor_check +
                         ' end); if not ok then io.stderr:write(tostring(err)); vim.cmd("cquit 1") end')
-        run(["/opt/homebrew/bin/nvim", "--headless", "-i", "NONE", "-n", "-u", home / ".config/nvim/init.lua",
+        run([tool("nvim"), "--headless", "-i", "NONE", "-n", "-u", home / ".config/nvim/init.lua",
              "+lua " + editor_check, "+qa!"], env=env, cwd=home)
         report["nvim"] = "baseline loads; no legacy plugin manager or AI plugin loaded"
         socket = root / "tmux.sock"
-        tmux = ["/opt/homebrew/bin/tmux", "-S", socket]
+        tmux = [tool("tmux"), "-S", socket]
         try:
             run([*tmux, "-f", home / ".tmux.conf", "new-session", "-d", "-s", "baseline", "/bin/sleep 30"], env=env, cwd=home)
             assert run([*tmux, "show-options", "-gv", "prefix"], env=env) == "C-a"

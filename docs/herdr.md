@@ -48,7 +48,7 @@ to nest tmux inside Herdr for ordinary use.
 
 Configuration comes from `chezmoi/dot_config/private_herdr/config.toml` and is
 installed at `~/.config/herdr/config.toml`. New panes follow the current directory
-and use the normal shell environment. Homebrew owns binary updates.
+and use the normal shell environment. mise owns binary updates; change the pin in the mise config.
 
 ```sh
 herdr status

@@ -5,7 +5,7 @@ shell_mode = "auto"
 new_cwd = "follow"
 
 [update]
-# Homebrew owns upgrades on this Mac.
+# mise owns upgrades (pinned in ~/.config/mise/config.toml).
 version_check = false
 
 [ui]

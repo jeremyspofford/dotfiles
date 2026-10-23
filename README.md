@@ -46,12 +46,13 @@ Use Workbench for apply/rollback so changes retain checkpoints.
 | --- | --- |
 | `chezmoi/` | The active configuration (no personal data) |
 | `bin/workbench` | File preview, checkpoint, apply, rollback, and doctor |
-| `manifests/Brewfile.core` | Core Homebrew package list |
+| `manifests/Brewfile.core` | Bootstrap Homebrew packages |
 | `tests/` | Transaction, shell/editor, and isolated Herdr checks |
 | `docs/` | Shortcuts, Herdr usage, and recovery |
 
-Homebrew owns OS-level tools; `chezmoi/dot_config/mise/config.toml` pins development
-tools. Package installation is separate from configuration changes.
+`chezmoi/dot_config/mise/config.toml` pins CLI and development tools, including
+Neovim, Herdr, chezmoi, and delta. Homebrew holds only the bootstrap layer (mise,
+Git, tmux, zsh plugins). Package installation is separate from configuration changes.
 
 Git identity is machine-local. The shared `.gitconfig` ends by including
 `~/.config/git/local.gitconfig`, which holds your name, email, and any

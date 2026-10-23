@@ -71,7 +71,7 @@ def checked_path(home, name):
 
 def render(home, names):
     if not shutil.which("chezmoi"):
-        raise ValueError("chezmoi is required; on macOS: brew install chezmoi")
+        raise ValueError("chezmoi is required; run mise install")
     with tempfile.TemporaryDirectory(prefix="workbench-render-") as tmp:
         tmp = Path(tmp)
         # Rendering must not depend on the caller's umask (checkpoints use 077).
@@ -109,7 +109,7 @@ def make_plan(home, names, existing):
 def doctor(home, root):
     print(f"Source: {REPO / 'chezmoi'}\nDestination: {home}\nState: {root}")
     tools = {name: shutil.which(name)
-             for name in ("chezmoi", "mise", "herdr", "tmux", "nvim", "git")}
+             for name in ("chezmoi", "mise", "herdr", "tmux", "nvim", "git", "delta")}
     for name, path in tools.items():
         print(f"{name}: {path or 'not installed'}")
     print("Configuration transactions only; package installation/rollback is separate.")

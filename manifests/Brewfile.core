@@ -1,11 +1,8 @@
-# Core Homebrew packages. Installation is explicit; Workbench apply manages files.
-brew "chezmoi"
+# Bootstrap layer only. CLI tools are pinned in chezmoi/dot_config/mise/config.toml.
+# Installation is explicit; Workbench apply manages files.
 brew "mise"
-brew "herdr"
-brew "tmux"
-brew "neovim"
 brew "git"
-brew "git-delta"
-brew "shellcheck"
+# mise's prebuilt tmux trails Homebrew; move it once versions match.
+brew "tmux"
 brew "zsh-autosuggestions"
 brew "zsh-syntax-highlighting"

@@ -27,20 +27,16 @@ Goal: one SSH key per device, no 1Password agent dependency, and no Host-alias
 - Remove the 1Password `Include` and `IdentityAgent` blocks from `~/.ssh/config`
   once every account has a device key.
 
-## 3. Move CLI tools from Homebrew to mise
+## 3. Finish moving CLI tools to mise
 
-mise is cross-platform and pins exact versions, so the same tool set works on
-macOS, Linux, and WSL. Keep Homebrew (or the OS package manager) only for the
-bootstrap layer and things mise cannot own:
+Neovim, Herdr, chezmoi, delta, and shellcheck now come from mise. Remaining:
 
-- Stay on the OS package manager: `mise` itself, `git`, `zsh`,
-  `zsh-autosuggestions`, `zsh-syntax-highlighting`, GUI apps.
-- Move to mise (all have prebuilt aqua backends): `neovim`, `tmux`, `herdr`,
-  `chezmoi`, `delta`, `shellcheck`.
-- Update `env.sh` PATH expectations, `bin/workbench` doctor tool checks,
-  `tests/baseline_smoke.py` hardcoded `/opt/homebrew/bin/...` paths, and
-  `manifests/Brewfile.core`. `chezmoi` must resolve before Workbench runs on a
-  fresh machine, so bootstrap installs mise first and runs `mise install`.
+- `brew uninstall herdr` after the next Herdr server restart; the running server
+  was started from the Homebrew binary.
+- Move `tmux` once mise's prebuilt build (`aqua:tmux/tmux-builds`) reaches the
+  Homebrew version (3.8 vs 3.7c).
+- Bootstrap on a fresh machine: install mise, apply the mise config, then
+  `mise install` so chezmoi exists before Workbench runs.
 
 ## 4. Update the local CLAUDE.md files on each machine
 
