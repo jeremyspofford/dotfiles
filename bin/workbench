@@ -135,6 +135,7 @@ def doctor(home, root):
     print("Configuration transactions only; package installation/rollback is separate.")
     packages_ok = check_packages()
     identity_ok = check_identity(home, tools["git"])
+    mise_ok = check_mise_tools(home, tools["mise"])
     if not tools["chezmoi"]:
         print("Configuration: unable to check without chezmoi.")
         return 1
@@ -150,7 +151,34 @@ def doctor(home, root):
     else:
         print("Configuration: all managed files match.")
     return int(bool(plan["changes"]) or not all(tools.values()) or packages_ok is False
-               or identity_ok is False)
+               or identity_ok is False or mise_ok is False)
+
+
+def check_mise_tools(home, mise):
+    """Every pinned tool (core and chosen optional) must be installed, not just a few on PATH."""
+    if not mise:
+        print("Tools: unable to check without mise.")
+        return None
+    if home.resolve() != Path.home().resolve():
+        print("Tools: skipped; mise reads the real home, not this destination.")
+        return None
+    result = subprocess.run([mise, "ls", "--global", "--missing", "--json"], cwd=home,
+                            capture_output=True, text=True)
+    try:
+        missing = json.loads(result.stdout) if result.returncode == 0 else None
+    except json.JSONDecodeError:
+        missing = None
+    if missing is None:
+        print(f"Tools: mise could not list pinned tools: {result.stderr.strip()[:200]}")
+        return False
+    for tool, versions in sorted(missing.items()):
+        for entry in versions:
+            print(f"MISSING        {tool}@{entry.get('requested_version') or entry.get('version')}")
+    if missing:
+        print("Tools: install with mise install")
+        return False
+    print("Tools: every pinned mise tool is installed.")
+    return True
 
 
 def check_identity(home, git):

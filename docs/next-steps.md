@@ -37,8 +37,6 @@ Neovim, Herdr, chezmoi, delta, and shellcheck now come from mise. Remaining:
   "Optional tools".
 - Move `tmux` once mise's prebuilt build (`aqua:tmux/tmux-builds`) reaches the
   Homebrew version (3.8 vs 3.7c).
-- Bootstrap on a fresh machine: install mise, apply the mise config, then
-  `mise install` so chezmoi exists before Workbench runs.
 
 ## 4. Update the local CLAUDE.md files on other machines
 
@@ -57,9 +55,6 @@ stay local and unmanaged; do not add them to this repository. Describe Workbench
 
 ## Bringing up another machine
 
-Multi-machine bootstrap is not built yet. Install Homebrew packages from
-`manifests/Brewfile.core`, copy `docs/examples/local.gitconfig` to
-`~/.config/git/local.gitconfig` (mode 600) and fill in the identity, then run `./bin/workbench doctor` and
-`./bin/workbench plan --existing replace` from this checkout and review before
-applying. Existing Stow symlinks are left untouched unless `--existing replace`
-is used. Smoke tests currently assume Apple Silicon macOS paths.
+Run `./bootstrap.sh` from the checkout (see README "New machine"). On Linux and
+WSL it installs mise but leaves zsh, tmux, and the zsh plugins to the system
+package manager, and the smoke tests still assume Apple Silicon macOS paths.

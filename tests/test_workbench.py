@@ -103,6 +103,27 @@ class WorkbenchTests(unittest.TestCase):
         self.assertIn("Configuration: all managed files match.", result.stdout)
         self.assertIn("sets user.email", result.stdout)
 
+    def test_doctor_reports_missing_mise_tools(self):
+        missing = wb.json.dumps({"jq": [{"requested_version": "1.8.1", "installed": False}]})
+        fake = wb.subprocess.CompletedProcess([], 0, missing, "")
+        output = io.StringIO()
+        with patch.object(wb.Path, "home", return_value=self.home), \
+                patch.object(wb.subprocess, "run", return_value=fake) as run, contextlib.redirect_stdout(output):
+            self.assertIs(wb.check_mise_tools(self.home, "/bin/mise"), False)
+        self.assertEqual(run.call_args.args[0], ["/bin/mise", "ls", "--global", "--missing", "--json"])
+        self.assertRegex(output.getvalue(), r"MISSING\s+jq@1\.8\.1")
+        fake = wb.subprocess.CompletedProcess([], 0, "{}", "")
+        with patch.object(wb.Path, "home", return_value=self.home), \
+                patch.object(wb.subprocess, "run", return_value=fake), contextlib.redirect_stdout(io.StringIO()):
+            self.assertIs(wb.check_mise_tools(self.home, "/bin/mise"), True)
+
+    def test_doctor_skips_mise_tools_for_other_destinations(self):
+        output = io.StringIO()
+        with patch.object(wb.subprocess, "run") as run, contextlib.redirect_stdout(output):
+            self.assertIsNone(wb.check_mise_tools(self.home, "/bin/mise"))
+        run.assert_not_called()
+        self.assertIn("mise reads the real home", output.getvalue())
+
     def test_doctor_requires_local_identity(self):
         self.apply()
         result = self.run_cli("doctor", ok=False)

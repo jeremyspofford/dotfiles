@@ -4,6 +4,24 @@ A small, chezmoi-based setup for daily work on this Mac: zsh/Bash, Git,
 mise tools, Neovim, and tmux, plus optional tools you choose. `chezmoi/` is the
 configuration source.
 
+## New machine
+
+```sh
+git clone <this repository> ~/workspace/dotfiles
+~/workspace/dotfiles/bootstrap.sh
+```
+
+The script checks for Python 3.9+ and Git and installs the Homebrew bootstrap
+packages (macOS) or mise (Linux), each only after asking. It installs the pinned
+chezmoi, writes `~/.config/git/local.gitconfig` (carrying over the name and email
+from an existing `~/.gitconfig`), shows the Workbench plan and applies it with a
+checkpoint once you confirm, runs `mise install`, and finishes with
+`workbench doctor`. Existing config files are replaced only if you agree, and
+their originals stay in the checkpoint. It is safe to re-run. `--yes` accepts
+every prompt; `--name`, `--email`, and `--existing skip|replace` answer
+individual ones. Optional tools come afterwards with
+`workbench apply --interactive`.
+
 ## Daily use
 
 ```sh
@@ -14,7 +32,8 @@ workbench checkpoints
 ```
 
 `workbench doctor` checks core tool availability, confirms every
-`manifests/Brewfile.core` entry is installed, and compares every managed file
+`manifests/Brewfile.core` entry and every pinned mise tool is installed, checks
+the local Git identity, and compares every managed file
 with the rendered source, including permissions and symlinks. It lists `MISSING`
 packages and `MISSING` or `DRIFT` paths without printing file contents or
 changing installed files. Newer upstream package versions are not reported.
