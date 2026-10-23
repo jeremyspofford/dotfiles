@@ -12,7 +12,37 @@ repository with a single initial commit and keep this one private as the archive
 Sharing privately needs no history change. Git history was scanned with gitleaks
 (230 commits, no credentials).
 
-## 2. Update the local CLAUDE.md files on each machine
+## 2. Replace 1Password SSH with per-device keys and simplify Git identity
+
+Goal: one SSH key per device, no 1Password agent dependency, and no Host-alias
+`insteadOf` rewrites.
+
+- Generate an ed25519 key per device and per account that needs its own key
+  (a forge rejects the same public key on two accounts). Protect it with a
+  passphrase stored in the OS keychain (`AddKeysToAgent yes`, `UseKeychain yes`
+  on macOS), so the key on disk is never usable alone. Revoke per device if lost.
+- In each identity file, replace the `[url "git@host-alias:"] insteadOf` rule
+  with `core.sshCommand = ssh -i ~/.ssh/<key> -o IdentitiesOnly=yes`. Remotes
+  stay plain `git@github.com:` URLs and `~/.ssh/config` loses its alias hosts.
+- Remove the 1Password `Include` and `IdentityAgent` blocks from `~/.ssh/config`
+  once every account has a device key.
+
+## 3. Move CLI tools from Homebrew to mise
+
+mise is cross-platform and pins exact versions, so the same tool set works on
+macOS, Linux, and WSL. Keep Homebrew (or the OS package manager) only for the
+bootstrap layer and things mise cannot own:
+
+- Stay on the OS package manager: `mise` itself, `git`, `zsh`,
+  `zsh-autosuggestions`, `zsh-syntax-highlighting`, GUI apps.
+- Move to mise (all have prebuilt aqua backends): `neovim`, `tmux`, `herdr`,
+  `chezmoi`, `delta`, `shellcheck`.
+- Update `env.sh` PATH expectations, `bin/workbench` doctor tool checks,
+  `tests/baseline_smoke.py` hardcoded `/opt/homebrew/bin/...` paths, and
+  `manifests/Brewfile.core`. `chezmoi` must resolve before Workbench runs on a
+  fresh machine, so bootstrap installs mise first and runs `mise install`.
+
+## 4. Update the local CLAUDE.md files on each machine
 
 `~/CLAUDE.md` and `~/.claude/CLAUDE.md` still describe the retired Stow setup
 (Stow packages, `.commonrc`, `.aliases`, `.secrets`). They are personal and stay
@@ -21,7 +51,7 @@ shell sections to describe Workbench: plan/apply/rollback, `workbench doctor`,
 component list from `COMPONENTS` in `bin/workbench`, and the shell chain
 `.zshrc` → `~/.config/workbench/shell/common.sh` → `env.sh`.
 
-## 3. Optional cleanup
+## 5. Optional cleanup
 
 - Homebrew `curl`, `unzip`, and `zsh` are installed as leaves outside
   `manifests/Brewfile.core` and duplicate system tools.
