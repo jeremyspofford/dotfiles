@@ -325,6 +325,16 @@ class WorkbenchTests(unittest.TestCase):
         self.assertEqual(list(self.home.iterdir()), [])
         self.assertEqual(self.last_checkpoint()["status"], "failed-restored")
 
+    def test_checkpoints_list_in_creation_order_within_one_second(self):
+        for _ in range(5):
+            self.run_cli("checkpoint", "--components", "tmux")
+        listed = [line.split()[0] for line in self.run_cli("checkpoints").stdout.splitlines()]
+        self.assertEqual(len(listed), 5)
+        entries = [json.loads((self.state / "checkpoints" / i / "checkpoint.json").read_text()) for i in listed]
+        created = [(self.state / "checkpoints" / i).stat().st_birthtime for i in listed]
+        self.assertEqual(created, sorted(created))
+        self.assertEqual([e["id"] for e in entries], listed)
+
     def test_checkpoint_path_traversal_refused(self):
         self.run_cli("rollback", "../escape", ok=False)
 

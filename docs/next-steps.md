@@ -47,12 +47,6 @@ stay local and unmanaged; do not add them to this repository. Describe Workbench
 `bin/workbench`, mise as the tool manager, and the machine-local
 `~/.config/git/local.gitconfig`.
 
-## 5. Optional cleanup
-
-- Homebrew `curl`, `unzip`, and `zsh` are installed as leaves outside
-  `manifests/Brewfile.core` and duplicate system tools.
-- `~/.commonrc` and `~/.aliases` are leftovers from Stow; nothing sources them.
-
 ## Bringing up another machine
 
 Run `./bootstrap.sh` from the checkout (see README "New machine"). On Linux and
