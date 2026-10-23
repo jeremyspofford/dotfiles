@@ -40,14 +40,14 @@ Neovim, Herdr, chezmoi, delta, and shellcheck now come from mise. Remaining:
 - Bootstrap on a fresh machine: install mise, apply the mise config, then
   `mise install` so chezmoi exists before Workbench runs.
 
-## 4. Update the local CLAUDE.md files on each machine
+## 4. Update the local CLAUDE.md files on other machines
 
-`~/CLAUDE.md` and `~/.claude/CLAUDE.md` still describe the retired Stow setup
-(Stow packages, `.commonrc`, `.aliases`, `.secrets`). They are personal and stay
-local and unmanaged; do not add them to this repository. Rewrite the dotfiles and
-shell sections to describe Workbench: plan/apply/rollback, `workbench doctor`,
-component list from `COMPONENTS` in `bin/workbench`, and the shell chain
-`.zshrc` → `~/.config/workbench/shell/common.sh` → `env.sh`.
+Done on the primary Mac. On each other machine, `~/CLAUDE.md` and
+`~/.claude/CLAUDE.md` still describe the retired Stow setup. They are personal and
+stay local and unmanaged; do not add them to this repository. Describe Workbench
+(plan/apply/rollback, `apply --interactive`, `doctor`), the components in
+`bin/workbench`, mise as the tool manager, and the machine-local
+`~/.config/git/local.gitconfig`.
 
 ## 5. Optional cleanup
 
