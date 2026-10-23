@@ -1,0 +1,3 @@
+# Optional: workbench apply --components zoetrope, then mise install.
+[tools]
+"github:furkankly/zoetrope" = "0.2.0"

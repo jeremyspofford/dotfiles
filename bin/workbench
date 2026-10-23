@@ -29,12 +29,28 @@ COMPONENTS = {
               ".config/workbench/shell/completion.zsh"],
     "git": [".gitconfig", ".config/git/ignore"],
     "mise": [".config/mise/config.toml"],
-    "herdr": [".config/herdr/config.toml"],
     "tmux": [".tmux.conf"],
     "nvim": [".config/nvim/init.lua"],
     "workbench": [".local/bin/workbench", ".config/chezmoi/chezmoi.toml"],
 }
+# Opt-in components pin their tool in mise's conf.d. A component counts as chosen
+# when any of its files is present; the default plan covers core plus chosen ones.
+OPTIONAL = {
+    "herdr": [".config/mise/conf.d/herdr.toml", ".config/herdr/config.toml"],
+    "zoetrope": [".config/mise/conf.d/zoetrope.toml"],
+}
+OPTIONAL_TOOLS = {"herdr": "herdr", "zoetrope": "zoe"}
+CORE_TOOLS = ("chezmoi", "mise", "tmux", "nvim", "git", "delta")
+COMPONENTS.update(OPTIONAL)
 ALLOWED = {p for paths in COMPONENTS.values() for p in paths}
+
+
+def chosen(home):
+    return [c for c, paths in OPTIONAL.items() if any(os.path.lexists(home / p) for p in paths)]
+
+
+def default_components(home):
+    return [c for c in COMPONENTS if c not in OPTIONAL] + chosen(home)
 
 
 def digest(value):
@@ -108,17 +124,21 @@ def make_plan(home, names, existing):
 
 def doctor(home, root):
     print(f"Source: {REPO / 'chezmoi'}\nDestination: {home}\nState: {root}")
+    selected = chosen(home)
     tools = {name: shutil.which(name)
-             for name in ("chezmoi", "mise", "herdr", "tmux", "nvim", "git", "delta")}
+             for name in (*CORE_TOOLS, *(OPTIONAL_TOOLS[c] for c in selected))}
     for name, path in tools.items():
         print(f"{name}: {path or 'not installed'}")
+    for component in OPTIONAL:
+        print(f"Optional {component}: {'chosen' if component in selected else 'not chosen'}")
     print("Configuration transactions only; package installation/rollback is separate.")
     packages_ok = check_packages()
     identity_ok = check_identity(home, tools["git"])
     if not tools["chezmoi"]:
         print("Configuration: unable to check without chezmoi.")
         return 1
-    plan = make_plan(home, sorted(ALLOWED), "replace")
+    names = sorted({n for c in default_components(home) for n in COMPONENTS[c]})
+    plan = make_plan(home, names, "replace")
     for name in plan["changes"]:
         status = "MISSING" if plan["before"][name]["kind"] == "absent" else "DRIFT"
         print(f"{status:14} {name}")
@@ -346,7 +366,8 @@ def main():
     commands = parser.add_subparsers(dest="command", required=True)
     for name in ("plan", "apply", "checkpoint"):
         sub = commands.add_parser(name)
-        sub.add_argument("--components", nargs="+", choices=COMPONENTS, default=list(COMPONENTS))
+        sub.add_argument("--components", nargs="+", choices=COMPONENTS,
+                         help="default: core components plus optional ones already chosen")
         sub.add_argument("--existing", choices=["skip", "replace"], default="skip")
         if name == "apply":
             sub.add_argument("--plan", required=True, help="exact hash printed by plan")
@@ -391,7 +412,7 @@ def main():
             entry["status"] = "rolled-back"
             atomic_json(path, entry)
         return
-    names = sorted({n for c in args.components for n in COMPONENTS[c]})
+    names = sorted({n for c in (args.components or default_components(home)) for n in COMPONENTS[c]})
     if args.command == "plan":
         show_plan(make_plan(home, names, args.existing), args.color, args.format)
         return

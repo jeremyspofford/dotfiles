@@ -54,6 +54,43 @@ class WorkbenchTests(unittest.TestCase):
         token = self.token("rollback", ident)
         self.run_cli("rollback", ident, "--plan", token)
 
+    def test_default_plan_skips_optional_components_until_chosen(self):
+        plan = self.run_cli("plan").stdout
+        self.assertNotIn("conf.d/herdr.toml", plan)
+        self.assertNotIn(".config/herdr/config.toml", plan)
+        self.apply("--components", "herdr")
+        self.assertTrue((self.home / ".config/mise/conf.d/herdr.toml").is_file())
+        self.assertEqual(wb.chosen(self.home), ["herdr"])
+        plan = self.run_cli("plan").stdout
+        self.assertRegex(plan, r"UNCHANGED\s+\.config/mise/conf\.d/herdr\.toml")
+        self.assertNotIn("conf.d/zoetrope.toml", plan)
+
+    def test_doctor_checks_optional_tools_only_when_chosen(self):
+        self.apply()
+        self.write_local_identity()
+        real_which = wb.shutil.which
+        missing = lambda name: None if name in ("herdr", "zoe") else real_which(name)
+        output = io.StringIO()
+        with patch.object(wb.shutil, "which", side_effect=missing), contextlib.redirect_stdout(output):
+            self.assertEqual(wb.doctor(self.home, self.state), 0)
+        self.assertNotIn("herdr: not installed", output.getvalue())
+        self.assertIn("Optional herdr: not chosen", output.getvalue())
+        self.apply("--components", "herdr")
+        output = io.StringIO()
+        with patch.object(wb.shutil, "which", side_effect=missing), contextlib.redirect_stdout(output):
+            self.assertEqual(wb.doctor(self.home, self.state), 1)
+        self.assertIn("herdr: not installed", output.getvalue())
+        self.assertIn("Optional herdr: chosen", output.getvalue())
+
+    def test_optional_components_pin_tools_outside_core_mise_config(self):
+        core = wb.base64.b64decode(wb.render(self.home, [".config/mise/config.toml"])
+                                   [".config/mise/config.toml"]["data"]).decode()
+        for component, tool in (("herdr", "herdr ="), ("zoetrope", "zoetrope")):
+            self.assertNotIn(tool, core)
+            pin = f".config/mise/conf.d/{component}.toml"
+            self.assertIn(pin, wb.OPTIONAL[component])
+            self.assertIn(tool, wb.base64.b64decode(wb.render(self.home, [pin])[pin]["data"]).decode())
+
     def write_local_identity(self, text='[user]\n    email = "you@example.com"\n'):
         path = self.home / wb.LOCAL_GITCONFIG
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -88,7 +125,7 @@ class WorkbenchTests(unittest.TestCase):
         self.assertTrue(text.rstrip().endswith("[include]\n    path = ~/.config/git/local.gitconfig"))
 
     def test_doctor_reports_drift_without_changing_files_or_checkpoints(self):
-        self.apply()
+        self.apply("--components", *wb.COMPONENTS)
         herdr = self.home / ".config/herdr/config.toml"
         herdr.write_text(herdr.read_text() + "\n# private local preference\n")
         (self.home / ".zshrc").unlink()
@@ -118,9 +155,9 @@ class WorkbenchTests(unittest.TestCase):
         self.write_local_identity()
         real_which = wb.shutil.which
         output = io.StringIO()
-        with patch.object(wb.shutil, "which", side_effect=lambda name: None if name == "herdr" else real_which(name)), contextlib.redirect_stdout(output):
+        with patch.object(wb.shutil, "which", side_effect=lambda name: None if name == "nvim" else real_which(name)), contextlib.redirect_stdout(output):
             self.assertEqual(wb.doctor(self.home, self.state), 1)
-        self.assertIn("herdr: not installed", output.getvalue())
+        self.assertIn("nvim: not installed", output.getvalue())
         self.assertIn("Configuration: all managed files match.", output.getvalue())
 
     def test_doctor_without_chezmoi_reports_unchecked_configuration(self):
@@ -260,7 +297,7 @@ class WorkbenchTests(unittest.TestCase):
             return real_install(path, state)
 
         argv = [str(CLI), "--destination", str(self.home), "--state-dir", str(self.state),
-                "apply", "--existing", "replace", "--plan", wb.digest(plan)]
+                "apply", "--components", *wb.COMPONENTS, "--existing", "replace", "--plan", wb.digest(plan)]
         with patch("sys.argv", argv), patch.object(wb, "install_state", fail_once), contextlib.redirect_stdout(io.StringIO()):
             with self.assertRaisesRegex(OSError, "injected"):
                 wb.main()

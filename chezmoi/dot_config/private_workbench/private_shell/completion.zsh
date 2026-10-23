@@ -40,7 +40,7 @@ _workbench() {
       case "$words[1]" in
         plan|apply|checkpoint)
           specs+=(
-            '--components[Components to manage]:component:(shell git mise herdr tmux nvim workbench)'
+            '--components[Components to manage]:component:(shell git mise tmux nvim workbench herdr zoetrope)'
             '--existing=[How to handle existing files]:policy:(skip replace)'
           )
           # argparse accepts several components, ending at the next option.
@@ -48,7 +48,7 @@ _workbench() {
             [[ $word == --* ]] && last_option=$word
           done
           if [[ $last_option == --components ]]; then
-            specs+=('*:component:(shell git mise herdr tmux nvim workbench)')
+            specs+=('*:component:(shell git mise tmux nvim workbench herdr zoetrope)')
           fi
           case "$words[1]" in
             plan) specs+=('--format=[Preview format]:format:(text html)') ;;

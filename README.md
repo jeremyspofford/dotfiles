@@ -1,7 +1,8 @@
 # Workbench dotfiles
 
 A small, chezmoi-based setup for daily work on this Mac: zsh/Bash, Git,
-mise tools, Neovim, tmux, and Herdr. `chezmoi/` is the configuration source.
+mise tools, Neovim, and tmux, plus optional tools you choose. `chezmoi/` is the
+configuration source.
 
 ## Daily use
 
@@ -39,6 +40,30 @@ workbench rollback <checkpoint-id> --plan <reviewed-rollback-hash>
 
 `chezmoi diff`, `chezmoi status`, and `chezmoi verify` inspect the installed state.
 Use Workbench for apply/rollback so changes retain checkpoints.
+
+## Optional tools
+
+Core components always apply. Optional components add one tool each, pinned in
+its own `~/.config/mise/conf.d/<component>.toml`:
+
+| Component | Adds |
+| --- | --- |
+| `herdr` | Herdr terminal workspace and its config |
+| `zoetrope` | `zoe`, a live flow graph of a Claude Code session |
+
+Choose one, then install it:
+
+```sh
+workbench plan --components herdr
+workbench apply --components herdr --plan <reviewed-hash>
+mise install
+```
+
+A component counts as chosen once any of its files exists. After that, a plain
+`workbench plan` and `workbench doctor` include it; unchosen ones are ignored.
+To drop one, delete its files (for Herdr, `~/.config/mise/conf.d/herdr.toml` and
+`~/.config/herdr/config.toml`) and run `mise prune`. Editor and shell plugins are
+not managed; add them per machine as needed.
 
 ## What's here
 
