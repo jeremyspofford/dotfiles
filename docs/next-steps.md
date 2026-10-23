@@ -49,6 +49,40 @@ stay local and unmanaged; do not add them to this repository. Describe Workbench
 
 ## Bringing up another machine
 
-Run `./bootstrap.sh` from the checkout (see README "New machine"). On Linux and
-WSL it installs mise but leaves zsh, tmux, and the zsh plugins to the system
-package manager, and the smoke tests still assume Apple Silicon macOS paths.
+Run `./bootstrap.sh` from the checkout (see README "New machine"). Linux and WSL
+have not been run yet; expect to fix things on the first run.
+
+### First run on WSL (Ubuntu)
+
+1. Inside WSL, keep the checkout on the Linux filesystem
+   (`~/workspace/dotfiles`), not under `/mnt/c`; file modes and performance
+   depend on it.
+2. Install the bootstrap layer with apt first:
+   `sudo apt install git zsh tmux zsh-autosuggestions zsh-syntax-highlighting python3 curl`.
+   `bootstrap.sh` offers the official mise installer (`curl https://mise.run | sh`)
+   and installs mise into `~/.local/bin`.
+3. Run `./bootstrap.sh`, review the plan, then open a new shell and run
+   `workbench doctor`. Make zsh the login shell with `chsh -s "$(command -v zsh)"`.
+
+Likely problem spots, all macOS-shaped today:
+
+- `chezmoi/dot_config/private_workbench/private_shell/env.sh` lists Homebrew
+  paths and the macOS ChatGPT app's Codex path. They are skipped when missing,
+  but nothing Linux-specific is added.
+- `chezmoi/dot_zshrc` looks for zsh plugins under `/opt/homebrew/share`,
+  `/usr/local/share`, and `/usr/share`. Ubuntu installs them under
+  `/usr/share/zsh-autosuggestions/` and `/usr/share/zsh-syntax-highlighting/`,
+  which should match; verify.
+- `tests/baseline_smoke.py` expects macOS paths (the Codex app path, `/bin/zsh`,
+  pinned Node/Python output). Make it platform-aware before trusting `--live`.
+- `bin/workbench` doctor runs `brew bundle check` only when Homebrew exists; on
+  Linux it reports "unable to check" and does not fail. Decide whether Linux
+  needs an apt package check.
+- SSH on WSL: the old setup routed Git through Windows `ssh.exe` for the
+  1Password agent. With per-device keys (item 2), generate a key inside WSL
+  instead and skip that bridge.
+- Herdr and zoetrope publish Linux builds; choose them with
+  `workbench apply --interactive` after the core works.
+
+A Docker Ubuntu container (`docker run -it ubuntu:24.04`) reproduces most of this
+without touching a real machine.
