@@ -51,7 +51,21 @@ its own `~/.config/mise/conf.d/<component>.toml`:
 | `herdr` | Herdr terminal workspace and its config |
 | `zoetrope` | `zoe`, a live flow graph of a Claude Code session |
 
-Choose one, then install it:
+The quickest way to add, remove, or update tools is the checklist:
+
+```sh
+workbench apply --interactive
+```
+
+It lists core tools (always installed) and optional components, with each pinned
+version and any newer release from `mise outdated`. Space chooses a component or
+marks a tool for update; Enter shows the exact diff; `y` applies it with a
+checkpoint and then runs `mise install` (or `mise uninstall` for removed tools).
+Updates change the pin in this repository so every machine converges; commit them
+afterwards. Homebrew status is shown read-only. Cancelling at any point leaves the
+repository and home directory unchanged.
+
+The same choices work without the checklist:
 
 ```sh
 workbench plan --components herdr
@@ -61,8 +75,8 @@ mise install
 
 A component counts as chosen once any of its files exists. After that, a plain
 `workbench plan` and `workbench doctor` include it; unchosen ones are ignored.
-To drop one, delete its files (for Herdr, `~/.config/mise/conf.d/herdr.toml` and
-`~/.config/herdr/config.toml`) and run `mise prune`. Editor and shell plugins are
+To drop one, uncheck it in `workbench apply --interactive` (rollback restores its
+files), or delete its files and run `mise prune`. Editor and shell plugins are
 not managed; add them per machine as needed.
 
 ## What's here

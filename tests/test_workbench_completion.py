@@ -115,6 +115,8 @@ print ready > "$WB_READY"
             ("workbench plan --components shell --exi", "workbench plan --components shell --existing="),
             ("workbench plan --components shell --existing re", "workbench plan --components shell --existing replace"),
             ("workbench checkpoint --components he", "workbench checkpoint --components herdr"),
+            ("workbench plan --components zo", "workbench plan --components zoetrope"),
+            ("workbench apply --inter", "workbench apply --interactive"),
         ):
             with self.subTest(line=line):
                 self.assertEqual(self.complete(line), expected)

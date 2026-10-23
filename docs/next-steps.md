@@ -33,8 +33,8 @@ Neovim, Herdr, chezmoi, delta, and shellcheck now come from mise. Remaining:
 
 - `brew uninstall herdr` after the next Herdr server restart; the running server
   was started from the Homebrew binary.
-- Optional components exist (`herdr`, `zoetrope`); see README "Optional tools".
-  A `workbench remove <component>` command would replace deleting files by hand.
+- Optional components and `workbench apply --interactive` exist; see README
+  "Optional tools".
 - Move `tmux` once mise's prebuilt build (`aqua:tmux/tmux-builds`) reaches the
   Homebrew version (3.8 vs 3.7c).
 - Bootstrap on a fresh machine: install mise, apply the mise config, then

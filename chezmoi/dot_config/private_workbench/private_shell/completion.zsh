@@ -52,7 +52,8 @@ _workbench() {
           fi
           case "$words[1]" in
             plan) specs+=('--format=[Preview format]:format:(text html)') ;;
-            apply) specs+=('--plan=[Exact hash from the reviewed preview]:reviewed plan hash:') ;;
+            apply) specs+=('--plan=[Exact hash from the reviewed preview]:reviewed plan hash:'
+                           '--interactive[Choose optional tools and updates in a checklist]') ;;
           esac
           ;;
         rollback)

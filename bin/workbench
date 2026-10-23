@@ -12,6 +12,7 @@ import io
 import json
 import os
 from pathlib import Path
+import re
 import shutil
 import stat
 import subprocess
@@ -172,18 +173,15 @@ def check_identity(home, git):
 
 def check_packages():
     """Report Brewfile entries that are not installed; newer upstream versions are not drift."""
-    brew = shutil.which("brew")
-    if not brew:
+    missing = missing_packages()
+    if missing is None:
         print("Packages: unable to check without Homebrew.")
         return None
-    result = subprocess.run([brew, "bundle", "check", "--no-upgrade", "--verbose", "--file", str(BREWFILE)],
-                            capture_output=True, text=True)
-    if result.returncode == 0:
+    if not missing:
         print(f"Packages: all {BREWFILE.name} entries are installed.")
         return True
-    for line in (result.stdout + result.stderr).splitlines():
-        if line.startswith("→"):
-            print(f"MISSING        {line.lstrip('→ ').split(' needs')[0]}")
+    for name in missing:
+        print(f"MISSING        {name}")
     print(f"Packages: install with brew bundle install --file {BREWFILE}")
     return False
 
@@ -356,6 +354,226 @@ def restore(home, entry, replace_edits=False):
             pass  # Never remove a nonempty directory or unrelated contents.
 
 
+# Interactive selection. Decisions live in plain functions so they can be tested
+# without a terminal; the curses layer only collects choices.
+MISE_SOURCE = REPO / "chezmoi/dot_config/mise"
+OPTIONAL_DESCRIPTIONS = {"herdr": "Herdr terminal workspace", "zoetrope": "zoe: live flow graph of a Claude Code session"}
+PIN = re.compile(r'^(?P<key>"[^"]+"|[A-Za-z0-9_.:/@+-]+)\s*=\s*"(?P<version>[^"]+)"\s*(#.*)?$')
+
+
+def pin_source(component):
+    return MISE_SOURCE / ("config.toml" if component is None else f"conf.d/{component}.toml")
+
+
+def read_pins(path):
+    pins, section = {}, None
+    for line in path.read_text().splitlines():
+        stripped = line.strip()
+        if stripped.startswith("["):
+            section = stripped
+        elif section == "[tools]" and (match := PIN.match(stripped)):
+            pins[match["key"].strip('"')] = match["version"]
+    return pins
+
+
+def set_pin(text, tool, old, new):
+    """Change exactly one [tools] pin; refuse anything ambiguous."""
+    lines, section, hits = text.splitlines(keepends=True), None, []
+    for index, line in enumerate(lines):
+        stripped = line.strip()
+        if stripped.startswith("["):
+            section = stripped
+        elif section == "[tools]" and (match := PIN.match(stripped)) \
+                and match["key"].strip('"') == tool and match["version"] == old:
+            hits.append(index)
+    if len(hits) != 1:
+        raise ValueError(f"Expected one pin {tool} = {old!r}, found {len(hits)}")
+    lines[hits[0]] = lines[hits[0]].replace(f'"{old}"', f'"{new}"', 1)
+    return "".join(lines)
+
+
+def fetch_outdated():
+    """Newest release per live pin; empty when offline or mise is unavailable."""
+    if not shutil.which("mise"):
+        return {}
+    try:
+        result = subprocess.run(["mise", "outdated", "--bump", "--json"], capture_output=True,
+                                text=True, timeout=90)
+        return json.loads(result.stdout) if result.returncode == 0 and result.stdout.strip() else {}
+    except (subprocess.TimeoutExpired, json.JSONDecodeError):
+        return {}
+
+
+def inventory(outdated):
+    rows = []
+    for component in (None, *OPTIONAL):
+        source = pin_source(component)
+        if not source.is_file():
+            continue
+        for tool, version in read_pins(source).items():
+            latest = (outdated.get(tool) or {}).get("bump")
+            rows.append({"component": component, "tool": tool, "pinned": version,
+                         "latest": latest if latest and latest != version else None})
+    return rows
+
+
+def selection_changes(current, choices, bumps, rows):
+    """Translate checklist state into components to write, remove, and pins to bump."""
+    add = [c for c in OPTIONAL if choices[c] and c not in current]
+    remove = [c for c in OPTIONAL if not choices[c] and c in current]
+    bump_rows = [r for r in rows if r["tool"] in bumps and r["latest"]
+                 and (r["component"] is None or choices[r["component"]])]
+    touched = set(add) | {r["component"] or "mise" for r in bump_rows}
+    return {"add": add, "remove": remove, "bumps": bump_rows, "touched": sorted(touched)}
+
+
+def selection_plan(home, changes):
+    names = sorted({n for c in changes["touched"] for n in COMPONENTS[c]})
+    plan = make_plan(home, names, "replace") if names else {
+        "destination": str(home), "existing": "replace", "before": {}, "desired": {}, "changes": {}}
+    for component in changes["remove"]:
+        for name in COMPONENTS[component]:
+            before = file_state(checked_path(home, name))
+            if before["kind"] != "absent":
+                plan["before"][name] = before
+                plan["desired"][name] = plan["changes"][name] = {"kind": "absent"}
+    return plan
+
+
+def missing_packages():
+    """None without Homebrew; otherwise the Brewfile entries that are not installed."""
+    brew = shutil.which("brew")
+    if not brew:
+        return None
+    result = subprocess.run([brew, "bundle", "check", "--no-upgrade", "--verbose", "--file", str(BREWFILE)],
+                            capture_output=True, text=True)
+    if result.returncode == 0:
+        return []
+    return [line.lstrip("→ ").split(" needs")[0]
+            for line in (result.stdout + result.stderr).splitlines() if line.startswith("→")]
+
+
+def checklist(screen, rows, choices, footer):
+    """Curses checklist. Returns (choices, bumps), or None when cancelled."""
+    import curses
+    choices, bumps = dict(choices), set()
+    items = [("header", "Core (always installed)")]
+    items += [("tool", r) for r in rows if r["component"] is None]
+    items.append(("header", "Optional (Space to choose)"))
+    for component in OPTIONAL:
+        items.append(("component", component))
+        items += [("tool", r) for r in rows if r["component"] == component]
+    selectable = [i for i, (kind, value) in enumerate(items) if kind == "component"
+                  or (kind == "tool" and value["latest"])]
+    cursor, top = 0, 0
+    with contextlib.suppress(curses.error):
+        curses.curs_set(0)
+    while True:
+        height, width = screen.getmaxyx()
+        body = max(1, height - 4)
+        current = selectable[cursor] if selectable else -1
+        top = min(max(top, current - body + 1), max(current, 0)) if selectable else 0
+        screen.erase()
+        lines = []
+        for index, (kind, value) in enumerate(items):
+            if kind == "header":
+                lines.append((index, value, curses.A_BOLD))
+            elif kind == "component":
+                mark = "[x]" if choices[value] else "[ ]"
+                lines.append((index, f"{mark} {value:<12} {OPTIONAL_DESCRIPTIONS.get(value, '')}", 0))
+            else:
+                indent = "      " if value["component"] else "  "
+                if value["latest"]:
+                    mark = "[u]" if value["tool"] in bumps else "[ ]"
+                    status = f"{value['pinned']} -> {value['latest']}"
+                else:
+                    mark, status = "   ", f"{value['pinned']}  up to date" if value["component"] is None \
+                        or choices[value["component"]] else value["pinned"]
+                lines.append((index, f"{indent}{mark} {value['tool']:<28} {status}", 0))
+        for row, (index, text, attr) in enumerate(lines[top:top + body]):
+            if index == current:
+                attr |= curses.A_REVERSE
+            with contextlib.suppress(curses.error):
+                screen.addnstr(row, 0, text, width - 1, attr)
+        for offset, text in enumerate(("Up/Down move   Space choose or mark update   Enter review   q cancel", footer)):
+            with contextlib.suppress(curses.error):
+                screen.addnstr(height - 2 + offset, 0, text, width - 1, curses.A_DIM)
+        screen.refresh()
+        key = screen.getch()
+        if key in (ord("q"), 27):
+            return None
+        if key in (10, 13, curses.KEY_ENTER):
+            return choices, bumps
+        if key in (curses.KEY_UP, ord("k")) and cursor > 0:
+            cursor -= 1
+        elif key in (curses.KEY_DOWN, ord("j")) and cursor < len(selectable) - 1:
+            cursor += 1
+        elif key in (ord(" "), ord("u")) and selectable:
+            kind, value = items[selectable[cursor]]
+            if kind == "component":
+                choices[value] = not choices[value]
+            else:
+                bumps ^= {value["tool"]}
+
+
+def has_terminal():
+    return sys.stdin.isatty() and sys.stdout.isatty()
+
+
+def interactive_apply(root, home, color):
+    import curses
+    if not has_terminal():
+        raise ValueError("--interactive needs a terminal; use plan and apply --plan instead")
+    print("Checking mise for newer releases...", flush=True)
+    rows = inventory(fetch_outdated())
+    current = chosen(home)
+    packages = missing_packages()
+    footer = ("Homebrew: unavailable" if packages is None else
+              "Homebrew bootstrap: all installed (read-only)" if not packages else
+              f"Homebrew bootstrap missing (read-only): {', '.join(packages)}")
+    picked = curses.wrapper(checklist, rows, {c: c in current for c in OPTIONAL}, footer)
+    if picked is None:
+        print("Cancelled; nothing changed.")
+        return
+    changes = selection_changes(current, *picked, rows)
+    if not (changes["add"] or changes["remove"] or changes["bumps"]):
+        print("Nothing selected; nothing changed.")
+        return
+    originals = {}
+    try:
+        # Pins live in the repository so every machine converges on the same versions.
+        for row in changes["bumps"]:
+            source = pin_source(row["component"])
+            originals.setdefault(source, source.read_text())
+            source.write_text(set_pin(source.read_text(), row["tool"], row["pinned"], row["latest"]))
+        plan = selection_plan(home, changes)
+        show_plan(plan, color)
+        if input("Apply these changes? [y/N] ").strip().lower() not in ("y", "yes"):
+            raise KeyboardInterrupt
+        with locked(root):
+            if digest(selection_plan(home, changes)) != digest(plan):
+                raise ValueError("Files changed while reviewing; nothing applied")
+            apply_plan(root, home, plan)
+    except KeyboardInterrupt:
+        for source, text in originals.items():
+            source.write_text(text)
+        print("\nCancelled; nothing changed.")
+        return
+    except BaseException:
+        for source, text in originals.items():
+            source.write_text(text)
+        raise
+    if changes["add"] or changes["bumps"]:
+        subprocess.run(["mise", "install"], check=True)
+    for component in changes["remove"]:
+        for tool, version in read_pins(pin_source(component)).items():
+            subprocess.run(["mise", "uninstall", f"{tool}@{version}"], check=False)
+    if originals:
+        print("Pins changed in the repository; review and commit them:")
+        for source in originals:
+            print(f"  git -C {REPO} diff -- {source.relative_to(REPO)}")
+
+
 def main():
     os.umask(0o077)
     parser = argparse.ArgumentParser(description=__doc__)
@@ -370,7 +588,9 @@ def main():
                          help="default: core components plus optional ones already chosen")
         sub.add_argument("--existing", choices=["skip", "replace"], default="skip")
         if name == "apply":
-            sub.add_argument("--plan", required=True, help="exact hash printed by plan")
+            sub.add_argument("--plan", help="exact hash printed by plan")
+            sub.add_argument("--interactive", action="store_true",
+                             help="choose optional tools and updates in a checklist, then review and confirm")
         elif name == "plan":
             sub.add_argument("--format", choices=["text", "html"], default="text",
                              help="export a readable color diff with --format html")
@@ -412,6 +632,12 @@ def main():
             entry["status"] = "rolled-back"
             atomic_json(path, entry)
         return
+    if args.command == "apply" and args.interactive:
+        if args.plan or args.components:
+            raise ValueError("--interactive chooses components itself; omit --plan and --components")
+        return interactive_apply(root, home, args.color)
+    if args.command == "apply" and not args.plan:
+        raise ValueError("apply needs --plan <hash> from workbench plan, or --interactive")
     names = sorted({n for c in (args.components or default_components(home)) for n in COMPONENTS[c]})
     if args.command == "plan":
         show_plan(make_plan(home, names, args.existing), args.color, args.format)
@@ -424,31 +650,37 @@ def main():
         if args.plan != digest(plan):
             raise ValueError("Plan is stale or options differ; run plan again before applying")
         show_plan(plan, args.color)
-        if not plan["changes"]:
-            print("No changes.")
-            return
-        before = {n: plan["before"][n] for n in plan["changes"]}
-        directory, entry = checkpoint(root, home, before, plan["changes"], "before-apply")
+        apply_plan(root, home, plan)
+
+
+def apply_plan(root, home, plan):
+    """Checkpoint, install, and verify; restores every file if any step fails. Caller holds the lock."""
+    if not plan["changes"]:
+        print("No changes.")
+        return None
+    before = {n: plan["before"][n] for n in plan["changes"]}
+    directory, entry = checkpoint(root, home, before, plan["changes"], "before-apply")
+    try:
+        for name, desired in plan["changes"].items():
+            path = checked_path(home, name)
+            if file_state(path) != before[name]:
+                raise ValueError(f"Target changed during apply: {name}")
+            install_state(path, desired)
+        if any(file_state(home / n) != s for n, s in plan["changes"].items()):
+            raise ValueError("Post-apply verification failed")
+        entry["status"] = "applied"
+    except BaseException:
         try:
-            for name, desired in plan["changes"].items():
-                path = checked_path(home, name)
-                if file_state(path) != before[name]:
-                    raise ValueError(f"Target changed during apply: {name}")
-                install_state(path, desired)
-            if any(file_state(home / n) != s for n, s in plan["changes"].items()):
-                raise ValueError("Post-apply verification failed")
-            entry["status"] = "applied"
-        except BaseException:
-            try:
-                restore(home, entry)
-                entry["status"] = "failed-restored"
-            except Exception as error:
-                entry["status"] = "recovery-required"
-                print(f"Automatic restore stopped: {error}; use checkpoint {entry['id']}", file=sys.stderr)
-            raise
-        finally:
-            atomic_json(directory / "checkpoint.json", entry)
-        print("Applied and verified. Rollback id:", entry["id"])
+            restore(home, entry)
+            entry["status"] = "failed-restored"
+        except Exception as error:
+            entry["status"] = "recovery-required"
+            print(f"Automatic restore stopped: {error}; use checkpoint {entry['id']}", file=sys.stderr)
+        raise
+    finally:
+        atomic_json(directory / "checkpoint.json", entry)
+    print("Applied and verified. Rollback id:", entry["id"])
+    return entry["id"]
 
 
 if __name__ == "__main__":
