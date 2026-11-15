@@ -8,6 +8,7 @@
 #
 # Usage:
 #   source "$(dirname "$0")/logger.sh"        # or an absolute path
+#   bash scripts/logger.sh --help
 #   log_info "Starting deploy"
 #   log_success "Deploy finished"
 #   log_warning "Config not found, using defaults"
@@ -44,8 +45,9 @@
 #                   If 1, log_debug lines print.
 #
 # Notes:
-#   - This file only DEFINES functions and color variables. It does not
-#     change the calling script's shell options; call set_strict yourself.
+#   - When sourced, this file defines functions, colors and DOTFILES_VERSION.
+#     It does not change the caller's shell options; call set_strict yourself.
+#     When executed directly, it accepts -h/--help and rejects other arguments.
 #   - Improvements over the original (Jeremy's deployment logger, kept in
 #     logger.orig.sh): printf instead of echo -e (portable, and message
 #     text can never be read as format flags); colors auto-disable for
@@ -56,6 +58,8 @@
 #     outside a git repo; optional timestamps.
 #
 # Author: Jeremy Spofford / Aria Labs (original), Muse (improvements)
+# Version: read from ../VERSION at runtime, with "unknown" as the fallback.
+# Exit codes when executed: 0 help; 2 invalid or missing arguments.
 # =============================================================================
 
 # Guard against being sourced twice.
@@ -237,3 +241,63 @@ set_verbose() {
 set_quiet() {
 	set +x
 }
+
+# CLI handling runs only when executed, never when sourced by another script.
+if [[ ${BASH_SOURCE[0]} == "$0" ]]; then
+	set_strict
+	usage() {
+		cat <<EOF
+logger.sh — common logger for shell scripts
+Usage: source scripts/logger.sh
+       bash scripts/logger.sh --help
+
+Source this file for logging and shared helpers. Sourcing preserves your shell
+options and loads DOTFILES_VERSION from the repository VERSION file.
+
+Parameters:
+  -h, --help  Print full help and exit 0.
+  No other command-line arguments are accepted.
+
+Functions:
+  log_info MESSAGE...       General progress (stdout).
+  log_success MESSAGE...    Completed steps (stdout).
+  log_warning MESSAGE...    Warning (stderr); log_warn is an alias.
+  log_error MESSAGE...      Error (stderr).
+  log_debug MESSAGE...      Debug output when enabled (stderr).
+  log_section MESSAGE...    Section banner (stdout).
+  log_kv KEY VALUE          Aligned key/value output (stdout).
+  log_heredoc COLOR         Read lines from stdin and print them in COLOR.
+  error_exit MESSAGE [CODE] Log an error and exit (default: 1).
+  command_exists COMMAND    Return 0 when COMMAND is available.
+  require_commands CMD...   Exit 1 and list any missing commands.
+  get_repo_dir             Print Git root; return 1 outside a repository.
+  set_strict               Enable set -euo pipefail in the caller.
+  set_verbose              Enable shell tracing.
+  set_quiet                Disable shell tracing.
+
+Environment:
+  DEBUG=1 or DOTFILES_DEBUG=1  Enable debug messages.
+  LOG_TIMESTAMP=1             Prefix log lines with the current time.
+  NO_COLOR=1                  Disable terminal colors.
+  Colors are also disabled when stdout is not a terminal.
+
+Examples:
+  source scripts/logger.sh
+  log_info "Starting setup"
+  log_warn "Optional configuration missing"
+  require_commands git curl
+  DOTFILES_DEBUG=1 log_debug "Checking configuration"
+
+Exit codes: 0 help; 2 invalid or missing arguments.
+Author: Jeremy Spofford / Aria Labs (original), Muse (improvements).
+Version: $DOTFILES_VERSION (VERSION).
+EOF
+	}
+	if [[ $# == 1 && ($1 == --help || $1 == -h) ]]; then
+		usage
+		exit 0
+	fi
+	log_error "Source logger.sh for its functions, or run it with --help."
+	usage >&2
+	exit 2
+fi
