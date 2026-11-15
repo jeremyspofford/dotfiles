@@ -33,3 +33,71 @@ test('Keep a Changelog headings and plain-language entries', async () => {
   assert.match(notes, /^## \[0\.0\.2\] - \d{4}-\d{2}-\d{2}/);
   assert.match(notes, /### Fixed\n\n- Improve setup/);
 });
+
+// Exercise the real pinned Manifest API, stubbing only the GitHub transport.
+// Policy-only unit tests cannot catch changes to the proposal return shape.
+const { createManifest, runRelease } = require('../scripts/release.cjs');
+const config = require('../release-please-config.json');
+const baseline = require('../.release-please-manifest.json')['.'];
+function releaseFixture(messages, { tagOnly = false } = {}) {
+  const writes = [];
+  const tag = { name: 'v' + baseline, sha: config['bootstrap-sha'] };
+  const github = {
+    repository: { owner: 'example', repo: 'dotfiles' },
+    async *releaseIterator() {
+      if (!tagOnly) yield { ...tag, tagName: tag.name, notes: 'Scaffold baseline' };
+    },
+    async *tagIterator() { yield tag; },
+    async *mergeCommitIterator() {
+      for (const [index, message] of messages.entries()) {
+        yield { sha: 'commit-' + index, message, files: ['scripts/release.cjs'] };
+      }
+      yield { sha: tag.sha, message: 'Scaffold baseline', files: [] };
+      throw new Error('Must stop at the baseline instead of reading legacy history');
+    },
+    async *pullRequestIterator() {},
+    async createPullRequest(pr, branch, message, updates) {
+      writes.push({ pr, branch, message, updates });
+      return { ...pr, number: 42 };
+    },
+  };
+  return { manifest: createManifest(github, baseline, config), writes };
+}
+
+for (const messages of [[], ['Merge pull request #2 from example/maintenance']]) {
+  test('no releasable commits completes without writes: ' + JSON.stringify(messages), async () => {
+    const { manifest, writes } = releaseFixture(messages);
+    assert.deepEqual(await manifest.buildPullRequests(), []);
+    await runRelease(manifest);
+    assert.deepEqual(writes, []);
+  });
+}
+
+for (const tagOnly of [false, true]) {
+  test('fix proposes 0.0.2 through the Manifest API, tagOnly=' + tagOnly, async () => {
+    const { manifest, writes } = releaseFixture(['fix: handle release proposal versions'], { tagOnly });
+    await runRelease(manifest);
+    assert.equal(writes.length, 1);
+    const { pr, updates } = writes[0];
+    assert.match(pr.title, /0\.0\.2/);
+    const update = (path, content) => updates.find(item => item.path === path).updater.updateContent(content);
+    assert.equal(update('VERSION', baseline + '\n'), '0.0.2\n');
+    assert.equal(JSON.parse(update('.release-please-manifest.json', JSON.stringify({ '.': baseline })))['.'], '0.0.2');
+    const changelog = update('CHANGELOG.md', '# Changelog\n');
+    assert.match(changelog, /## \[0\.0\.2\]/);
+    assert.match(changelog, /### Fixed\n\n- handle release proposal versions/);
+    assert.doesNotMatch(changelog, /Scaffold baseline/);
+  });
+}
+
+test('dry run validates a real proposal without writing', async () => {
+  const { manifest, writes } = releaseFixture(['fix: handle release proposal versions']);
+  await runRelease(manifest, { dryRun: true });
+  assert.deepEqual(writes, []);
+});
+
+test('API errors still fail the release runner', async () => {
+  const { manifest } = releaseFixture([]);
+  manifest.buildPullRequests = async () => { throw new Error('GitHub unavailable'); };
+  await assert.rejects(runRelease(manifest), /GitHub unavailable/);
+});

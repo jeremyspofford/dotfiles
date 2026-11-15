@@ -22,15 +22,19 @@ async function main() {
   if (raw.versioning !== 'zero-major' || raw['version-file'] !== 'VERSION') {
     throw new Error('Release policy must use zero-major and VERSION.');
   }
-  registerVersioningStrategy('zero-major', () => new ZeroMajor());
-  registerChangelogNotes('keep-a-changelog', () => new KeepAChangelog());
   const [owner, repo, extra] = (process.env.GITHUB_REPOSITORY || '').split('/');
   if (!owner || !repo || extra || !process.env.GITHUB_TOKEN) {
     throw new Error('GITHUB_REPOSITORY and GITHUB_TOKEN are required.');
   }
   const github = await GitHub.create({ owner, repo, token: process.env.GITHUB_TOKEN });
+  await runRelease(createManifest(github, version, raw), { dryRun: process.argv.includes('--dry-run') });
+}
+
+function createManifest(github, version, raw) {
+  registerVersioningStrategy('zero-major', () => new ZeroMajor());
+  registerChangelogNotes('keep-a-changelog', () => new KeepAChangelog());
   // Explicit configuration prevents remote release-as overrides bypassing the strategy.
-  const manifest = new Manifest(github, 'main', { '.': {
+  return new Manifest(github, 'main', { '.': {
     releaseType: 'simple',
     versionFile: 'VERSION',
     versioning: 'zero-major',
@@ -45,18 +49,31 @@ async function main() {
   } }, { '.': Version.parse(version) }, {
     bootstrapSha: raw['bootstrap-sha'],
   });
+}
+
+async function runRelease(manifest, { dryRun = false } = {}) {
   const candidates = await manifest.buildPullRequests();
+  // The public API returns ReleasePullRequest[], not internal CandidateReleasePullRequest wrappers.
   for (const candidate of candidates) {
-    assertZero(candidate.pullRequest.version);
-    console.log('Release-please proposal: ' + candidate.pullRequest.version);
+    assertZero(candidate.version);
+    console.log('Release-please proposal: ' + candidate.version);
   }
   const releases = await manifest.buildReleases();
   for (const candidate of releases) assertZero(candidate.tag.version);
-  if (process.argv.includes('--dry-run')) {
+  if (candidates.length === 0 && releases.length === 0) {
+    console.log('No releasable changes or pending releases; nothing to publish.');
+    return;
+  }
+  if (dryRun) {
     console.log('Dry run: no GitHub writes.');
     return;
   }
   await manifest.createReleases();
   await manifest.createPullRequests();
 }
-main().catch(error => { console.error(error.message); process.exitCode = 1; });
+
+if (require.main === module) {
+  main().catch(error => { console.error(error.stack); process.exitCode = 1; });
+}
+
+module.exports = { createManifest, runRelease };
