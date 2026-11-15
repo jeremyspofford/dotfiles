@@ -25,6 +25,10 @@ jobs:
       - name: Bootstrap in fresh Linux container
         run: |
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          # Applying .gitconfig replaces the temporary global setting above.
+          # Keep this container-only exception in the supported local override.
+          mkdir -p "$HOME/.config/git"
+          git config --file "$HOME/.config/git/local.gitconfig" --add safe.directory "$GITHUB_WORKSPACE"
           bash scripts/bootstrap.sh --repo "$GITHUB_WORKSPACE" --source "$HOME/.local/share/chezmoi"
           "$HOME/.local/bin/chezmoi" apply --dry-run
           zsh -lic '[[ -r ~/.secrets && -r ~/.aliases ]]; print "Managed zsh started"'
