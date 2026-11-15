@@ -13,6 +13,7 @@ import shutil
 import stat
 import subprocess
 import tempfile
+import tomllib
 import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -48,7 +49,7 @@ class InstallerTests(unittest.TestCase):
         self.git("init", "--quiet", "--initial-branch=main")
         self.git("remote", "add", "origin", REPO)
         self.commit("test: seed installer fixture")
-        self.source = self.home / ".local/share/chezmoi"
+        self.source = self.home / "dotfiles"
         self.installer = ["bash", str(self.seed / "install.sh")]
 
     def run_command(self, command, expected=0, **kwargs):
@@ -103,6 +104,10 @@ class InstallerTests(unittest.TestCase):
             self.assertFalse((self.home / name).is_symlink(), name)
         self.assertEqual(stat.S_IMODE((self.home / ".secrets").stat().st_mode), 0o600)
         self.assertFalse((self.home / "install.sh").exists())
+        self.assertFalse((self.home / ".local/share/chezmoi").exists())
+        self.assert_fresh_shell_uses_visible_checkout()
+        self.assertIn("Your dotfiles live in: ~/dotfiles — a git checkout. Edit files there, then run: chezmoi apply", first.stdout)
+        self.assertNotIn("Source:", first.stdout)
         before = self.snapshot()
         # Compare managed content/modes, not chezmoi's mutable state database.
         self.run_command(self.installer + ["--defaults"], umask=0o022)
@@ -120,6 +125,119 @@ class InstallerTests(unittest.TestCase):
         self.assertEqual(self.run_command(["git", "-C", str(self.source), "rev-parse", "HEAD"]).stdout,
                          self.git("rev-parse", "HEAD"))
         self.assertEqual(self.run_command(["chezmoi", "status"]).stdout, "")
+
+    def assert_fresh_shell_uses_visible_checkout(self):
+        config = tomllib.loads((self.home / ".config/chezmoi/chezmoi.toml").read_text())
+        self.assertEqual(config["sourceDir"], str(self.source))
+        # Only a home and an ordinary executable search path: no XDG/CHEZMOI
+        # variables, per-command flags, or inherited shell functions/aliases.
+        clean_env = {"HOME": str(self.home), "PATH": self.env["PATH"], "TERM": "dumb"}
+        result = subprocess.run(
+            ["bash", "-ic", 'cd /; chezmoi source-path && chezmoi status && chezmoi apply && chezmoi status'],
+            env=clean_env, cwd=self.base, capture_output=True, text=True)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertEqual(result.stdout, str(self.source) + "\n")
+
+    @staticmethod
+    def tree_snapshot(root):
+        # Compare all saved bytes, links, and modes, including Git metadata.
+        snapshot = {}
+        for path in sorted(root.rglob("*")):
+            content = (os.readlink(path) if path.is_symlink() else
+                       hashlib.sha256(path.read_bytes()).hexdigest() if path.is_file() else None)
+            snapshot[str(path.relative_to(root))] = (stat.S_IMODE(path.lstat().st_mode), content)
+        return snapshot
+
+    def seed_legacy_install(self, explicit_source=False):
+        legacy = self.home / ".local/share/chezmoi"
+        legacy.parent.mkdir(parents=True)
+        self.run_command(["git", "clone", REPO, str(legacy)])
+        config = self.home / ".config/chezmoi/chezmoi.toml"
+        config.parent.mkdir(parents=True)
+        source_setting = f'sourceDir = "{legacy}"\n' if explicit_source else ""
+        config.write_text(source_setting + 'umask = 0o077\n[data]\ndomain = "personal"\n'
+                          'gitName = "Fixture Person"\ngitEmail = "fixture@example.invalid"\n')
+        self.run_command(["chezmoi", "apply"])
+        self.assertEqual(self.run_command(["chezmoi", "status"]).stdout, "")
+        return legacy, config
+
+    def check_legacy_migration(self, explicit_source):
+        legacy, config = self.seed_legacy_install(explicit_source)
+        saved_config = config.read_bytes()
+        inode = legacy.stat().st_ino
+        before = self.snapshot()
+        archive = legacy.with_name("chezmoi.pre-reset-20261115")
+        self.run_command(["git", "clone", str(legacy), str(archive)])
+        (archive / "keep-this-file").write_text("Preserved archive\n")
+        archived = self.tree_snapshot(archive)
+        # Simulate pulling the update, with no changes to managed home outputs.
+        with (self.seed / "README.md").open("a") as handle:
+            handle.write("\nFixture upstream update.\n")
+        self.commit("docs: exercise migration fast-forward")
+        result = self.run_command(self.installer)
+        self.assertIn("Moving your existing dotfiles checkout to ~/dotfiles", result.stdout)
+        self.assertFalse(legacy.exists())
+        self.assertEqual(self.source.stat().st_ino, inode)  # moved, not re-cloned
+        self.assertEqual(self.run_command(["git", "-C", str(self.source), "rev-parse", "HEAD"]).stdout,
+                         self.git("rev-parse", "HEAD"))
+        self.assertEqual(self.tree_snapshot(archive), archived)
+        self.assertEqual(self.snapshot(), before)
+        self.assert_fresh_shell_uses_visible_checkout()
+        data = tomllib.loads(config.read_text())["data"]
+        self.assertEqual(data["domain"], "personal")
+        self.assertEqual(data["gitName"], "Fixture Person")
+        backup = next((self.home / "dotfleet-backups").iterdir())
+        self.assertEqual((backup / "home/.config/chezmoi/chezmoi.toml").read_bytes(), saved_config)
+        # Repeat after migration; neither the archive nor managed state changes.
+        self.run_command(self.installer)
+        self.assertEqual(self.snapshot(), before)
+        self.assertEqual(self.tree_snapshot(archive), archived)
+
+    def test_migrates_default_legacy_source_and_preserves_archive(self):
+        self.check_legacy_migration(explicit_source=False)
+
+    def test_migrates_explicit_legacy_source_config(self):
+        self.check_legacy_migration(explicit_source=True)
+
+    def test_occupied_visible_path_changes_nothing(self):
+        legacy, _ = self.seed_legacy_install()
+        for kind in ("directory", "file", "unrelated-repository", "symlink"):
+            with self.subTest(kind=kind):
+                if kind == "file":
+                    self.source.write_text("Not dotfiles\n")
+                elif kind == "symlink":
+                    self.source.symlink_to(legacy, target_is_directory=True)
+                else:
+                    self.source.mkdir()
+                    (self.source / "keep-me").write_text("Unrelated files\n")
+                    if kind == "unrelated-repository":
+                        self.run_command(["git", "-C", str(self.source), "init", "--quiet"])
+                        self.run_command(["git", "-C", str(self.source), "remote", "add", "origin", "https://example.invalid/other.git"])
+                before = self.tree_snapshot(self.home)
+                result = self.run_command(self.installer, expected=1)
+                self.assertIn(str(self.source), result.stderr)
+                self.assertIn("must not be a symlink" if kind == "symlink" else "already exists and is not this repository's clone", result.stderr)
+                self.assertEqual(self.tree_snapshot(self.home), before)
+                self.assertTrue(legacy.is_dir())
+                self.assertFalse((self.home / "dotfleet-backups").exists())
+                if self.source.is_symlink() or self.source.is_file():
+                    self.source.unlink()
+                else:
+                    shutil.rmtree(self.source)
+
+    def test_bootstrap_domain_option_selects_each_documented_domain(self):
+        for domain in ("personal", "work", "client", "core"):
+            with self.subTest(domain=domain):
+                # Each selection starts with no saved profile; updates preserve
+                # existing profile data through promptStringOnce.
+                config = self.home / ".config/chezmoi/chezmoi.toml"
+                config.unlink(missing_ok=True)
+                self.run_command(["bash", str(self.seed / "scripts/bootstrap.sh"), "--domain", domain])
+                data = tomllib.loads(config.read_text())["data"]
+                self.assertEqual(data["domain"], domain)
+                self.run_command(["bash", str(self.seed / "scripts/bootstrap.sh"), "--domain", "core"])
+                self.assertEqual(tomllib.loads(config.read_text())["data"]["domain"], domain)
+                self.assertEqual(self.run_command(["chezmoi", "status"]).stdout, "")
 
     def test_missing_git_or_curl_fails_with_summary_before_changes(self):
         for missing in ("git", "curl"):
@@ -156,7 +274,7 @@ class InstallerTests(unittest.TestCase):
         self.assertEqual((self.home / ".zshrc").read_text(), (self.seed / "dot_zshrc").read_text())
         self.run_command(["git", "-C", str(self.source), "remote", "set-url", "origin", "https://example.invalid/other.git"])
         result = self.run_command(self.installer + ["--defaults"], expected=1)
-        self.assertIn("Source belongs to another repository", result.stderr)
+        self.assertIn("already exists and is not this repository\'s clone", result.stderr)
         self.assertEqual(self.snapshot(), before)
 
     def run_on_terminal(self, responses):
@@ -190,7 +308,7 @@ class InstallerTests(unittest.TestCase):
                 if not chunk:
                     break
                 transcript += chunk
-                if not responses and b"Domain (core, personal, work, client)" in transcript:
+                if not responses and b"Domain (core: shared; personal: shared+personal; work: shared+employer; client: shared+client)" in transcript:
                     break  # An update must not ask for the profile again.
             elif process.poll() is not None:
                 break
@@ -212,9 +330,9 @@ class InstallerTests(unittest.TestCase):
         self.assertEqual(answered, len(responses), transcript.decode(errors="replace"))
 
     def test_first_run_prompts_on_terminal_and_reuses_personal_identity(self):
-        responses = [(b"Domain (core, personal, work, client)", b"personal\r"),
-                     (b"Git name (optional)", b"Fixture Person\r"),
-                     (b"Git email (optional)", b"fixture@example.invalid\r")]
+        responses = [(b"Domain (core: shared; personal: shared+personal; work: shared+employer; client: shared+client)", b"personal\r"),
+                     (b"Git name (commit author; blank=unset)", b"Fixture Person\r"),
+                     (b"Git email (commit author email; blank=unset)", b"fixture@example.invalid\r")]
         self.run_on_terminal(responses)
         config = (self.home / ".config/chezmoi/chezmoi.toml").read_text()
         self.assertIn('domain = "personal"', config)

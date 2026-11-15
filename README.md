@@ -1,52 +1,133 @@
 # dotfiles
 
-A standalone, chezmoi-managed shell and Git scaffold, built from a sanitized
-existing Workbench configuration. Git stores the source, chezmoi renders it for
-one machine and domain, and Mise manages tools. You can use this layer on its own.
+Dotfiles are home configuration files. These come from Workbench, an older setup, with private details removed.
+Git records file versions. chezmoi copies or renders configuration files into your home. Mise installs and selects developer tool versions.
+Layer 0, this repository, works alone. Planned [Dotfleet](https://github.com/jeremyspofford/dotfleet) forms Layer 1 and manages multiple machines.
+Add-ons will extend Dotfleet. This repository has no custom sync engine, graphical interface, background service, or agent pack.
 
 ## Install
+
+A checkout is a local Git copy of this repository.
+The installer puts a checkout of this repository at ~/dotfiles; that folder is what chezmoi reads, and it's where you edit your dotfiles.
+A **profile** is the saved domain and Git commit identity for this machine. A domain selects one group of settings.
+Bash runs terminal commands. curl downloads files. tar unpacks archives.
 
 ```sh
 curl -fsSL https://raw.githubusercontent.com/jeremyspofford/dotfiles/main/install.sh | bash
 ```
 
-- Backs up existing managed files, installs missing user-local tools, and prompts for your domain and Git identity before applying.
-- Re-running the same command fast-forwards the source and updates your dotfiles.
-- Backups live in `~/dotfleet-backups/<YYYYMMDD-HHMMSS>/`, including symlinks and external file targets.
+- Setup backs up files, installs missing tools, asks for your profile, and applies settings.
+- Re-run this command to update the checkout and your home files.
+- Backups live in `~/dotfleet-backups/<YYYYMMDD-HHMMSS>/`. They include links and their external file targets.
 
-Roll back by reviewing the backup's `MANIFEST` and restoring its saved files; see the [rollback procedure](docs/DESIGN.md#enrollment-and-rollback).
+Roll back by restoring saved files from a backup's `MANIFEST`; follow the [rollback steps](docs/DESIGN.md#enrollment-and-rollback).
 
-![dotfiles, Dotfleet and add-on layers](docs/diagrams/layers.svg)
+Choose a domain and identity at the prompts:
 
-Dotfleet will consume dotfiles to provide onboarding and fleet profiles.
-Add-ons will extend Dotfleet. Neither is required here; there is no custom sync
-engine, GUI, daemon, or agent pack.
+| Prompt choice | Meaning |
+| --- | --- |
+| `core` | Shared settings only; the default |
+| `personal` | Shared settings plus your personal settings |
+| `work` | Shared settings plus your employer's settings |
+| `client` | Shared settings plus settings for a client |
+| Git name / email | Optional author name and email for commits; blank means no identity here |
 
-## Concepts
+First-run prompts read `/dev/tty`, the terminal device, never piped input. Updates reuse the profile.
+For disposable test homes, `bash install.sh --defaults` selects `core` and a blank identity without a terminal.
+Core supplies shell startup, aliases, Git defaults, and tool setup to every machine. It does not depend on the machine or role.
+An overlay adds one role's aliases, settings, and configuration fragments. Personal, work, and client each select exactly one overlay above core.
+Choose the machine's role at the prompt. Domains keep personal and employer settings separate.
+Domain folders start empty. Aliases are command shortcuts; this setup invents no personal aliases.
 
-Three ideas explain everything this repository does:
+Use Linux, macOS, or WSL (Windows Subsystem for Linux). Install Bash, git, curl, and tar first. Native Windows users must use WSL.
+Missing chezmoi and Mise binaries go in `~/.local/bin`. The installer needs no sudo or GitHub login.
+Install zsh, another command shell, separately if wanted. Changing your login shell is a separate step.
 
-- **Your checkout.** The installer keeps a full copy of this repository on your machine and prints its location in the end summary. That checkout is the source chezmoi reads. To change your dotfiles, edit files in the checkout, then run `chezmoi apply`. The files in your home directory are generated from the checkout — editing them directly works only until the next apply overwrites them.
-- **Core.** The baseline configuration that every machine gets: shell startup files, aliases, Git defaults and tool setup. Core always applies; it is not tied to any one machine or role. Choosing `core` as your domain means "baseline only, nothing role-specific."
-- **Domains.** On top of core, each machine gets exactly one overlay matching its role: `personal`, `work` or `client`. The overlay is where role-specific aliases, settings and fragments live, so the same baseline can serve a personal laptop and a work machine without mixing their settings. Pick the domain that matches the machine when the installer asks. You can switch later by changing `[data].domain` in `~/.config/chezmoi/chezmoi.toml` and applying again — the old overlay's files are removed, not left behind.
+An existing `~/dotfiles` must be this repository's clean `main` checkout.
+Updates must fast-forward: advance without merging separate histories.
+Setup refuses local edits, unrelated repositories, and separate histories. It never overwrites unrelated `~/dotfiles` contents.
+First runs from another clone copy its committed files without changing it.
+Updates move the active checkout from the previous hidden location when `~/dotfiles` is absent. Preserved archives stay untouched.
+Saved configuration points chezmoi at `~/dotfiles`. Bare `chezmoi status` and `chezmoi apply` work from any directory.
+The end summary prints the checkout location and commit. Edit checkout files, then run `chezmoi apply`.
+Direct edits to generated home files can be overwritten by the next apply.
+
+## Files in your home
+
+With default directory settings, chezmoi creates or updates these managed files:
+
+- `~/.zshrc`, `~/.zprofile`, `~/.zshenv`: zsh startup.
+- `~/.bashrc`, `~/.bash_profile`: Bash startup.
+- `~/.commonrc`, `~/.aliases`: shared shell setup and shortcuts.
+- `~/.gitconfig`, `~/.config/git/ignore`: Git settings and ignored paths.
+- `~/.secrets`: private secrets file; comments only by default.
+- `~/.config/chezmoi/chezmoi.toml`: saved source path, domain, and identity.
+- `~/.config/dotfiles/domain.zsh`, `~/.config/dotfiles/platform.zsh`, `~/.config/dotfiles/interactive.zsh`: domain, operating-system, and interactive settings.
+- `~/.config/mise/config.toml`, `~/.config/starship.toml`: tool manager and prompt settings.
+
+See [GENERATED.md](docs/GENERATED.md) for every source, output, and regeneration command.
+Bash interactive/login sessions and zsh load aliases, secrets, tool paths, and Mise through `~/.commonrc`.
+Optional tools activate only when installed: Starship formats prompts, eza lists files, and fzf finds choices by partial text.
+The [Workbench tool example](docs/examples/workbench-tools.toml) retains existing versions and commented WSL additions. Setup does not install that example.
+
+## Use and update
+
+Run `diff`, which shows proposed changes, only in a private terminal: it can expose secrets.
+`update` pulls Git changes and applies them. Re-running the installer also makes a backup.
+
+```sh
+chezmoi status
+chezmoi diff
+chezmoi apply
+chezmoi update
+cd ~/dotfiles && git pull && chezmoi apply
+bash ~/dotfiles/scripts/bootstrap.sh --help
+```
+
+Change `[data].domain` in `~/.config/chezmoi/chezmoi.toml` to a domain listed above, then run `chezmoi apply`.
+The new overlay replaces the old overlay in the same generated files; obsolete settings disappear.
+The `.chezmoi.toml.tmpl` template creates local configuration. Templates contain placeholders for machine settings.
+Git identity can instead live in `~/.config/git/local.gitconfig`; see the [example](docs/examples/local.gitconfig).
+Keep machine-only shell edits in `~/.commonrc.local`, `~/.aliases.local`, `~/.zshrc.local`, or `~/.bashrc.local`.
+These optional files are user-owned; setup neither generates nor commits them.
+
+With the AWS command-line tool installed, `sso PROFILE` signs in and exports credentials into the current shell.
+`PROFILE` is an AWS profile name. Without that argument, set `AWS_PROFILE` to the desired name first.
+Shell startup never signs in to AWS.
+
+## Optional agent setup
+
+An agent is an installed coding assistant. The generator writes detected agents' settings, skill links, and an output record.
+Skills are folders of agent instructions. Use the generator to share them across installed agents.
+Skip it without agents or to keep your setup. It neither installs agents nor handles logins.
+Requires Python 3.11+. From `~/dotfiles`, preview first: `--dry-run` lists paths without writing.
+
+```sh
+bash scripts/generate-agent-configs.sh --dry-run
+bash scripts/generate-agent-configs.sh
+```
+
+Unknown or edited outputs stop generation. See [agent instructions](docs/AGENTS.md) for paths, conflicts, and removal.
+Ollama uses process/service settings; this generator writes no Ollama configuration.
+
+## Secrets
+
+Secrets are off by default. The generated `~/.secrets` contains comments and uses mode `0600`: only its owner can read or write it.
+To enable secrets:
+
+1. Install the 1Password command-line tool and sign in.
+2. Set `secretsEnabled = true` under `[data]` in `~/.config/chezmoi/chezmoi.toml`.
+3. Set `secretReference = "op://YourVault/YourItem/field"` to your vault, item, and field.
+4. Run `chezmoi apply`.
+
+Keep references in Git, never secret values. Shell quoting prevents values from becoming commands.
+Repository and global Git ignore rules exclude `.secrets`. Never run `chezmoi add ~/.secrets`.
+The `private_` source prefix protects file permissions. One named template holds the secret-file content.
 
 ## Advanced bootstrap
 
-The installer supports Linux, macOS and WSL and requires Bash, git, curl and tar.
-It downloads official chezmoi/Mise binaries into `~/.local/bin` only when missing;
-no sudo or GitHub authentication is needed. Install zsh separately if desired.
-Python 3.11+ is needed only for the optional agent generator. Native Windows users
-should run the installer inside WSL.
-
-The first run reads domain and identity prompts from `/dev/tty`, including when
-piped from curl. Later runs reuse your machine-local profile. For disposable CI
-homes, `bash install.sh --defaults` explicitly accepts core and a blank identity.
-An existing canonical source must be a clean checkout of this repository on
-`main`; the installer refuses unrelated repositories, local edits and divergent
-history. When invoked from a local clone on first enrollment, it copies that
-clone's committed tree into the canonical location without changing the original.
-
-For direct bootstrap use (without the installer's backup/update wrapper):
+Bootstrap is the lower-level setup script, without installer backups or updates.
+For direct interactive setup, run:
 
 ```sh
 git clone https://github.com/jeremyspofford/dotfiles.git
@@ -54,81 +135,50 @@ cd dotfiles
 bash scripts/bootstrap.sh --interactive
 ```
 
-Choose `core`, `personal`, `work` or `client` at the prompt. The selected overlay
-adds to core; identity stays machine-local. The lower-level bootstrap also accepts
-`--domain personal` for noninteractive setup with default identity values.
-
-To use **your own trusted chezmoi repository**, use this bootstrap as tooling:
+`--interactive` prompts for domain and identity. `--domain personal` selects initial personal settings and default identity without prompts. Existing profiles keep their saved domain.
+For your own trusted repository, preview before applying:
 
 ```sh
 bash scripts/bootstrap.sh --repo https://github.com/you/dotfiles.git --dry-run
 bash scripts/bootstrap.sh --repo https://github.com/you/dotfiles.git
 ```
 
-Both modes initialize a checkout and validate templates with `chezmoi diff`
-before applying. Dry-run installs tools and initializes source/config state but
-does not apply dotfiles. Diff content is suppressed to keep secrets out of logs.
-A failing diff prevents apply. A repo can run code through templates and hooks;
-dry-run is validation, not a sandbox. The own-repo mode does not inject this
-project's aliases, domain values, secrets template, or agents.
+`--repo` selects a repository. `--dry-run` installs tools and initializes source/configuration state without applying home files.
+Both modes validate templates with `chezmoi diff` before applying. A failed diff stops apply. Bootstrap hides diff content to protect secrets.
+Templates and hooks can execute commands. Hooks are chezmoi-triggered commands. Dry-run provides no security isolation.
+Own-repository mode adds none of this project's aliases, domains, secret templates, or agents.
 
-Open zsh after setup. Set it as your login shell separately if desired.
-Interactive Bash and Bash login sessions are also managed; both shells share
-`~/.commonrc` for aliases, secrets, tool paths and Mise activation.
-Starship, eza, fzf and other integrations activate only when installed. The
-[optional Workbench Mise profile](docs/examples/workbench-tools.toml) preserves
-the existing tool choices and commented WSL additions; it is not automatically installed.
+## Uninstall
 
-## Usage
+Keep a terminal open until you restore usable shell files. Do not delete unrelated files, credentials, shared tools, or preserved archives.
 
-```sh
-chezmoi status
-chezmoi diff                   # May display secrets; use only in a private terminal.
-chezmoi apply
-chezmoi update                 # Git pull plus apply; ordinary chezmoi behavior.
-bash scripts/generate-agent-configs.sh --dry-run
-bash scripts/generate-agent-configs.sh
-bash scripts/bootstrap.sh --help
-```
-
-Change `[data].domain` in `~/.config/chezmoi/chezmoi.toml`, then apply again.
-The repository's `.chezmoi.toml.tmpl` creates this machine-local configuration.
-Names and email addresses are optional template data or can stay in
-`~/.config/git/local.gitconfig`; see the [sanitized example](docs/examples/local.gitconfig).
-
-Machine-only shell adjustments can stay in `~/.commonrc.local`,
-`~/.aliases.local`, `~/.zshrc.local` or `~/.bashrc.local`. These optional
-inputs are not generated or committed. When AWS CLI is installed, `sso PROFILE`
-logs in and exports credentials in the current shell; omitting PROFILE requires
-an existing `AWS_PROFILE`. Shell startup never performs an AWS login.
-
-Secrets are disabled by default, so a fresh machine gets a private, comment-only
-`~/.secrets`. To enable a value, install/sign in to 1Password CLI and set
-`secretsEnabled = true` and `secretReference = "op://YourVault/YourItem/field"`
-under local `[data]`, then apply. Only references belong in source control.
-The rendered file is mode 0600, shell-escaped, and ignored by both repository and
-managed global Git ignore rules. Never run `chezmoi add ~/.secrets`.
+1. Run `chezmoi status`. Back up checkout edits and changed home files privately before removal.
+2. Run `chezmoi managed --include files,symlinks` and save the list outside `~/dotfiles`. `files,symlinks` selects files and symbolic links, which point to other paths.
+3. If you used the agent generator, follow its [removal steps](docs/AGENTS.md#remove-generated-agent-files) before deleting the checkout.
+4. Remove only the listed managed files. Restore original files from an installer backup using the [rollback steps](docs/DESIGN.md#enrollment-and-rollback).
+   Keep any user edits you saved. Remove empty generated directories with `rmdir`; leave directories containing unrelated files.
+5. Run `chezmoi purge`. It removes the checkout, configuration, and state, but keeps home outputs.
+   Step 4 is therefore required. Review the confirmation. See [purge documentation](https://www.chezmoi.io/reference/commands/purge/).
+6. Remove `~/.local/bin/chezmoi` and `~/.local/bin/mise` only if this installer added them and no other project uses them.
+   If Mise is no longer needed, remove its installed runtimes at `~/.local/share/mise` and cache at `~/.cache/mise`.
+   A cache stores reusable downloads or results. Keep shared tools and user-owned settings.
+7. Keep `~/dotfleet-backups` until you verify recovery. Open a fresh shell. Restore your previous login shell separately if you changed it.
 
 ## How it works
 
-| Source of truth | Generated result |
-| --- | --- |
-| `dot_zshenv`, `dot_zprofile`, `dot_zshrc` | Shell startup files |
-| `dot_bash_profile`, `dot_bashrc`, `dot_commonrc` | Bash startup and shared interactive setup |
-| `core/aliases.zsh` plus selected domain | `~/.aliases` |
-| `dot_config/` templates and files | Platform/domain fragments, prompt, Git ignore, Mise settings |
-| `dot_gitconfig.tmpl` plus local data | `~/.gitconfig` |
-| `.chezmoitemplates/dot_secrets.tmpl` | `~/.secrets` via `private_dot_secrets.tmpl` |
-| `agents/manifest.toml`, `agents/skills/` | Native configs, skill links and output inventory |
-| `docs/diagrams/layers.d2` | Committed `layers.svg` |
+![dotfiles, Dotfleet and add-on layers](docs/diagrams/layers.svg)
 
-The `private_` chezmoi attribute protects secrets permissions; the named secrets
-template holds the content in one place. Source-only directories are excluded by
-`.chezmoiignore`. Every output and regeneration command is listed in
-[GENERATED.md](docs/GENERATED.md). Agent defaults and limitations, including
-Ollama's environment-only model, are documented in [AGENTS.md](docs/AGENTS.md).
+Source files are the files you edit; generated outputs are their rendered copies or links.
+Shell sources create startup files. Core aliases and one domain create `~/.aliases`. Git settings combine a template with local data.
+The `dot_config/` sources create operating-system, domain, prompt, Git ignore, and Mise settings.
+`agents/manifest.toml` is the agent configuration list; `agents/skills/` holds skill content. The generator records its outputs.
+D2, a diagram tool, produces the committed SVG, a vector image. `.chezmoiignore` excludes source-only files from your home.
+Read [DESIGN.md](docs/DESIGN.md) for boundaries and [RELEASES.md](docs/RELEASES.md) for release rules and recorded live tests.
 
-## Development and review
+## Development
+
+CI means continuous integration: automated change checks. It checks shells, fresh Linux setup, isolated apply/preview, releases, and diagrams.
+CI uses D2 0.7.1. Run:
 
 ```sh
 shellcheck -x install.sh scripts/*.sh
@@ -139,10 +189,7 @@ npm run test:release
 d2 --layout=dagre docs/diagrams/layers.d2 docs/diagrams/layers.svg
 ```
 
-CI runs shell checks, a fresh Linux-container bootstrap, isolated chezmoi
-dry-run/apply tests, release-policy tests and D2 rendering. D2 is pinned to 0.7.1
-in CI. Read [DESIGN.md](docs/DESIGN.md) for boundaries and [RELEASES.md](docs/RELEASES.md)
-for the owner-only 1.0.0 gate and pending live release test. VERSION is the
-version source; Conventional Commit subjects become plain-language changelog entries.
-
-This repository is public. Its history was reset on 2026-11-15; the earlier history is preserved in a private archive.
+`--layout=dagre` selects the diagram layout engine used by CI. ShellCheck checks shell code; shfmt checks its formatting.
+`VERSION` is the version source. Conventional Commits use type-prefixed subjects, such as `fix: repair setup`; subjects become release-note entries.
+Only the owner can authorize a manual 1.0.0 release. Follow [WRITING.md](docs/WRITING.md) for documentation changes.
+This repository is public. Its history was reset on 2026-11-15. The private archive preserves earlier history.

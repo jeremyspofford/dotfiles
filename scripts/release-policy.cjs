@@ -1,10 +1,11 @@
 /**
- * Purpose: fail-closed 0.x policy and Keep a Changelog rendering for release-please.
- * Usage: imported by release.cjs; tests: node --test tests/release-policy.test.cjs.
- * Parameters: release-please strategy/notes API inputs.
+ * Purpose: Reject automatic releases outside 0.x and format release notes.
+ * Release-please proposes releases. Keep a Changelog defines the note format.
+ * Usage: import from release.cjs; test with node --test tests/release-policy.test.cjs.
+ * Parameters: strategy and note inputs from release-please's programming interface.
  * Example: new ZeroMajor().bump(Version.parse('0.0.1'), commits).
- * Exit codes: library throws on forbidden release; wrapper reports failure.
- * Author: Jeremy Spofford / Aria Labs; project version comes from VERSION.
+ * Exit codes: this library throws for forbidden releases; the wrapper reports failure.
+ * Author: Jeremy Spofford / Aria Labs; Version: project version comes from VERSION.
  */
 const { DefaultVersioningStrategy } = require('release-please/build/src/versioning-strategies/default');
 const { Version } = require('release-please/build/src/version');

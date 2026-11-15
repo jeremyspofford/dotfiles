@@ -1,4 +1,4 @@
-{{- $domain := promptStringOnce . "domain" "Domain (core, personal, work, client)" "core" -}}
+{{- $domain := promptStringOnce . "domain" "Domain (core: shared; personal: shared+personal; work: shared+employer; client: shared+client)" "core" -}}
 {{- if not (has $domain (list "core" "personal" "work" "client")) -}}
 {{- fail "domain must be core, personal, work, or client" -}}
 {{- end }}
@@ -6,11 +6,13 @@
 # Keep managed files/directories private (0600/0700), including on later applies.
 # The private_ source attribute also explicitly protects .secrets.
 umask = 0o077
+# Persist the initialized checkout so bare chezmoi commands work in any shell.
+sourceDir = {{ .chezmoi.sourceDir | quote }}
 
 [data]
 domain = {{ $domain | quote }}
-gitName = {{ promptStringOnce . "gitName" "Git name (optional)" "" | quote }}
-gitEmail = {{ promptStringOnce . "gitEmail" "Git email (optional)" "" | quote }}
+gitName = {{ promptStringOnce . "gitName" "Git name (commit author; blank=unset)" "" | quote }}
+gitEmail = {{ promptStringOnce . "gitEmail" "Git email (commit author email; blank=unset)" "" | quote }}
 # Enable only after installing/signing in to the 1Password CLI.
 secretsEnabled = {{ get . "secretsEnabled" | default false }}
 secretReference = {{ get . "secretReference" | default "op://Example/Development/api-token" | quote }}

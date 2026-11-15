@@ -5,6 +5,7 @@
 .gitignore
 .github
 README.md
+AGENTS.md
 install.sh
 VERSION
 CHANGELOG.md

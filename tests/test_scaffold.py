@@ -51,7 +51,7 @@ class ScaffoldTests(unittest.TestCase):
                 self.assertEqual(subprocess.check_output(
                     ["git", "config", "--file", str(home / ".gitconfig"), "--get", "init.defaultBranch"],
                     text=True).strip(), "main")
-                for metadata in (".git", ".gitignore", ".github"):
+                for metadata in (".git", ".gitignore", ".github", "AGENTS.md"):
                     self.assertFalse((home / metadata).exists())
                 self.assertFalse((home / "scripts").exists())
                 self.assertFalse((home / "agents").exists())

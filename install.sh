@@ -1,15 +1,18 @@
 #!/usr/bin/env bash
-# Purpose: Enroll or update a machine using the bundled chezmoi scaffold.
-# Usage: bash install.sh [--defaults]; see usage() for the curl | bash command.
-# Parameters: --defaults (noninteractive core profile), -h, --help.
+# Purpose: Install or update the bundled home configuration.
+# Usage: bash install.sh [--defaults]; see --help for the one-line command.
+# Parameters: --defaults selects shared settings and blank Git identity without prompts.
+# -h and --help print full help.
 # Examples: bash install.sh; bash install.sh --defaults
-# Exit codes: 0 success/help; 1 preflight/install/drift failure; 2 invalid arguments.
+# Exit codes: 0 success/help; 1 missing tool, install failure, or drift; 2 invalid arguments.
+# Drift means home files differ from the generated result.
 # Author: Jeremy Spofford / Aria Labs; Version: read from VERSION at runtime.
 set -euo pipefail
 
 repo=https://github.com/jeremyspofford/dotfiles.git
 raw=https://raw.githubusercontent.com/jeremyspofford/dotfiles/main
-source_path="$HOME/.local/share/chezmoi"
+source_path="$HOME/dotfiles"
+legacy_source_path="$HOME/.local/share/chezmoi"
 script_path=${BASH_SOURCE[0]:-}
 script_dir=
 if [[ -n $script_path && -f $script_path ]]; then
@@ -21,19 +24,27 @@ if [[ -n $script_dir && -r $script_dir/VERSION ]]; then
 fi
 usage() {
 	cat <<HELP
-install.sh — enroll or update this machine ($DOTFILES_VERSION)
+install.sh — install or update dotfiles ($DOTFILES_VERSION)
 Usage: bash install.sh [OPTIONS]
        curl -fsSL $raw/install.sh | bash
 
-Back up existing managed files, install missing user-local chezmoi/Mise,
-and apply the bundled dotfiles. Requires Bash, git, curl and tar on Linux,
-macOS or WSL. No sudo. First-run prompts read /dev/tty, never piped stdin.
-Choose a domain and Git identity on first run; updates reuse that profile.
-An existing canonical checkout must be clean, on main, and fast-forwardable.
-A local clone can seed a first install; its committed checkout is used as-is.
+Dotfiles are home configuration files. chezmoi generates them; Mise manages tools.
+Setup backs up existing managed files, then applies the bundled files.
+It installs missing chezmoi and Mise into ~/.local/bin without sudo.
+Requires Bash, git, curl, and tar on Linux, macOS, or WSL.
+WSL means Windows Subsystem for Linux. Native Windows users must use WSL.
+
+A profile saves this machine's domain and Git commit identity.
+Domain choices: core = shared only; personal = shared plus personal settings;
+work = shared plus employer settings; client = shared plus client settings.
+Git name/email identify the commit author; blank leaves identity unset here.
+First-run prompts read /dev/tty, the terminal device, never piped input.
+Updates reuse the profile. The ~/dotfiles Git checkout must be clean and on main.
+Updates must fast-forward: advance without merging separate histories.
+A first run inside another clone copies its committed files without changing it.
 
 Options:
-  --defaults  Explicitly accept core/blank identity without a terminal (CI).
+  --defaults  Select core and blank identity without prompts; for test homes.
   -h, --help  Print full help and exit 0.
 
 Examples:
@@ -41,11 +52,13 @@ Examples:
   bash install.sh --defaults
   curl -fsSL $raw/install.sh | bash
 
-Backups: ~/dotfleet-backups/<YYYYMMDD-HHMMSS>/ (unique suffix on collision).
-Source: ~/.local/share/chezmoi. Tools: ~/.local/bin when missing from PATH.
-Inspect backups' MANIFEST before restoring home/ files; external symlink
-file targets are preserved separately under external/. See docs/DESIGN.md.
-Exit codes: 0 success/help; 1 runtime failure; 2 invalid arguments.
+Edit your checkout at ~/dotfiles, then run chezmoi apply.
+Backups: ~/dotfleet-backups/<YYYYMMDD-HHMMSS>/; collisions get a unique suffix.
+MANIFEST records saved/absent paths and link targets. home/ holds file copies.
+external/ holds file targets outside your home. Review MANIFEST before restoring.
+See docs/DESIGN.md for recovery steps.
+Exit codes: 0 success/help; 1 missing tool, install failure, or drift; 2 invalid arguments.
+Drift means home files differ from the generated result.
 Author: Jeremy Spofford / Aria Labs; Version: $DOTFILES_VERSION (VERSION).
 HELP
 }
@@ -76,16 +89,19 @@ finish() {
 	log_info 'END SUMMARY'
 	log_info "Result: $([[ $result == 0 ]] && echo SUCCESS || echo FAILED) (exit $result)"
 	log_info "Backup: $backup_path"
-	log_info "Source: $source_path"
+	log_info 'Your dotfiles live in: ~/dotfiles — a git checkout. Edit files there, then run: chezmoi apply'
 	log_info "Commit: $source_commit"
 	log_info "chezmoi status: $status_result"
 	log_info 'Additional information'
 	log_info "Update: curl -fsSL $raw/install.sh | bash"
-	log_info 'Or: cd ~/.local/share/chezmoi && git pull && chezmoi apply'
+	log_info 'Or: cd ~/dotfiles && git pull && chezmoi apply'
 	log_info 'Check drift: chezmoi status (or ~/.local/bin/chezmoi status before opening a new shell).'
 	log_info 'Backups: ~/dotfleet-backups/<timestamp>/; MANIFEST records saved and absent paths and symlink targets.'
 	# shellcheck disable=SC2016 # Print a command for the user to run later.
-	log_info 'Roll back: review MANIFEST; restore external/ targets to their recorded paths, then cp -a BACKUP/home/. "$HOME/"; remove only newly created files marked absent. Do not apply again until ready.'
+	log_info 'Roll back: review MANIFEST. Restore external/ targets to their recorded paths.'
+	# shellcheck disable=SC2016 # Print a command for the user to run later.
+	log_info 'Then run: cp -a BACKUP/home/. "$HOME/". Remove only newly created files marked absent.'
+	log_info 'Do not apply again until ready.'
 	log_info "Docs: $source_path/README.md and $source_path/docs/DESIGN.md"
 	[[ -z $work_dir ]] || rm -rf -- "$work_dir"
 	exit "$result"
@@ -93,6 +109,8 @@ finish() {
 
 is_this_repo() {
 	local origin
+	# Do not mistake an ordinary directory inside another checkout for a clone.
+	[[ -e $1/.git ]] || return 1
 	origin=$(git -C "$1" config --get remote.origin.url 2>/dev/null) || return 1
 	case $origin in
 	https://github.com/jeremyspofford/dotfiles | https://github.com/jeremyspofford/dotfiles.git | git@github.com:jeremyspofford/dotfiles.git | ssh://git@github.com/jeremyspofford/dotfiles.git) return 0 ;;
@@ -150,7 +168,7 @@ main() {
 	# A piped standalone script has no adjacent logger yet. Load the canonical
 	# logger before emitting messages; curl's own diagnostics cover download
 	# failure. The shell itself reports a missing curl before a logger exists.
-	local logger_path='' os local_clone='' config_path inventory_tool relative stamp suffix origin
+	local logger_path='' os local_clone='' config_path inventory_tool relative stamp suffix origin migrated=0
 	if [[ -n $script_dir && -r $script_dir/scripts/logger.sh ]]; then
 		logger_path="$script_dir/scripts/logger.sh"
 	elif command -v git >/dev/null && is_this_repo "$source_path" && [[ -r $source_path/scripts/logger.sh ]]; then
@@ -186,23 +204,40 @@ main() {
 	[[ -n $work_dir ]] || work_dir=$(mktemp -d)
 	physical_home=$(cd -P -- "$HOME" && pwd)
 
+	# Check the visible destination before touching the old checkout or home.
 	if [[ -e $source_path || -L $source_path ]]; then
 		[[ ! -L $source_path ]] || error_exit "Source must not be a symlink: $source_path"
-		is_this_repo "$source_path" || error_exit "Source belongs to another repository: $source_path"
+		is_this_repo "$source_path" || error_exit "Cannot install: $source_path already exists and is not this repository's clone. Nothing was changed; move it aside yourself before retrying."
+	elif [[ -e $legacy_source_path || -L $legacy_source_path ]] && is_this_repo "$legacy_source_path"; then
+		[[ ! -L $legacy_source_path && -d $legacy_source_path/.git ]] || error_exit 'The previous checkout must be a directory clone, not a symlink or linked worktree.'
+		require_clean_clone "$legacy_source_path"
+		[[ $(git -C "$legacy_source_path" branch --show-current) == main ]] || error_exit 'The previous checkout must be on main before migration.'
+		# Finish network/fast-forward checks before moving the active checkout.
+		log_info 'Updating your existing checkout before moving it to ~/dotfiles'
+		git -C "$legacy_source_path" pull --ff-only origin main </dev/null
+		log_info 'Moving your existing dotfiles checkout to ~/dotfiles'
+		mv -- "$legacy_source_path" "$source_path"
+		migrated=1
+	fi
+
+	if [[ -e $source_path ]]; then
 		require_clean_clone "$source_path"
-		[[ $(git -C "$source_path" branch --show-current) == main ]] || error_exit 'Canonical source must be on main before updating.'
-		log_info 'Fast-forwarding the canonical source'
-		git -C "$source_path" pull --ff-only origin main </dev/null
+		[[ $(git -C "$source_path" branch --show-current) == main ]] || error_exit 'The ~/dotfiles checkout must be on main before updating.'
+		if [[ $migrated == 0 ]]; then
+			log_info 'Updating ~/dotfiles from GitHub'
+			git -C "$source_path" pull --ff-only origin main </dev/null
+		fi
 	else
 		if [[ -n $script_dir ]] && is_this_repo "$script_dir"; then
 			local_clone=$(git -C "$script_dir" rev-parse --show-toplevel)
-		elif is_this_repo "$PWD"; then
-			local_clone=$(git rev-parse --show-toplevel)
+		else
+			local_clone=$(git rev-parse --show-toplevel 2>/dev/null) || local_clone=''
+			if [[ -n $local_clone ]] && ! is_this_repo "$local_clone"; then local_clone=''; fi
 		fi
 		mkdir -p -- "$(dirname -- "$source_path")"
 		if [[ -n $local_clone ]]; then
 			require_clean_clone "$local_clone"
-			log_info "Seeding the canonical source from $local_clone"
+			log_info "Creating ~/dotfiles from $local_clone"
 			git clone --no-hardlinks -- "$local_clone" "$source_path" </dev/null
 			git -C "$source_path" remote set-url origin "$repo"
 			# Keep the supplied committed tree; subsequent runs update from main.
@@ -210,7 +245,7 @@ main() {
 			git -C "$source_path" config branch.main.remote origin
 			git -C "$source_path" config branch.main.merge refs/heads/main
 		else
-			log_info 'Cloning the public dotfiles source'
+			log_info 'Cloning your dotfiles into ~/dotfiles'
 			git clone --branch main -- "$repo" "$source_path" </dev/null
 		fi
 	fi
@@ -266,7 +301,7 @@ main() {
 	if [[ $defaults == 0 ]]; then bootstrap+=(--interactive); fi
 	# Bootstrap owns domain/identity initialization and validated apply.
 	"${bootstrap[@]}" </dev/null
-	if ! chezmoi --source "$source_path" --destination "$HOME" status >"$work_dir/status"; then
+	if ! chezmoi status >"$work_dir/status"; then
 		status_result='FAILED (status command failed)'
 		error_exit 'Cannot check chezmoi status.'
 	elif [[ -s $work_dir/status ]]; then

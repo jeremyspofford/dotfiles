@@ -1,11 +1,14 @@
 /**
- * Purpose: run upstream release-please behind the owner's 0.x gate.
+ * Purpose: Run release-please while keeping automatic versions at 0.x.
+ * Release-please proposes and publishes releases. Only the owner can authorize 1.0.0.
  * Usage: bash scripts/release.sh [--dry-run].
- * Parameters: GITHUB_TOKEN, GITHUB_REPOSITORY; --dry-run prevents writes.
+ * Parameters: --dry-run prevents writes; GITHUB_REPOSITORY selects owner/repo.
+ * GITHUB_TOKEN grants content and pull-request write access.
+ * A pull request proposes a repository change.
  * Example: bash scripts/release.sh --dry-run.
- * Exit codes: 0 success/help, 1 validation/API failure, 2 invalid arguments.
- * Author: Jeremy Spofford / Aria Labs; version read from VERSION.
- * Log messages are routed through the Bash wrapper's logger.sh.
+ * Exit codes: 0 success/help; 1 validation or API failure; 2 invalid arguments.
+ * The API is GitHub's programming interface. The Bash wrapper logs through logger.sh.
+ * Author: Jeremy Spofford / Aria Labs; Version: read from VERSION.
  */
 const fs = require('node:fs');
 const { GitHub, Manifest, registerVersioningStrategy, registerChangelogNotes } = require('release-please');

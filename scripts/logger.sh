@@ -1,66 +1,48 @@
 #!/usr/bin/env bash
-# =============================================================================
-# logger.sh — common logger for shell scripts
+# Purpose: Provide shared shell logging and small command/path helpers.
+# Usage: source "$(dirname "$0")/logger.sh"; an absolute path also works.
+#        bash scripts/logger.sh --help
+# Sourcing defines functions, colors, and DOTFILES_VERSION. It preserves shell options.
+# Call set_strict yourself to enable strict error handling.
+# Parameters: -h/--help prints help when executed; other arguments are invalid.
+# Examples: log_info "Starting deploy"; log_success "Deploy finished"
+#           log_warning "Config missing; using defaults"; log_error "Deploy failed"
+#           log_debug "Cache dir: ${cache_dir}"; log_section "Phase 2"
+#           log_kv "Environment" "production"; require_commands git curl jq
+#           error_exit "Something broke" 3
 #
-# Purpose:
-#   Source this file in your scripts to get consistent, colored log output
-#   plus small shared helpers (command checks, strict mode, repo root).
-#
-# Usage:
-#   source "$(dirname "$0")/logger.sh"        # or an absolute path
-#   bash scripts/logger.sh --help
-#   log_info "Starting deploy"
-#   log_success "Deploy finished"
-#   log_warning "Config not found, using defaults"
-#   log_error "Deploy failed"
-#   log_debug "Cache dir: ${cache_dir}"       # only prints when debugging
-#   log_section "Phase 2"
-#   log_kv "Environment" "production"
-#   require_commands git curl jq
-#   error_exit "Something broke" 3
-#
-# Functions:
-#   log_info msg...        Blue.   General progress (stdout).
-#   log_success msg...     Green.  Completed steps (stdout).
-#   log_warning msg...     Yellow. Warnings (stderr). Alias: log_warn.
-#   log_error msg...       Red.    Errors (stderr).
-#   log_debug msg...       Magenta. Only when DEBUG=1 or DOTFILES_DEBUG=1 (stderr).
-#   log_section msg...     Cyan bold banner (stdout).
-#   log_kv key value       Aligned "Key:  Value" line (stdout).
-#   log_heredoc COLOR      Reads stdin, prints each line in COLOR.
-#   error_exit msg [code]  log_error + exit (default code 1).
-#   command_exists cmd     Returns 0 if cmd is on PATH.
-#   require_commands ...   error_exit listing any missing commands.
-#   get_repo_dir           Prints the git repo root; returns 1 outside a repo.
-#   set_strict             set -euo pipefail in the calling script.
-#   set_verbose            set -x (shell trace) — debugging only.
-#   set_quiet              set +x.
+# Functions and output:
+# log_info msg...: blue progress; log_success msg...: green success. Both use stdout.
+# log_warning msg...: yellow warnings on stderr. log_warn is the same interface.
+# log_error msg...: red errors on stderr.
+# log_debug msg...: magenta stderr output when DEBUG=1 or DOTFILES_DEBUG=1.
+# stdout is normal output; stderr is diagnostic output.
+# log_section msg...: cyan bold banner on stdout.
+# log_kv key value: aligned "Key: Value" output on stdout.
+# log_heredoc COLOR: read stdin and print each line in that color.
+# stdin is input. Color variables are RED, GREEN, YELLOW, BLUE, MAGENTA, CYAN,
+# BOLD (bold text), and CLEAR (reset formatting).
+# error_exit msg [code]: log an error and exit; default code is 1.
+# command_exists cmd: return 0 when PATH, the command search path, contains cmd.
+# require_commands ...: list missing commands and exit through error_exit.
+# get_repo_dir: print the Git root; return 1 without output outside a repository.
+# set_strict: enable set -euo pipefail in the caller.
+# Strict mode stops on failed commands, unset variables, and failed pipeline commands.
+# set_verbose: enable set -x command tracing for debugging. set_quiet: disable tracing.
 #
 # Environment:
-#   NO_COLOR        If set (any value), colors are disabled. Colors are
-#                   also disabled automatically when output is not a TTY,
-#                   so CI logs stay clean.
-#   LOG_TIMESTAMP   If 1, prefix each log line with [HH:MM:SS].
-#   DEBUG / DOTFILES_DEBUG
-#                   If 1, log_debug lines print.
+# NO_COLOR: a nonempty value disables colors. Nonterminal output also disables colors.
+# The original header promised any set value; this implementation treats empty as unset.
+# LOG_TIMESTAMP=1: prefix log lines with [HH:MM:SS].
+# DEBUG=1 or DOTFILES_DEBUG=1: enable debug lines.
 #
-# Notes:
-#   - When sourced, this file defines functions, colors and DOTFILES_VERSION.
-#     It does not change the caller's shell options; call set_strict yourself.
-#     When executed directly, it accepts -h/--help and rejects other arguments.
-#   - Improvements over the original (Jeremy's deployment logger, kept in
-#     logger.orig.sh): printf instead of echo -e (portable, and message
-#     text can never be read as format flags); colors auto-disable for
-#     non-TTY output and NO_COLOR; log_warning/log_error/log_debug go to
-#     stderr so stdout stays usable for real script output; added log_warn
-#     and log_debug so the Dotfleet interface (log_info / log_warn /
-#     log_error / log_debug) is fully covered; get_repo_dir fails cleanly
-#     outside a git repo; optional timestamps.
-#
-# Author: Jeremy Spofford / Aria Labs (original), Muse (improvements)
-# Version: read from ../VERSION at runtime, with "unknown" as the fallback.
+# Compared with Jeremy's deployment logger, printf replaces echo -e.
+# Messages cannot become printf format flags. Warnings, errors, and debug use stderr.
+# log_warn/log_debug complete the Dotfleet logging interface; timestamps are optional.
+# The original header references logger.orig.sh; this checkout does not contain it.
 # Exit codes when executed: 0 help; 2 invalid or missing arguments.
-# =============================================================================
+# Author: Jeremy Spofford / Aria Labs (original), Muse (improvements).
+# Version: read from ../VERSION at runtime; use "unknown" if unavailable.
 
 # Guard against being sourced twice.
 if [[ -n "${_LOGGER_SH_LOADED:-}" ]]; then
@@ -247,39 +229,43 @@ if [[ ${BASH_SOURCE[0]} == "$0" ]]; then
 	set_strict
 	usage() {
 		cat <<EOF
-logger.sh — common logger for shell scripts
+logger.sh — shared shell logging
 Usage: source scripts/logger.sh
        bash scripts/logger.sh --help
 
-Source this file for logging and shared helpers. Sourcing preserves your shell
-options and loads DOTFILES_VERSION from the repository VERSION file.
+Source this file to load functions and colors without changing your shell options.
+It reads DOTFILES_VERSION from the repository VERSION file; the fallback is unknown.
+stdout carries normal output; stderr carries diagnostics; stdin supplies input.
 
 Parameters:
   -h, --help  Print full help and exit 0.
   No other command-line arguments are accepted.
 
 Functions:
-  log_info MESSAGE...       General progress (stdout).
-  log_success MESSAGE...    Completed steps (stdout).
-  log_warning MESSAGE...    Warning (stderr); log_warn is an alias.
-  log_error MESSAGE...      Error (stderr).
-  log_debug MESSAGE...      Debug output when enabled (stderr).
-  log_section MESSAGE...    Section banner (stdout).
-  log_kv KEY VALUE          Aligned key/value output (stdout).
-  log_heredoc COLOR         Read lines from stdin and print them in COLOR.
-  error_exit MESSAGE [CODE] Log an error and exit (default: 1).
-  command_exists COMMAND    Return 0 when COMMAND is available.
-  require_commands CMD...   Exit 1 and list any missing commands.
-  get_repo_dir             Print Git root; return 1 outside a repository.
+  log_info MESSAGE...       Blue progress on stdout.
+  log_success MESSAGE...    Green success on stdout.
+  log_warning MESSAGE...    Yellow warning on stderr; log_warn is an alias.
+  log_error MESSAGE...      Red error on stderr.
+  log_debug MESSAGE...      Magenta stderr output when debugging is enabled.
+  log_section MESSAGE...    Cyan bold banner on stdout.
+  log_kv KEY VALUE          Aligned key/value output on stdout.
+  log_heredoc COLOR         Read stdin lines and print them in COLOR.
+  error_exit MESSAGE [CODE] Log an error and exit; default code: 1.
+  command_exists COMMAND   Return 0 if PATH, the command search path, contains COMMAND.
+  require_commands CMD...  List missing commands and exit 1 if any are missing.
+  get_repo_dir             Print the Git root; return 1 without output outside a repository.
   set_strict               Enable set -euo pipefail in the caller.
-  set_verbose              Enable shell tracing.
-  set_quiet                Disable shell tracing.
+  set_verbose              Enable set -x command tracing for debugging.
+  set_quiet                Disable command tracing.
+Color variables: RED, GREEN, YELLOW, BLUE, MAGENTA, CYAN, BOLD, CLEAR.
+BOLD enables bold text. CLEAR resets formatting.
+Strict mode stops on failed commands, unset variables, and failed pipeline commands.
 
 Environment:
   DEBUG=1 or DOTFILES_DEBUG=1  Enable debug messages.
-  LOG_TIMESTAMP=1             Prefix log lines with the current time.
-  NO_COLOR=1                  Disable terminal colors.
-  Colors are also disabled when stdout is not a terminal.
+  LOG_TIMESTAMP=1             Prefix log lines with [HH:MM:SS].
+  NO_COLOR=1                  Disable colors; any nonempty value works.
+Nonterminal output disables colors automatically.
 
 Examples:
   source scripts/logger.sh

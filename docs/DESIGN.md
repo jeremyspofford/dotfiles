@@ -1,124 +1,111 @@
 # Design
 
-## Layer boundaries
+## Layers and ownership
 
-Layer 0 is standalone dotfiles: git history, chezmoi source, Mise tools, shell,
-Git and optional agent configuration. Layer 1, Dotfleet, will orchestrate existing
-git/chezmoi operations and select profiles. Add-ons will attach to Layer 1.
-Dotfiles never imports, invokes, or requires Dotfleet.
+Layer 0 is standalone dotfiles: shell, Git, tools, and optional agent settings.
+Git records source history. chezmoi renders source files into home files. Mise manages developer tools.
+Layer 1 is Dotfleet, a planned manager for machines and profiles. A profile saves a machine's domain and identity.
+Add-ons are optional Dotfleet extensions. Dotfiles never imports, calls, or requires Dotfleet.
+There is no sync service or custom merge engine. Workbench, the older setup, stays archived rather than providing another apply mechanism.
+The [inventory](LEGACY-INVENTORY.md) records reused settings and the owner's approval rule.
 
-No sync service or custom merge engine is introduced. The legacy Workbench
-orchestrator remains in history rather than becoming a second apply mechanism.
-The [inventory](LEGACY-INVENTORY.md) records salvage and the owner's merge gate.
+Templates contain placeholders; manifest entries declare settings and paths. These authored files are the sources.
+Rendered home files, agent settings, and skill links are outputs. A skill is a folder of agent instructions.
+Edit sources and regenerate outputs. Do not edit generated files. [GENERATED.md](GENERATED.md) lists every output.
+The agent generator rejects unowned files. Resolve agent edits before generating replacements.
+It records link targets and hashes, identifiers used to compare file contents.
 
-## One source per output
+## Domains and systems
 
-Authored templates and manifest entries are sources. Rendered home files, agent
-configurations and skills links are outputs. Edit sources and regenerate; do not
-edit generated files. The [output inventory](GENERATED.md) includes every output.
-The agent generator refuses to overwrite unmanaged files and records output
-hashes/links. Existing agent edits must be reconciled explicitly.
+`[data].domain` in local chezmoi configuration is the only domain selector:
 
-## Domain overlays
+| Value | Settings |
+| --- | --- |
+| `core` | Shared settings only; always included |
+| `personal` | Core plus personal settings |
+| `work` | Core plus employer settings |
+| `client` | Core plus client settings |
 
-`[data].domain` in the local chezmoi config is the only selector. Valid values are
-core, personal, work and client. Core always applies. A non-core domain adds
-exactly one overlay through a template conditional. Switching domains regenerates
-the same output paths, so obsolete aliases disappear without orphan files.
+An overlay is one domain's added settings. A non-core domain adds exactly one overlay through a template condition.
+Changing domains regenerates the same paths, so obsolete aliases disappear. Aliases are command shortcuts.
+Workbench supplies shared defaults. Domain folders start empty because the old main branch had no separate domain aliases.
+Jeremy's tool profile is optional, not a project requirement. Identities, client names, and paths stay machine-local.
 
-The existing Workbench core supplies reusable defaults. Domain directories start
-empty because no separate domain aliases were found in main. Jeremy's optional
-tool profile is an example, never a required project specification. Identities,
-client names and paths remain machine-local.
-
-## Platforms
-
-Template branches distinguish macOS, Linux, Windows and WSL (Linux plus WSL
-environment detection). The macOS branch discovers either Homebrew prefix.
-Linux assumes no particular package manager. WSL uses Linux paths and tools.
-Native Windows paths are documented in the agent manifest, but Bash bootstrap
-requires WSL. No macOS app-bundle executable path survives into portable core.
+Templates distinguish macOS, Linux, Windows, and WSL (Windows Subsystem for Linux).
+macOS finds either Homebrew package-manager prefix, the installation directory. Linux assumes no specific package manager.
+WSL uses Linux paths and tools. The agent manifest describes native Windows paths; Bash setup there requires WSL. Bash is a command shell.
+Portable core has no fixed macOS application-bundle executable path.
 
 ## Secrets
 
-The template stores a 1Password reference, never a credential. With secrets
-disabled it generates a private comment-only file; with secrets enabled it invokes
-`onepasswordRead`. Shell single-quote encoding prevents substitutions in credential
-values becoming shell commands. chezmoi's private attribute sets mode 0600.
-
-Rendered `.secrets` is ignored in the repo and in managed global Git excludes.
-CI checks ignore matching and absence from tracked paths. Git ignore does not
-protect forced additions or already-tracked files; review changes before commit.
-No diff containing secret values is logged by bootstrap. A 1Password failure
-stops rendering instead of substituting a fake credential.
+The secret template stores a 1Password reference, never a credential value. A reference names a stored secret without containing its value.
+Secrets off generates private comments only. Secrets on retrieves the value through `onepasswordRead`.
+Shell single quotes prevent credential contents from becoming commands. chezmoi's `private_` prefix sets mode `0600`: owner-only read/write access.
+Repository and global Git ignore rules exclude generated `.secrets`. CI, the automated checks, verifies ignore matching and no tracked secrets.
+Ignore rules cannot protect forced additions or files Git already tracks. Review changes before committing.
+A diff shows proposed file changes. Bootstrap, the setup script, never logs secret-bearing diffs.
+A 1Password failure stops rendering; it never substitutes a fake credential.
 
 ## Enrollment and rollback
 
-`install.sh` is the enrollment and update entry point. It chooses the canonical
-source at `~/.local/share/chezmoi`, fast-forwards an existing clean main checkout,
-or seeds it from a local clone or public HTTPS. It never resets local changes or
-merges divergent history. The original local clone is not modified.
+Enrollment means installing this setup on a machine. `install.sh` handles enrollment and updates.
+A checkout is a local Git copy. The editable checkout lives at `~/dotfiles`.
+The installer fast-forwards clean `main` checkouts: Git advances without merging separate histories.
+Fresh installs copy a local clone's committed tree or clone public HTTPS. The original local clone stays unchanged.
+Run `chezmoi apply` to render edits into your home.
+Local configuration saves `sourceDir`, the checkout path. Bare `chezmoi status` and `chezmoi apply` work anywhere in a fresh shell.
+The installer never resets local changes or merges separate histories.
 
-Before applying, the installer asks `chezmoi managed` for the current file and
-symlink inventory. If chezmoi is missing, its official installer first downloads
-a temporary binary solely for inventory; the permanent binary is installed into
-`~/.local/bin` afterward. Mise uses its official installer with the same user-local
-destination. No package manager or sudo is invoked.
+If `~/dotfiles` is absent, updates migrate this repository's active clone from the previous hidden location.
+The installer validates and fast-forwards that clone before moving it. It then backs up files and configures the new source path.
+It checks bare `chezmoi status`. Only the exact previous active path qualifies; preserved pre-reset archives stay untouched.
+If an unrelated item occupies `~/dotfiles`, setup stops before moving, pulling, backing up, or applying anything.
+Re-run the one-liner to update, or run `cd ~/dotfiles && git pull && chezmoi apply`.
 
-Each run makes a private `~/dotfleet-backups/<timestamp>/` directory (a suffix
-prevents same-second collisions). `home/` mirrors saved paths; `MANIFEST` records
-saved/absent paths and symlink targets using Bash-escaped filenames. Symlinks are
-copied as links, including broken links. File targets physically outside HOME are
-also copied to `external/`, mirroring their absolute paths. The local chezmoi
-configuration is backed up before bootstrap regenerates it. Backups may contain
-secrets; retain their private directory permissions.
+Before apply, `chezmoi managed` lists managed files and symbolic links, which point to other paths.
+If chezmoi is missing, its official installer downloads a temporary listing binary. It installs permanently in `~/.local/bin` afterward.
+The official Mise installer uses the same directory. Setup never calls sudo or a package manager.
 
-Bootstrap's `--interactive` mode reads initialization prompts from `/dev/tty`.
-First enrollment without a terminal fails unless `install.sh --defaults` explicitly
-accepts the core profile and blank identity. The installer uses bootstrap's
-existing diff validation and apply path; it does not maintain a separate renderer.
-The end summary reports backup/source/commit/status even when installation fails
-after the logger has loaded. Help and invalid arguments do not start enrollment;
-a missing curl or failed logger download on a standalone run produces the shell
-or curl diagnostic before logging is available.
+Each run creates private `~/dotfleet-backups/<timestamp>/`. A suffix prevents collisions within one second.
+`home/` mirrors saved paths. `MANIFEST` records saved and absent paths, plus link targets, with Bash-escaped filenames.
+Copies preserve links, including broken links. External file targets also go into `external/`, mirroring their full paths.
+Setup backs up local chezmoi configuration before bootstrap regenerates it. Backups can contain secrets; keep their directory permissions private.
 
-To roll back:
+`--interactive` reads setup prompts from `/dev/tty`, the terminal device.
+First enrollment without a terminal fails unless `--defaults` explicitly accepts core settings and blank identity.
+The installer uses bootstrap's existing diff validation and apply path. It adds no separate renderer.
+After loading the logger, which formats messages, every run prints backup, checkout, commit, and status, even on failure.
+Help and invalid arguments never start enrollment. Before logging is available, missing curl or a failed logger download produces shell or curl errors.
 
-1. Stop applying changes and review the chosen backup's `MANIFEST` in a private
-   terminal. Restore any `external/` files to the absolute paths recorded there.
-2. Restore saved home files with `cp -a /path/to/backup/home/. "$HOME/"`. This
-   restores preserved symlinks as links. Review any pre-existing symlinked parent
-   directories before copying; do not replace unrelated directory contents.
-3. Remove only files created by enrollment whose paths were recorded as `absent`.
-   If the chezmoi config was absent, remove the newly generated config too. Keep
-   unrelated files and the backups. Installed tools/source may remain in place.
-4. Run `chezmoi status` to inspect the restored differences. Do not run apply
-   until you intend to replace those restored files again.
+To restore an earlier setup:
 
-Idempotence means identical managed file contents and modes on repeated runs.
-New backup directories and updates to chezmoi's own state database are expected.
+1. Stop applying files. Review the backup's `MANIFEST` privately. Restore `external/` files to their recorded full paths.
+2. Run `cp -a /path/to/backup/home/. "$HOME/"` to restore saved files and links.
+   Inspect existing linked parent directories first. Do not replace unrelated contents.
+3. Remove only newly created files marked `absent`. If chezmoi configuration was absent, remove the new configuration too.
+   Keep unrelated files and backups. Tools and the checkout may remain.
+   After migration, keep restored `sourceDir` set to the full path of `~/dotfiles`; the checkout now lives there.
+4. Run `chezmoi status` to inspect restored differences. Do not apply until you intend to replace the restored files.
 
-## Agent scope
+Idempotence means repeated runs preserve managed contents and permissions. New backups and changes to chezmoi's state database are expected.
 
-The manifest selects native paths/formats and is the only source of config content.
-The generator finds installed commands without running them. Empty valid native
-configs preserve vendor defaults; authentication is outside this scaffold.
-Canonical skill directories are linked per skill. Ollama has no native portable
-configuration-file/skills contract and is reported explicitly, not fabricated.
+## Agents and future add-ons
 
-## Future add-on boundary
+The agent manifest alone defines configuration content, formats, and operating-system paths.
+The generator finds commands without running them. Minimal valid settings preserve agent defaults; login remains outside this setup.
+Each skill links to its source. Ollama has no portable configuration-file or skill format; the generator reports this limit.
 
-Dotfleet may pass a validated domain, explicit profile selection, a machine's OS/
-architecture/capabilities and approved installation roots to an add-on. An add-on
-must declare its managed outputs and dependencies and provide idempotent install,
-validation and teardown. It cannot silently modify Layer 0 sources, read secret
-values or remove unrelated user configuration. The draft contract is in
-`dotfleet-stub/docs/ADDON-INTERFACE.md` pending creation of the separate stub repo.
+A capability grants specific access. An installation root is an allowed destination directory.
+Dotfleet may provide a validated domain, selected profile, operating system, processor architecture (type), capabilities, and approved installation roots.
+Each add-on must declare outputs and dependencies, and support repeatable install, validation, and removal.
+An add-on cannot silently change Layer 0 sources, read secret values, or remove unrelated user settings.
+Originally, `dotfleet-stub/docs/ADDON-INTERFACE.md` held the draft pending a separate repository.
+The current [draft contract](https://github.com/jeremyspofford/dotfleet/blob/main/docs/ADDON-INTERFACE.md) lives in Dotfleet.
 
-## Version and release authority
+## Releases and approval
 
-VERSION is authoritative. Release-please's manifest is a derived cache. Automatic
-versions stay in 0.x indefinitely: fixes/chores bump patch, features/breaking
-changes bump minor. An additional strategy guard rejects nonzero-major proposals
-and Release-As overrides. Only the owner may deliberately declare and manually
-release 1.0.0. The migration itself always requires explicit owner approval.
+`VERSION` is authoritative. Release-please, the release automation tool, keeps a matching derived manifest, or version record.
+Automatic releases remain in `0.x`. Fixes and chores increase the patch number; features and breaking changes increase the minor number.
+In `0.minor.patch`, minor and patch are the second and third numbers.
+A strategy guard rejects nonzero major versions and `Release-As` overrides, which request a forced version.
+Only the owner can declare production readiness and manually release 1.0.0. The migration itself requires explicit owner approval.
