@@ -159,7 +159,7 @@ class InstallerTests(unittest.TestCase):
         self.assertIn("Source belongs to another repository", result.stderr)
         self.assertEqual(self.snapshot(), before)
 
-    def test_first_run_prompts_on_terminal_and_reuses_personal_identity(self):
+    def run_on_terminal(self, responses):
         master, slave = pty.openpty()
 
         def controlling_terminal():
@@ -175,9 +175,6 @@ class InstallerTests(unittest.TestCase):
         # If initialization ever reads stdin, these invalid answers break it.
         process.stdin.write(b"NOT-A-DOMAIN\nWRONG NAME\nwrong@example.invalid\n")
         process.stdin.close()
-        responses = [(b"Domain (core, personal, work, client)", b"personal\r"),
-                     (b"Git name (optional)", b"Fixture Person\r"),
-                     (b"Git email (optional)", b"fixture@example.invalid\r")]
         transcript = b""
         answered = 0
         deadline = time.monotonic() + 45
@@ -193,6 +190,8 @@ class InstallerTests(unittest.TestCase):
                 if not chunk:
                     break
                 transcript += chunk
+                if not responses and b"Domain (core, personal, work, client)" in transcript:
+                    break  # An update must not ask for the profile again.
             elif process.poll() is not None:
                 break
             if answered < len(responses):
@@ -210,13 +209,21 @@ class InstallerTests(unittest.TestCase):
             os.killpg(process.pid, signal.SIGKILL)
         process.wait(timeout=5)
         self.assertEqual(process.returncode, 0, transcript.decode(errors="replace"))
-        self.assertEqual(answered, 3, transcript.decode(errors="replace"))
+        self.assertEqual(answered, len(responses), transcript.decode(errors="replace"))
+
+    def test_first_run_prompts_on_terminal_and_reuses_personal_identity(self):
+        responses = [(b"Domain (core, personal, work, client)", b"personal\r"),
+                     (b"Git name (optional)", b"Fixture Person\r"),
+                     (b"Git email (optional)", b"fixture@example.invalid\r")]
+        self.run_on_terminal(responses)
         config = (self.home / ".config/chezmoi/chezmoi.toml").read_text()
         self.assertIn('domain = "personal"', config)
         identity = ["git", "config", "--file", str(self.home / ".gitconfig")]
         self.assertEqual(self.run_command(identity + ["user.name"]).stdout.strip(), "Fixture Person")
         self.assertEqual(self.run_command(identity + ["user.email"]).stdout.strip(), "fixture@example.invalid")
-        # Updates must succeed without a TTY and retain the chosen identity.
+        # Both terminal and unattended updates must reuse the saved profile.
+        self.run_on_terminal([])
+        self.assertEqual((self.home / ".config/chezmoi/chezmoi.toml").read_text(), config)
         self.run_command(self.installer)
         self.assertEqual((self.home / ".config/chezmoi/chezmoi.toml").read_text(), config)
         self.assertEqual(self.run_command(["chezmoi", "status"]).stdout, "")
