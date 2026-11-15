@@ -37,9 +37,16 @@ test('Keep a Changelog headings and plain-language entries', async () => {
 // Exercise the real pinned Manifest API, stubbing only the GitHub transport.
 // Policy-only unit tests cannot catch changes to the proposal return shape.
 const { createManifest, runRelease } = require('../scripts/release.cjs');
-const config = require('../release-please-config.json');
-const baseline = require('../.release-please-manifest.json')['.'];
-function releaseFixture(messages, { tagOnly = false } = {}) {
+function releaseFixture(messages, { tagOnly = false, startingVersion = '0.7.12' } = {}) {
+  // Seed an isolated repository snapshot; never read the live version or baseline.
+  const config = { 'bootstrap-sha': 'a'.repeat(40) };
+  const files = {
+    VERSION: startingVersion + '\n',
+    '.release-please-manifest.json': JSON.stringify({ '.': startingVersion }),
+    'CHANGELOG.md': '# Changelog\n',
+  };
+  const baseline = JSON.parse(files['.release-please-manifest.json'])['.'];
+  assert.equal(files.VERSION.trim(), baseline);
   const writes = [];
   const tag = { name: 'v' + baseline, sha: config['bootstrap-sha'] };
   const github = {
@@ -61,7 +68,7 @@ function releaseFixture(messages, { tagOnly = false } = {}) {
       return { ...pr, number: 42 };
     },
   };
-  return { manifest: createManifest(github, baseline, config), writes };
+  return { manifest: createManifest(github, files.VERSION.trim(), config), writes, files };
 }
 
 for (const messages of [[], ['Merge pull request #2 from example/maintenance']]) {
@@ -73,21 +80,28 @@ for (const messages of [[], ['Merge pull request #2 from example/maintenance']])
   });
 }
 
-for (const tagOnly of [false, true]) {
-  test('fix proposes 0.0.2 through the Manifest API, tagOnly=' + tagOnly, async () => {
-    const { manifest, writes } = releaseFixture(['fix: handle release proposal versions'], { tagOnly });
-    await runRelease(manifest);
-    assert.equal(writes.length, 1);
-    const { pr, updates } = writes[0];
-    assert.match(pr.title, /0\.0\.2/);
-    const update = (path, content) => updates.find(item => item.path === path).updater.updateContent(content);
-    assert.equal(update('VERSION', baseline + '\n'), '0.0.2\n');
-    assert.equal(JSON.parse(update('.release-please-manifest.json', JSON.stringify({ '.': baseline })))['.'], '0.0.2');
-    const changelog = update('CHANGELOG.md', '# Changelog\n');
-    assert.match(changelog, /## \[0\.0\.2\]/);
-    assert.match(changelog, /### Fixed\n\n- handle release proposal versions/);
-    assert.doesNotMatch(changelog, /Scaffold baseline/);
-  });
+for (const startingVersion of ['0.0.1', '0.0.2', '0.7.12', '0.42.99']) {
+  for (const tagOnly of [false, true]) {
+    test('fix increments fixture patch from ' + startingVersion + ', tagOnly=' + tagOnly, async () => {
+      const { manifest, writes, files } = releaseFixture(['fix: handle release proposal versions'], {
+        tagOnly, startingVersion,
+      });
+      // Compute the expected patch independently of the versioning code under test.
+      const [major, minor, patch] = files.VERSION.trim().split('.').map(Number);
+      const expected = [major, minor, patch + 1].join('.');
+      await runRelease(manifest);
+      assert.equal(writes.length, 1);
+      const { pr, updates } = writes[0];
+      assert.equal(pr.title, 'chore(main): release ' + expected);
+      const update = path => updates.find(item => item.path === path).updater.updateContent(files[path]);
+      assert.equal(update('VERSION'), expected + '\n');
+      assert.equal(JSON.parse(update('.release-please-manifest.json'))['.'], expected);
+      const changelog = update('CHANGELOG.md');
+      assert.ok(changelog.includes('## [' + expected + '] - '));
+      assert.match(changelog, /### Fixed\n\n- handle release proposal versions/);
+      assert.doesNotMatch(changelog, /Scaffold baseline/);
+    });
+  }
 }
 
 test('dry run validates a real proposal without writing', async () => {
