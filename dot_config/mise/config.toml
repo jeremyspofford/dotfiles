@@ -1,3 +1,0 @@
-# Add project tools in each project's mise.toml; the shell activates Mise.
-[settings]
-experimental = false

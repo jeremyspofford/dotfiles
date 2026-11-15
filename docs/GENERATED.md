@@ -20,7 +20,7 @@ CI means automated change checks. Release-please creates release proposals. Conv
 | `.chezmoitemplates/dot_secrets.tmpl`, `private_dot_secrets.tmpl` | `~/.secrets`: mode `0600`, Git-ignored | `chezmoi apply` |
 | `dot_config/dotfiles/*` | `~/.config/dotfiles/domain.zsh`, `~/.config/dotfiles/platform.zsh`, `~/.config/dotfiles/interactive.zsh` | `chezmoi apply` |
 | `dot_config/git/ignore` | `~/.config/git/ignore` | `chezmoi apply` |
-| `dot_config/mise/config.toml` | `~/.config/mise/config.toml` | `chezmoi apply` |
+| `dot_config/mise/config.toml.tmpl`, local `[data.miseTools]` | `~/.config/mise/config.toml` | `chezmoi apply` |
 | `dot_config/starship.toml` | `~/.config/starship.toml` | `chezmoi apply` |
 | `agents/manifest.toml` | Agent paths in the manifest and [AGENTS.md](AGENTS.md) | `bash scripts/generate-agent-configs.sh` |
 | `agents/skills/*` | One symbolic link per skill per agent | Same generator |

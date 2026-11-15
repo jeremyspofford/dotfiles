@@ -52,6 +52,36 @@ Saved configuration points chezmoi at `~/dotfiles`. Bare `chezmoi status` and `c
 The end summary prints the checkout location and commit. Edit checkout files, then run `chezmoi apply`.
 Direct edits to generated home files can be overwritten by the next apply.
 
+## Concepts
+
+A tool pin selects a tool version. Globally pinned tools are available in every shell after installation.
+The installer records pins at enrollment. Project files override them per project.
+
+The first capture copies existing `[tools]` entries from `~/.config/mise/config.toml` into local chezmoi data.
+Without entries, it selects the newest installed Node.js and Python versions, when present. Node.js runs JavaScript; Python runs Python programs.
+Setup downloads neither runtime. The end summary lists the recorded pins and their initial source.
+Later runs keep saved pins, even when newer versions are installed. An empty saved table means no global pins.
+
+To change global pins:
+
+1. Open `~/.config/chezmoi/chezmoi.toml`.
+2. Set tool versions under `[data.miseTools]`. Keep other machine data intact.
+3. Run `chezmoi apply`. This renders the global Mise file from your saved data.
+4. Run `mise install` from your home if the selected versions need installation. Open a new shell.
+
+For example, this machine data selects two exact versions:
+
+```toml
+[data.miseTools]
+node = "22.10.0"
+python = "3.12.10"
+```
+
+Lists and tool option tables also work. Use the same values that Mise accepts under `[tools]`.
+Do not store changes by editing the generated file. `mise use -g` writes that file; the next apply replaces those edits.
+If you used `mise use -g`, copy its `[tools]` entries into `[data.miseTools]` before applying.
+Enrollment carries tool selections. Other Mise settings still come from this repository.
+
 ## Files in your home
 
 With default directory settings, chezmoi creates or updates these managed files:

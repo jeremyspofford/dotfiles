@@ -239,6 +239,106 @@ class InstallerTests(unittest.TestCase):
                 self.assertEqual(tomllib.loads(config.read_text())["data"]["domain"], domain)
                 self.assertEqual(self.run_command(["chezmoi", "status"]).stdout, "")
 
+    def installed_tool(self, tool, version, commands):
+        # Use real Mise discovery/activation with tiny offline executables.
+        binary_dir = self.home / ".local/share/mise/installs" / tool / version / "bin"
+        binary_dir.mkdir(parents=True)
+        for name in commands:
+            binary = binary_dir / name
+            binary.write_text(f"#!/bin/sh\nprintf '%s\\n' '{name}-{version}'\n")
+            binary.chmod(0o755)
+        return binary_dir
+
+    def saved_tools(self):
+        config = self.home / ".config/chezmoi/chezmoi.toml"
+        return tomllib.loads(config.read_text())["data"]["miseTools"]
+
+    def rendered_tools(self):
+        return tomllib.loads((self.home / ".config/mise/config.toml").read_text())["tools"]
+
+    def test_existing_mise_pins_survive_enrollment_apply_and_updates(self):
+        self.installed_tool("node", "22.9.0", ["node", "codex"])
+        self.installed_tool("node", "22.10.0", ["node", "codex"])
+        config = self.home / ".config/mise/config.toml"
+        config.parent.mkdir(parents=True)
+        original = ('[tools]\nnode = "22.9.0"\npython = ["3.12.9", "3.11.9"]\n'
+                    '"npm:example" = { version = "1.2.3", exe = "example" }\n'
+                    '[settings]\nexperimental = false\n')
+        config.write_text(original)
+        expected = tomllib.loads(original)["tools"]
+        result = self.run_command(self.installer + ["--defaults"])
+        self.assertIn("initial source: existing global config", result.stdout)
+        self.assertEqual(self.saved_tools(), expected)
+        self.assertEqual(self.rendered_tools(), expected)
+        backup = next((self.home / "dotfleet-backups").iterdir())
+        self.assertEqual((backup / "home/.config/mise/config.toml").read_text(), original)
+        self.run_command(["chezmoi", "apply"])
+        self.run_command(self.installer + ["--defaults"])
+        self.assertEqual(self.saved_tools(), expected)
+        self.assertEqual(self.rendered_tools(), expected)
+        # Machine data wins over old output, even when changing or clearing pins.
+        data_file = self.home / ".config/chezmoi/chezmoi.toml"
+        data_file.write_text(data_file.read_text().replace('node = "22.9.0"', 'node = "22.10.0"'))
+        self.run_command(self.installer + ["--defaults"])
+        self.assertEqual(self.rendered_tools()["node"], "22.10.0")
+        data_file.write_text('sourceDir = "' + str(self.source) + '"\numask = 0o077\n'
+                             '[data]\ndomain = "core"\n[data.miseTools]\n')
+        self.run_command(self.installer + ["--defaults"])
+        self.assertEqual(self.saved_tools(), {})
+        self.assertEqual(self.rendered_tools(), {})
+        self.assertEqual(self.run_command(["chezmoi", "status"]).stdout, "")
+
+    def test_installed_defaults_resolve_node_and_global_executable_at_home(self):
+        self.installed_tool("node", "22.9.0", ["node", "codex"])
+        latest = self.installed_tool("node", "22.10.0", ["node", "codex"])
+        self.installed_tool("python", "3.12.9", ["python"])
+        self.installed_tool("python", "3.12.10", ["python"])
+        # An existing settings-only file must still allow installed defaults.
+        config = self.home / ".config/mise/config.toml"
+        config.parent.mkdir(parents=True)
+        config.write_text('[settings]\nexperimental = false\n')
+        result = self.run_command(self.installer + ["--defaults"])
+        expected = {"node": "22.10.0", "python": "3.12.10"}
+        self.assertEqual(self.saved_tools(), expected)
+        self.assertEqual(self.rendered_tools(), expected)
+        summary = result.stdout.split("END SUMMARY", 1)[1]
+        self.assertIn('Mise global pins: {"node":"22.10.0","python":"3.12.10"}', summary)
+        self.assertIn("defaults from installed Node/Python; no downloads", summary)
+        # Isolate PATH from the invoking user's installed Node and npm globals.
+        mise_link = self.home / ".local/bin/mise"
+        mise_link.symlink_to(shutil.which("mise"))
+        env = {"HOME": str(self.home), "PATH": "/usr/local/bin:/usr/bin:/bin", "TERM": "dumb"}
+        for shell in ("bash", "zsh"):
+            with self.subTest(shell=shell):
+                result = subprocess.run(
+                    [shell, "-eic", 'cd "$HOME"; command -v node; command -v codex; node; codex'],
+                    cwd=self.home, env=env, capture_output=True, text=True)
+                self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+                self.assertEqual(result.stdout.splitlines(),
+                                 [str(latest / "node"), str(latest / "codex"), "node-22.10.0", "codex-22.10.0"])
+        # Newly installed versions must not silently replace saved defaults.
+        self.installed_tool("node", "24.0.0", ["node", "codex"])
+        self.run_command(self.installer + ["--defaults"])
+        self.run_command(["chezmoi", "apply"])
+        self.assertEqual(self.saved_tools(), expected)
+        self.assertEqual(self.rendered_tools(), expected)
+
+    def test_no_installed_tools_records_empty_defaults(self):
+        result = self.run_command(self.installer + ["--defaults"])
+        self.assertEqual(self.saved_tools(), {})
+        self.assertEqual(self.rendered_tools(), {})
+        self.assertIn("Mise global pins: none (initial source: defaults from installed Node/Python; no downloads)", result.stdout)
+
+    def test_invalid_existing_mise_config_stops_before_apply(self):
+        config = self.home / ".config/mise/config.toml"
+        config.parent.mkdir(parents=True)
+        original = '[tools]\nnode = [broken TOML\n'
+        config.write_text(original)
+        result = self.run_command(self.installer + ["--defaults"], expected=1)
+        self.assertIn("fromToml", result.stderr)
+        self.assertEqual(config.read_text(), original)
+        self.assertFalse((self.home / ".zshrc").exists())
+
     def test_missing_git_or_curl_fails_with_summary_before_changes(self):
         for missing in ("git", "curl"):
             with self.subTest(missing=missing):
