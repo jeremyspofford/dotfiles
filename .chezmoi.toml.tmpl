@@ -6,6 +6,8 @@
 # Keep managed files/directories private (0600/0700), including on later applies.
 # The private_ source attribute also explicitly protects .secrets.
 umask = 0o077
+# Persist the initialized checkout so bare chezmoi commands work in any shell.
+sourceDir = {{ .chezmoi.sourceDir | quote }}
 
 [data]
 domain = {{ $domain | quote }}

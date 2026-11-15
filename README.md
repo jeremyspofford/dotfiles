@@ -6,6 +6,8 @@ one machine and domain, and Mise manages tools. You can use this layer on its ow
 
 ## Install
 
+The installer puts a checkout of this repository at ~/dotfiles; that folder is what chezmoi reads, and it's where you edit your dotfiles.
+
 ```sh
 curl -fsSL https://raw.githubusercontent.com/jeremyspofford/dotfiles/main/install.sh | bash
 ```
@@ -33,10 +35,15 @@ should run the installer inside WSL.
 The first run reads domain and identity prompts from `/dev/tty`, including when
 piped from curl. Later runs reuse your machine-local profile. For disposable CI
 homes, `bash install.sh --defaults` explicitly accepts core and a blank identity.
-An existing canonical source must be a clean checkout of this repository on
+The visible `~/dotfiles` folder must be a clean checkout of this repository on
 `main`; the installer refuses unrelated repositories, local edits and divergent
 history. When invoked from a local clone on first enrollment, it copies that
-clone's committed tree into the canonical location without changing the original.
+clone's committed tree into `~/dotfiles` without changing the original. On update,
+the installer automatically moves an active checkout from the previous hidden
+location and saves the new source path in chezmoi's local configuration. Preserved
+archive folders are left alone. An occupied `~/dotfiles` belonging to something
+else is never overwritten. Bare `chezmoi status` and `chezmoi apply` work in a
+new shell from any directory.
 
 For direct bootstrap use (without the installer's backup/update wrapper):
 

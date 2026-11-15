@@ -55,9 +55,22 @@ stops rendering instead of substituting a fake credential.
 ## Enrollment and rollback
 
 `install.sh` is the enrollment and update entry point. It chooses the canonical
-source at `~/.local/share/chezmoi`, fast-forwards an existing clean main checkout,
-or seeds it from a local clone or public HTTPS. It never resets local changes or
-merges divergent history. The original local clone is not modified.
+source at `~/dotfiles`, fast-forwards an existing clean main checkout,
+or seeds it from a local clone or public HTTPS. This visible folder is the Git
+checkout you edit; run `chezmoi apply` to render those edits into your home.
+The generated local chezmoi config persists `sourceDir`, so bare `chezmoi status`
+and `chezmoi apply` work from any directory in a fresh shell. It never resets
+local changes or merges divergent history. A local clone used to seed a fresh
+install is not modified.
+
+Updates automatically migrate an active clone from the previous hidden location
+when `~/dotfiles` is absent. The installer validates and fast-forwards that clone
+before moving it, then backs up existing managed files and config and regenerates
+config with the new source path. It verifies the result using bare `chezmoi status`.
+Only the exact previous active path is considered; preserved pre-reset archives
+are untouched. If `~/dotfiles` is occupied by anything other than this repository's
+clone, enrollment stops before moving, pulling, backing up, or applying anything.
+Re-run the one-liner to update, or use `cd ~/dotfiles && git pull && chezmoi apply`.
 
 Before applying, the installer asks `chezmoi managed` for the current file and
 symlink inventory. If chezmoi is missing, its official installer first downloads
@@ -92,6 +105,8 @@ To roll back:
 3. Remove only files created by enrollment whose paths were recorded as `absent`.
    If the chezmoi config was absent, remove the newly generated config too. Keep
    unrelated files and the backups. Installed tools/source may remain in place.
+   After a checkout migration, keep the restored config's `sourceDir` set to
+   `~/dotfiles` (use the full path), since the checkout now lives there.
 4. Run `chezmoi status` to inspect the restored differences. Do not run apply
    until you intend to replace those restored files again.
 

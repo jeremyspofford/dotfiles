@@ -24,7 +24,7 @@ Options:
   --repo URL       Own repo (default: https://github.com/jeremyspofford/dotfiles.git).
                   Accepts HTTPS, SSH or an absolute local repository path.
   --domain VALUE   Bundled overlay: core (default), personal, work, client.
-  --source PATH    Absolute source path (default: ~/.local/share/chezmoi).
+  --source PATH    Absolute source path (default: ~/dotfiles).
   --branch NAME    Branch to initialize (default: remote default).
   --dry-run        Install tools, clone/init and validate; do not apply dotfiles.
   --interactive    Prompt for missing domain/identity data using /dev/tty.
@@ -47,7 +47,7 @@ bad_argument() {
 }
 repo=https://github.com/jeremyspofford/dotfiles.git
 domain=core
-source_path="${XDG_DATA_HOME:-$HOME/.local/share}/chezmoi"
+source_path="$HOME/dotfiles"
 branch=
 own_repo=0
 dry_run=0
