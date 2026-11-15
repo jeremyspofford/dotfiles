@@ -1,8 +1,11 @@
 #!/usr/bin/env bash
-# Purpose: Install chezmoi/Mise; validate then apply bundled or own dotfiles.
-# Usage: bash scripts/bootstrap.sh [OPTIONS]; see usage() below.
-# Parameters: --repo URL, --domain DOMAIN, --source PATH, --branch NAME,
-# --dry-run, --interactive, -h, --help.
+# Purpose: Install missing tools, validate files, and apply home configuration.
+# Usage: bash scripts/bootstrap.sh [OPTIONS]; see --help for all choices.
+# Parameters: --repo URL selects a trusted repository; --source PATH selects its checkout.
+# --domain DOMAIN selects initial core (shared), personal, work (employer), or client settings.
+# --branch NAME selects a Git branch; --dry-run validates without applying home files.
+# --interactive asks for missing profile data; -h/--help prints full help.
+# A profile saves the machine's domain and Git identity.
 # Examples: bash scripts/bootstrap.sh --domain work
 #           bash scripts/bootstrap.sh --repo https://github.com/you/dotfiles.git
 # Exit codes: 0 success/help; 1 runtime failure; 2 invalid arguments.
@@ -13,29 +16,40 @@ SCRIPT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
 source "$SCRIPT_DIR/logger.sh"
 usage() {
 	cat <<EOF
-bootstrap.sh — standalone dotfiles setup ($DOTFILES_VERSION)
+bootstrap.sh — set up home files ($DOTFILES_VERSION)
 Usage: bash scripts/bootstrap.sh [OPTIONS]
-Install missing chezmoi/Mise in ~/.local/bin. Clone/init a trusted source checkout,
-validate with chezmoi diff, then run chezmoi init --apply on that same checkout.
-Diff contents are suppressed because they may contain secrets.
-Requires Bash, curl, git, tar. Install zsh separately for the managed shell.
-Supported hosts: Linux, macOS, WSL. Native Windows: use WSL.
+
+chezmoi generates home files from source templates. Mise manages developer tools.
+Install missing chezmoi/Mise into ~/.local/bin. Initialize a trusted Git checkout.
+Validate with chezmoi diff, which compares generated and existing files.
+Hide diff contents because they can contain secrets. Apply only after validation passes.
+Apply uses chezmoi init --apply on that same checkout.
+Requires Bash, curl, git, and tar. Install zsh separately if wanted.
+Use Linux, macOS, or WSL (Windows Subsystem for Linux). Native Windows users must use WSL.
+
 Options:
-  --repo URL       Own repo (default: https://github.com/jeremyspofford/dotfiles.git).
-                  Accepts HTTPS, SSH or an absolute local repository path.
-  --domain VALUE   Bundled overlay: core (default), personal, work, client.
-  --source PATH    Absolute source path (default: ~/dotfiles).
-  --branch NAME    Branch to initialize (default: remote default).
-  --dry-run        Install tools, clone/init and validate; do not apply dotfiles.
-  --interactive    Prompt for missing domain/identity data using /dev/tty.
+  --repo URL       Select a trusted repository; default: https://github.com/jeremyspofford/dotfiles.git.
+                   Accept HTTPS (web), SSH (key-authenticated), or a full local path.
+  --domain VALUE   Initial bundled settings: core (shared only, default), personal (personal plus shared),
+                   work (employer plus shared), or client (client plus shared).
+                   Existing profiles keep their saved domain.
+  --source PATH    Full checkout path; default: ~/dotfiles.
+  --branch NAME    Git branch to initialize; default: the remote's default branch.
+  --dry-run        Install tools and initialize source/configuration state.
+                   Validate files, but do not apply them to your home.
+  --interactive    Ask for missing domain/name/email through /dev/tty, the terminal device.
+                   Name/email identify the Git commit author; blank leaves identity unset.
   -h, --help       Print full help and exit 0.
+
 Examples:
   bash scripts/bootstrap.sh --domain personal
   bash scripts/bootstrap.sh --repo https://github.com/you/dotfiles.git --dry-run
   bash scripts/bootstrap.sh --repo git@github.com:you/dotfiles.git
-Only use trusted repositories: templates and hooks can execute commands.
+
+Templates and hooks can execute commands. Use only trusted repositories.
 Private repositories require existing Git authentication.
-Does not change your login shell, install agents, or configure 1Password.
+Setup does not change your login shell, install agents, or configure 1Password.
+Agents are coding assistants; 1Password supplies optional secrets.
 Exit codes: 0 success/help; 1 runtime failure; 2 invalid arguments.
 Author: Jeremy Spofford / Aria Labs; Version: $DOTFILES_VERSION (VERSION).
 EOF
@@ -138,7 +152,8 @@ if [[ $interactive == 1 && ! -f ${XDG_CONFIG_HOME:-$HOME/.config}/chezmoi/chezmo
 fi
 [[ -z $branch ]] || init_args+=(--branch "$branch")
 if [[ $own_repo == 0 && $interactive == 0 ]]; then
-	init_args+=(--promptString "domain=$domain")
+	# chezmoi keys prompt overrides by the displayed question, not the data key.
+	init_args+=(--promptString "Domain (core: shared; personal: shared+personal; work: shared+employer; client: shared+client)=$domain")
 fi
 log_info "Initializing source checkout"
 if [[ $prompt_required == 1 ]]; then

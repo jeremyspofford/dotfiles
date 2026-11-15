@@ -225,6 +225,20 @@ class InstallerTests(unittest.TestCase):
                 else:
                     shutil.rmtree(self.source)
 
+    def test_bootstrap_domain_option_selects_each_documented_domain(self):
+        for domain in ("personal", "work", "client", "core"):
+            with self.subTest(domain=domain):
+                # Each selection starts with no saved profile; updates preserve
+                # existing profile data through promptStringOnce.
+                config = self.home / ".config/chezmoi/chezmoi.toml"
+                config.unlink(missing_ok=True)
+                self.run_command(["bash", str(self.seed / "scripts/bootstrap.sh"), "--domain", domain])
+                data = tomllib.loads(config.read_text())["data"]
+                self.assertEqual(data["domain"], domain)
+                self.run_command(["bash", str(self.seed / "scripts/bootstrap.sh"), "--domain", "core"])
+                self.assertEqual(tomllib.loads(config.read_text())["data"]["domain"], domain)
+                self.assertEqual(self.run_command(["chezmoi", "status"]).stdout, "")
+
     def test_missing_git_or_curl_fails_with_summary_before_changes(self):
         for missing in ("git", "curl"):
             with self.subTest(missing=missing):
@@ -294,7 +308,7 @@ class InstallerTests(unittest.TestCase):
                 if not chunk:
                     break
                 transcript += chunk
-                if not responses and b"Domain (core, personal, work, client)" in transcript:
+                if not responses and b"Domain (core: shared; personal: shared+personal; work: shared+employer; client: shared+client)" in transcript:
                     break  # An update must not ask for the profile again.
             elif process.poll() is not None:
                 break
@@ -316,9 +330,9 @@ class InstallerTests(unittest.TestCase):
         self.assertEqual(answered, len(responses), transcript.decode(errors="replace"))
 
     def test_first_run_prompts_on_terminal_and_reuses_personal_identity(self):
-        responses = [(b"Domain (core, personal, work, client)", b"personal\r"),
-                     (b"Git name (optional)", b"Fixture Person\r"),
-                     (b"Git email (optional)", b"fixture@example.invalid\r")]
+        responses = [(b"Domain (core: shared; personal: shared+personal; work: shared+employer; client: shared+client)", b"personal\r"),
+                     (b"Git name (commit author; blank=unset)", b"Fixture Person\r"),
+                     (b"Git email (commit author email; blank=unset)", b"fixture@example.invalid\r")]
         self.run_on_terminal(responses)
         config = (self.home / ".config/chezmoi/chezmoi.toml").read_text()
         self.assertIn('domain = "personal"', config)
