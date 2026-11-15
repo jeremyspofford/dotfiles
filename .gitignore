@@ -1,0 +1,33 @@
+# Generated secrets, including nested accidental copies.
+.secrets
+.secrets.*
+!.secrets.example
+# Chezmoi's private source attribute names the same target.
+private_dot_secrets
+dot_secrets
+# Machine-specific state and development output.
+.env
+.env.*
+!.env.example
+node_modules/
+.generated/
+*.log
+.DS_Store
+# Restored Stow-era protections; keep generated-secrets rules above.
+*.secret
+*.local
+*.pem
+*.key
+id_rsa*
+id_ed25519*
+.vscode/
+.claude/
+*~
+*.swp
+*.swo
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.worktrees/
+.herdr-web-ui/

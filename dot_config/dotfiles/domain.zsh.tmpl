@@ -1,0 +1,3 @@
+# One domain value selects one overlay; core always applies.
+{{ if not (has .domain (list "core" "personal" "work" "client")) }}{{ fail "invalid domain" }}{{ end }}
+export DOTFILES_DOMAIN={{ .domain | quote }}

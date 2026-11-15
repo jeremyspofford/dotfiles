@@ -1,0 +1,75 @@
+name: CI
+on:
+  pull_request:
+  push:
+    branches: [main, "feat/chezmoi-v0.0.1"]
+permissions:
+  contents: read
+jobs:
+  linux:
+    runs-on: ubuntu-latest
+    container: ubuntu:24.04
+    steps:
+      - name: Install test prerequisites
+        run: |
+          apt-get update
+          apt-get install -y bash curl git tar zsh python3 shellcheck shfmt ca-certificates
+      - uses: actions/checkout@v4
+      - name: Shell standards
+        run: |
+          shellcheck -x scripts/*.sh
+          shfmt -d scripts/*.sh
+          # Sourced home fragments are rendered later; source-path resolution is unavailable here.
+          shellcheck -s bash -e SC1091 dot_commonrc dot_bashrc dot_bash_profile core/aliases.zsh
+          shfmt -ln bash -d dot_commonrc dot_bashrc dot_bash_profile core/aliases.zsh
+      - name: Bootstrap in fresh Linux container
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          # Applying .gitconfig replaces the temporary global setting above.
+          # Keep this container-only exception in the supported local override.
+          mkdir -p "$HOME/.config/git"
+          git config --file "$HOME/.config/git/local.gitconfig" --add safe.directory "$GITHUB_WORKSPACE"
+          bash scripts/bootstrap.sh --repo "$GITHUB_WORKSPACE" --source "$HOME/.local/share/chezmoi"
+          "$HOME/.local/bin/chezmoi" apply --dry-run
+          zsh -lic '[[ -r ~/.secrets && -r ~/.aliases ]]; print "Managed zsh started"'
+          bash -lic '[[ -r ~/.commonrc && -r ~/.aliases && -n $DOTFILES_PLATFORM ]] && alias gs && printf "Managed Bash started\n"'
+          bash -ic 'before=$PATH; source ~/.commonrc; [[ $PATH == "$before" ]]'
+          test -f "$HOME/.secrets"
+          test "$(stat -c %a "$HOME/.secrets")" = 600
+          git check-ignore --no-index .secrets
+          test -z "$(git ls-files .secrets)"
+      - name: Integration and regression checks
+        run: PATH="$HOME/.local/bin:$PATH" python3 -m unittest discover -s tests -p 'test_*.py' -v
+  release-policy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install --ignore-scripts
+      - run: npm run test:release
+  diagram:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.24"
+      - name: Render D2 headlessly
+        run: |
+          go install oss.terrastruct.com/d2@v0.7.1
+          "$(go env GOPATH)/bin/d2" --layout=dagre docs/diagrams/layers.d2 /tmp/layers.svg
+      - name: Compare committed SVG
+        run: |
+          test -s docs/diagrams/layers.svg
+          cmp docs/diagrams/layers.svg /tmp/layers.svg
+      - name: Publish rendered SVG for review
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: layers-svg
+          path: /tmp/layers.svg
+      - name: Emit rendered source for connector-only recovery
+        if: always()
+        run: python3 -c 'import json; print("D2_RENDERED=" + json.dumps(open("/tmp/layers.svg").read()))'

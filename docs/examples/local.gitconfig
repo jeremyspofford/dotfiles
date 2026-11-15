@@ -1,0 +1,6 @@
+# Copy to ~/.config/git/local.gitconfig (chmod 600) and edit. This file is
+# machine-local: chezmoi never manages it and it is never committed.
+[user]
+    name = "Your Name"
+    email = "you@example.com"
+
