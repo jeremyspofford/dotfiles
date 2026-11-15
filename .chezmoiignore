@@ -5,6 +5,7 @@
 .gitignore
 .github
 README.md
+install.sh
 VERSION
 CHANGELOG.md
 LICENSE

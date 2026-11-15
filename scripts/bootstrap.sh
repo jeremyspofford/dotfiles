@@ -2,7 +2,7 @@
 # Purpose: Install chezmoi/Mise; validate then apply bundled or own dotfiles.
 # Usage: bash scripts/bootstrap.sh [OPTIONS]; see usage() below.
 # Parameters: --repo URL, --domain DOMAIN, --source PATH, --branch NAME,
-# --dry-run, -h, --help.
+# --dry-run, --interactive, -h, --help.
 # Examples: bash scripts/bootstrap.sh --domain work
 #           bash scripts/bootstrap.sh --repo https://github.com/you/dotfiles.git
 # Exit codes: 0 success/help; 1 runtime failure; 2 invalid arguments.
@@ -27,6 +27,7 @@ Options:
   --source PATH    Absolute source path (default: ~/.local/share/chezmoi).
   --branch NAME    Branch to initialize (default: remote default).
   --dry-run        Install tools, clone/init and validate; do not apply dotfiles.
+  --interactive    Prompt for missing domain/identity data using /dev/tty.
   -h, --help       Print full help and exit 0.
 Examples:
   bash scripts/bootstrap.sh --domain personal
@@ -50,11 +51,16 @@ source_path="${XDG_DATA_HOME:-$HOME/.local/share}/chezmoi"
 branch=
 own_repo=0
 dry_run=0
+interactive=0
 while (($#)); do
 	case $1 in
 	-h | --help)
 		usage
 		exit 0
+		;;
+	--interactive)
+		interactive=1
+		shift
 		;;
 	--dry-run)
 		dry_run=1
@@ -114,7 +120,7 @@ if ! command -v mise >/dev/null; then
 	MISE_INSTALL_PATH="$HOME/.local/bin/mise" sh "$work_dir/mise-install"
 fi
 if [[ -e $source_path ]]; then
-	origin=$(git -C "$source_path" remote get-url origin) || {
+	origin=$(git -C "$source_path" config --get remote.origin.url) || {
 		log_error "Source exists but is not a Git checkout: $source_path"
 		exit 1
 	}
@@ -125,12 +131,28 @@ if [[ -e $source_path ]]; then
 fi
 args=(--source "$source_path")
 init_args=(--promptDefaults)
+if [[ $interactive == 1 ]]; then
+	init_args=(--prompt)
+fi
 [[ -z $branch ]] || init_args+=(--branch "$branch")
-if [[ $own_repo == 0 ]]; then
+if [[ $own_repo == 0 && $interactive == 0 ]]; then
 	init_args+=(--promptString "domain=$domain")
 fi
 log_info "Initializing source checkout"
-chezmoi "${args[@]}" init "${init_args[@]}" "$repo"
+if [[ $interactive == 1 ]]; then
+	# Never consume the installer script from a curl | bash pipeline.
+	if { exec 3<>/dev/tty; } 2>/dev/null; then
+		chezmoi "${args[@]}" init "${init_args[@]}" "$repo" <&3
+		exec 3>&-
+	elif [[ -f ${XDG_CONFIG_HOME:-$HOME/.config}/chezmoi/chezmoi.toml ]]; then
+		# Previously chosen profile values are reused by promptStringOnce.
+		chezmoi "${args[@]}" init --promptDefaults "$repo" </dev/null
+	else
+		error_exit 'First enrollment needs a terminal (/dev/tty); use install.sh --defaults only to explicitly accept core/blank identity.'
+	fi
+else
+	chezmoi "${args[@]}" init "${init_args[@]}" "$repo"
+fi
 log_info "Validating templates with chezmoi diff (private output)"
 chezmoi "${args[@]}" diff >"$work_dir/diff"
 if [[ $dry_run == 1 ]]; then
