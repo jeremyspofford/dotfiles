@@ -4,6 +4,23 @@ All notable changes are documented here, following [Keep a Changelog](https://ke
 and [Semantic Versioning](https://semver.org/). Versions remain below 1.0.0 until
 the owner deliberately declares production readiness.
 
+## [0.1.0] - 2026-11-15
+
+### Added
+
+- make dotfiles setup visible and document it in plain English
+- add one-line installer
+
+### Changed
+
+- explain core and domains in the README
+- correct the repository visibility note
+- set release-please bootstrap-sha to the history-reset root
+
+### Fixed
+
+- reuse saved installer profile on terminal updates
+
 ## [0.0.2] - 2026-11-15
 
 ### Fixed
