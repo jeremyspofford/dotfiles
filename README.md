@@ -125,5 +125,4 @@ in CI. Read [DESIGN.md](docs/DESIGN.md) for boundaries and [RELEASES.md](docs/RE
 for the owner-only 1.0.0 gate and pending live release test. VERSION is the
 version source; Conventional Commit subjects become plain-language changelog entries.
 
-This repository remains private. The existing history includes personal metadata;
-sanitizing the current source does not sanitize historical commits.
+This repository is public. Its history was reset on 2026-11-15; the earlier history is preserved in a private archive.
