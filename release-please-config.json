@@ -1,4 +1,5 @@
 {
+  "bootstrap-sha": "46254275de9b4b201752a9e3fe3168194cb54458",
   "release-type": "simple",
   "version-file": "VERSION",
   "versioning": "zero-major",
