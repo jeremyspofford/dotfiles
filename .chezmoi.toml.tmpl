@@ -7,5 +7,5 @@ domain = {{ $domain | quote }}
 gitName = {{ promptStringOnce . "gitName" "Git name (optional)" "" | quote }}
 gitEmail = {{ promptStringOnce . "gitEmail" "Git email (optional)" "" | quote }}
 # Enable only after installing/signing in to the 1Password CLI.
-secretsEnabled = {{ .secretsEnabled }}
-secretReference = {{ .secretReference | quote }}
+secretsEnabled = {{ get . "secretsEnabled" | default false }}
+secretReference = {{ get . "secretReference" | default "op://Example/Development/api-token" | quote }}

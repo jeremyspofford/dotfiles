@@ -22,15 +22,15 @@ jobs:
       - name: Bootstrap in fresh Linux container
         run: |
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
-          bash scripts/bootstrap.sh --repo "$GITHUB_WORKSPACE" --source /root/.local/share/chezmoi
-          /root/.local/bin/chezmoi apply --dry-run
+          bash scripts/bootstrap.sh --repo "$GITHUB_WORKSPACE" --source "$HOME/.local/share/chezmoi"
+          "$HOME/.local/bin/chezmoi" apply --dry-run
           zsh -lic '[[ -r ~/.secrets && -r ~/.aliases ]]; print "Managed zsh started"'
-          test -f /root/.secrets
-          test "$(stat -c %a /root/.secrets)" = 600
+          test -f "$HOME/.secrets"
+          test "$(stat -c %a "$HOME/.secrets")" = 600
           git check-ignore --no-index .secrets
           test -z "$(git ls-files .secrets)"
       - name: Integration and regression checks
-        run: PATH="/root/.local/bin:$PATH" python3 -m unittest discover -s tests -p 'test_*.py' -v
+        run: PATH="$HOME/.local/bin:$PATH" python3 -m unittest discover -s tests -p 'test_*.py' -v
   release-policy:
     runs-on: ubuntu-latest
     steps:
