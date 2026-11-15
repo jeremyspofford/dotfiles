@@ -64,6 +64,18 @@ if [[ -n "${_LOGGER_SH_LOADED:-}" ]]; then
 	return 0 2>/dev/null || true
 fi
 _LOGGER_SH_LOADED=1
+# --- Version --------------------------------------------------------------------
+# Scripts print DOTFILES_VERSION in their --help output. Read it from the
+# VERSION file next to this script's parent directory; fall back to
+# "unknown" so sourcing this file never fails under `set -u`.
+_LOGGER_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+if [[ -r "${_LOGGER_DIR}/../VERSION" ]]; then
+	DOTFILES_VERSION="$(cat "${_LOGGER_DIR}/../VERSION")"
+else
+	DOTFILES_VERSION="unknown"
+fi
+export DOTFILES_VERSION
+unset _LOGGER_DIR
 
 # --- Colors -------------------------------------------------------------------
 # Enabled only on a real terminal and only when NO_COLOR is unset.
