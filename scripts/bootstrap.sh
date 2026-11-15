@@ -131,27 +131,28 @@ if [[ -e $source_path ]]; then
 fi
 args=(--source "$source_path")
 init_args=(--promptDefaults)
-if [[ $interactive == 1 ]]; then
+prompt_required=0
+if [[ $interactive == 1 && ! -f ${XDG_CONFIG_HOME:-$HOME/.config}/chezmoi/chezmoi.toml ]]; then
 	init_args=(--prompt)
+	prompt_required=1
 fi
 [[ -z $branch ]] || init_args+=(--branch "$branch")
 if [[ $own_repo == 0 && $interactive == 0 ]]; then
 	init_args+=(--promptString "domain=$domain")
 fi
 log_info "Initializing source checkout"
-if [[ $interactive == 1 ]]; then
+if [[ $prompt_required == 1 ]]; then
 	# Never consume the installer script from a curl | bash pipeline.
 	if { exec 3<>/dev/tty; } 2>/dev/null; then
 		chezmoi "${args[@]}" init "${init_args[@]}" "$repo" <&3
 		exec 3>&-
-	elif [[ -f ${XDG_CONFIG_HOME:-$HOME/.config}/chezmoi/chezmoi.toml ]]; then
-		# Previously chosen profile values are reused by promptStringOnce.
-		chezmoi "${args[@]}" init --promptDefaults "$repo" </dev/null
 	else
 		error_exit 'First enrollment needs a terminal (/dev/tty); use install.sh --defaults only to explicitly accept core/blank identity.'
 	fi
 else
-	chezmoi "${args[@]}" init "${init_args[@]}" "$repo"
+	# --prompt would ask again even when promptStringOnce has saved values.
+	# Updates reuse that data whether or not a terminal is attached.
+	chezmoi "${args[@]}" init "${init_args[@]}" "$repo" </dev/null
 fi
 log_info "Validating templates with chezmoi diff (private output)"
 chezmoi "${args[@]}" diff >"$work_dir/diff"
