@@ -40,7 +40,7 @@ documented empty customization points. Dotfleet is documentation only.
 
 ## Checks and remaining work
 
-CI has passed the fresh Linux container, shell standards, five integration tests,
+CI has passed the fresh Linux container, shell standards, eight integration tests,
 release-policy tests and byte-for-byte D2 rendering check. Exact run links and
 limitations are in [BLOCKERS.md](BLOCKERS.md).
 

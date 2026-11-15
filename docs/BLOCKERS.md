@@ -54,14 +54,16 @@ invent a config file. See [AGENTS.md](AGENTS.md).
 
 ## Verified in GitHub Actions
 
-[Successful CI run](https://github.com/jeremyspofford/dotfiles/actions/runs/43735983320)
-at `ea0b8958a1cdb2c6fe78b807026f73f2bc017eee` verified:
+[Successful CI run](https://github.com/jeremyspofford/dotfiles/actions/runs/43742290324)
+at `78002d983bf19ac4be798d44bda971e2b09e5eca` verified:
 
-- Shellcheck and shfmt pass for every Bash script.
+- Shellcheck and shfmt pass for every Bash script and the shared shell fragments.
 - Fresh Ubuntu 24.04 container installs chezmoi/Mise, validates and applies.
-- Managed zsh starts; local .secrets exists at mode 0600 and is Git-ignored/untracked.
-- Five Python tests pass, including all four domains, regeneration idempotence,
-  every Bash script's help/unknown flags, and agent conflict protection.
+- Managed zsh and Bash start; shared PATH setup is idempotent. Local .secrets
+  exists at mode 0600 and is Git-ignored/untracked.
+- Eight Python tests pass, including all four domains, regeneration idempotence,
+  every Bash script's help/unknown flags, agent conflict protection, all restored
+  ignore rules, shell syntax, and mocked SSO success/failure in Bash and zsh.
 - Release-policy tests pass, including 0.0.1 → 0.0.2 and breaking changes staying 0.x.
 - D2 0.7.1 renders headlessly; committed SVG exactly matches regenerated output.
 
