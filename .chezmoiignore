@@ -1,0 +1,21 @@
+# Repository metadata and input-only sources must never become home-directory files.
+.git*
+.github
+README.md
+VERSION
+CHANGELOG.md
+LICENSE
+docs
+scripts
+tests
+agents
+core
+personal
+work
+client
+mise.toml
+package*.json
+node_modules
+release-please-config.json
+.release-please-manifest.json
+dotfleet-stub

@@ -1,0 +1,11 @@
+{{- $domain := promptStringOnce . "domain" "Domain (core, personal, work, client)" "core" -}}
+{{- if not (has $domain (list "core" "personal" "work" "client")) -}}
+{{- fail "domain must be core, personal, work, or client" -}}
+{{- end }}
+[data]
+domain = {{ $domain | quote }}
+gitName = {{ promptStringOnce . "gitName" "Git name (optional)" "" | quote }}
+gitEmail = {{ promptStringOnce . "gitEmail" "Git email (optional)" "" | quote }}
+# Enable only after installing/signing in to the 1Password CLI.
+secretsEnabled = {{ .secretsEnabled }}
+secretReference = {{ .secretReference | quote }}

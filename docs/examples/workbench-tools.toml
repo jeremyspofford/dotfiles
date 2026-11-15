@@ -1,0 +1,22 @@
+# Optional sanitized Workbench example, not installed by bootstrap. Versions change deliberately through reviewed diffs.
+# Project mise.toml files can select different runtimes without changing this file.
+[tools]
+node = "24.14.1"
+python = "3.14.5"
+uv = "0.12.6"
+gh = "2.92.0"
+glab = "1.97.0"
+ripgrep = "15.1.0"
+fd = "10.4.2"
+bat = "0.26.1"
+fzf = "0.72.0"
+jq = "1.8.1"
+eza = "0.23.4"
+bun = "1.3.14"
+neovim = "0.12.6"
+chezmoi = "2.73.3"
+delta = "0.20.1"
+shellcheck = "0.11.0"
+
+[settings]
+idiomatic_version_file_enable_tools = ["node", "python"]

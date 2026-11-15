@@ -1,0 +1,37 @@
+# Sanitized Workbench baseline. Identity remains machine-local.
+[init]
+    defaultBranch = main
+[core]
+    excludesFile = ~/.config/git/ignore
+{{ if lookPath "nvim" }}    editor = nvim
+{{ end }}{{ if lookPath "delta" }}    pager = delta
+[interactive]
+    diffFilter = delta --color-only
+[delta]
+    navigate = true
+{{ end }}
+[color]
+    ui = auto
+[pull]
+    ff = only
+[push]
+    default = simple
+[fetch]
+    prune = true
+[merge]
+    conflictStyle = zdiff3
+{{ if lookPath "gh" }}
+[credential "https://github.com"]
+    helper =
+    helper = !gh auth git-credential
+[credential "https://gist.github.com"]
+    helper =
+    helper = !gh auth git-credential
+{{ end }}
+{{ if or .gitName .gitEmail }}
+[user]
+{{ if .gitName }}    name = {{ .gitName | toJson }}
+{{ end }}{{ if .gitEmail }}    email = {{ .gitEmail | toJson }}
+{{ end }}{{ end }}
+[include]
+    path = ~/.config/git/local.gitconfig

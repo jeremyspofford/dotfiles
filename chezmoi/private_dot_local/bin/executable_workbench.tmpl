@@ -1,3 +1,0 @@
-#!/bin/sh
-# Keep the orchestration code in the dotfiles checkout.
-exec python3 {{ joinPath .chezmoi.sourceDir ".." "bin" "workbench" | shellQuote }} "$@"

@@ -1,0 +1,11 @@
+direction: down
+dotfiles: {
+  label: "Layer 0 · dotfiles\nStandalone · git + chezmoi + Mise"
+  source: "Core + one domain\nTemplates + skills manifest"
+  outputs: "Shell · Git · agent configs\nLocal generated secrets"
+  source -> outputs: "chezmoi + generation"
+}
+dotfleet: "Layer 1 · Dotfleet (future)\nTUI onboarding · profiles · orchestration"
+addons: "Add-ons (future)\nIndependent install and teardown contracts"
+dotfleet -> dotfiles: "consumes"
+addons -> dotfleet: "extends"
