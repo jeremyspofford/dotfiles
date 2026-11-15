@@ -17,11 +17,18 @@ jobs:
       - uses: actions/checkout@v4
       - name: Shell standards
         run: |
-          shellcheck -x scripts/*.sh
-          shfmt -d scripts/*.sh
+          shellcheck -x install.sh scripts/*.sh
+          shfmt -d install.sh scripts/*.sh
           # Sourced home fragments are rendered later; source-path resolution is unavailable here.
           shellcheck -s bash -e SC1091 dot_commonrc dot_bashrc dot_bash_profile core/aliases.zsh
           shfmt -ln bash -d dot_commonrc dot_bashrc dot_bash_profile core/aliases.zsh
+      - name: Installer with no preinstalled chezmoi or Mise
+        run: |
+          # A fresh HOME and the image's base PATH exercise user-local downloads.
+          # checkout is detached on PRs; the installer must also support that.
+          HOME="$(mktemp -d)" GIT_CONFIG_COUNT=1 \
+            GIT_CONFIG_KEY_0=safe.directory GIT_CONFIG_VALUE_0="$GITHUB_WORKSPACE" \
+            bash install.sh --defaults
       - name: Bootstrap in fresh Linux container
         run: |
           git config --global --add safe.directory "$GITHUB_WORKSPACE"

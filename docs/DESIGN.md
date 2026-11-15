@@ -52,6 +52,52 @@ protect forced additions or already-tracked files; review changes before commit.
 No diff containing secret values is logged by bootstrap. A 1Password failure
 stops rendering instead of substituting a fake credential.
 
+## Enrollment and rollback
+
+`install.sh` is the enrollment and update entry point. It chooses the canonical
+source at `~/.local/share/chezmoi`, fast-forwards an existing clean main checkout,
+or seeds it from a local clone or public HTTPS. It never resets local changes or
+merges divergent history. The original local clone is not modified.
+
+Before applying, the installer asks `chezmoi managed` for the current file and
+symlink inventory. If chezmoi is missing, its official installer first downloads
+a temporary binary solely for inventory; the permanent binary is installed into
+`~/.local/bin` afterward. Mise uses its official installer with the same user-local
+destination. No package manager or sudo is invoked.
+
+Each run makes a private `~/dotfleet-backups/<timestamp>/` directory (a suffix
+prevents same-second collisions). `home/` mirrors saved paths; `MANIFEST` records
+saved/absent paths and symlink targets using Bash-escaped filenames. Symlinks are
+copied as links, including broken links. File targets physically outside HOME are
+also copied to `external/`, mirroring their absolute paths. The local chezmoi
+configuration is backed up before bootstrap regenerates it. Backups may contain
+secrets; retain their private directory permissions.
+
+Bootstrap's `--interactive` mode reads initialization prompts from `/dev/tty`.
+First enrollment without a terminal fails unless `install.sh --defaults` explicitly
+accepts the core profile and blank identity. The installer uses bootstrap's
+existing diff validation and apply path; it does not maintain a separate renderer.
+The end summary reports backup/source/commit/status even when installation fails
+after the logger has loaded. Help and invalid arguments do not start enrollment;
+a missing curl or failed logger download on a standalone run produces the shell
+or curl diagnostic before logging is available.
+
+To roll back:
+
+1. Stop applying changes and review the chosen backup's `MANIFEST` in a private
+   terminal. Restore any `external/` files to the absolute paths recorded there.
+2. Restore saved home files with `cp -a /path/to/backup/home/. "$HOME/"`. This
+   restores preserved symlinks as links. Review any pre-existing symlinked parent
+   directories before copying; do not replace unrelated directory contents.
+3. Remove only files created by enrollment whose paths were recorded as `absent`.
+   If the chezmoi config was absent, remove the newly generated config too. Keep
+   unrelated files and the backups. Installed tools/source may remain in place.
+4. Run `chezmoi status` to inspect the restored differences. Do not run apply
+   until you intend to replace those restored files again.
+
+Idempotence means identical managed file contents and modes on repeated runs.
+New backup directories and updates to chezmoi's own state database are expected.
+
 ## Agent scope
 
 The manifest selects native paths/formats and is the only source of config content.

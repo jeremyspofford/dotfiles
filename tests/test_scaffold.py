@@ -18,11 +18,11 @@ spec.loader.exec_module(agents)
 
 class ScaffoldTests(unittest.TestCase):
     def test_script_help_and_unknown_flags(self):
-        for script in sorted((ROOT / "scripts").glob("*.sh")):
+        for script in [ROOT / "install.sh", *sorted((ROOT / "scripts").glob("*.sh"))]:
             for flag in ("--help", "-h"):
                 result = subprocess.run(["bash", str(script), flag], capture_output=True, text=True, cwd=ROOT)
                 self.assertEqual(result.returncode, 0, result.stderr)
-                for word in ("Usage:", "Parameters:" if script.name == "logger.sh" else "Options:" if script.name in ("bootstrap.sh", "generate-agent-configs.sh") else "Parameters:", "Example", "Exit codes:", "Version:"):
+                for word in ("Usage:", "Parameters:" if script.name == "logger.sh" else "Options:" if script.name in ("install.sh", "bootstrap.sh", "generate-agent-configs.sh") else "Parameters:", "Example", "Exit codes:", "Version:"):
                     self.assertIn(word, result.stdout)
             result = subprocess.run(["bash", str(script), "--unknown"], capture_output=True, text=True, cwd=ROOT)
             self.assertEqual(result.returncode, 2)

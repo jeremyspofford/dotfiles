@@ -4,11 +4,17 @@ A standalone, chezmoi-managed shell and Git scaffold, built from a sanitized
 existing Workbench configuration. Git stores the source, chezmoi renders it for
 one machine and domain, and Mise manages tools. You can use this layer on its own.
 
-**v0.0.1 is a migration candidate on `feat/chezmoi-v0.0.1`. Main still contains
-Workbench. Do not migrate an existing machine until the owner has reviewed the
-[legacy inventory](docs/LEGACY-INVENTORY.md), salvage decisions, and preservation
-references. WSL inventory is complete on `legacy/stow-local-2026`.** See
-[blockers and acceptance status](docs/BLOCKERS.md).
+## Install
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/jeremyspofford/dotfiles/main/install.sh | bash
+```
+
+- Backs up existing managed files, installs missing user-local tools, and prompts for your domain and Git identity before applying.
+- Re-running the same command fast-forwards the source and updates your dotfiles.
+- Backups live in `~/dotfleet-backups/<YYYYMMDD-HHMMSS>/`, including symlinks and external file targets.
+
+Roll back by reviewing the backup's `MANIFEST` and restoring its saved files; see the [rollback procedure](docs/DESIGN.md#enrollment-and-rollback).
 
 ![dotfiles, Dotfleet and add-on layers](docs/diagrams/layers.svg)
 
@@ -16,27 +22,33 @@ Dotfleet will consume dotfiles to provide onboarding and fleet profiles.
 Add-ons will extend Dotfleet. Neither is required here; there is no custom sync
 engine, GUI, daemon, or agent pack.
 
-## Install
+## Advanced bootstrap
 
-Prerequisites: Bash, Git, curl, tar and zsh; Linux, macOS or WSL. For example, a
-fresh Ubuntu container needs `apt-get install -y git curl ca-certificates tar zsh`.
-Bootstrap installs missing chezmoi and Mise into `~/.local/bin`. Python 3.11+ is
-needed only for the optional agent generator. Authenticate Git before cloning this
-private repository. Native Windows bootstrap is deferred; use WSL.
+The installer supports Linux, macOS and WSL and requires Bash, git, curl and tar.
+It downloads official chezmoi/Mise binaries into `~/.local/bin` only when missing;
+no sudo or GitHub authentication is needed. Install zsh separately if desired.
+Python 3.11+ is needed only for the optional agent generator. Native Windows users
+should run the installer inside WSL.
 
-Clone the migration candidate and run one setup command:
+The first run reads domain and identity prompts from `/dev/tty`, including when
+piped from curl. Later runs reuse your machine-local profile. For disposable CI
+homes, `bash install.sh --defaults` explicitly accepts core and a blank identity.
+An existing canonical source must be a clean checkout of this repository on
+`main`; the installer refuses unrelated repositories, local edits and divergent
+history. When invoked from a local clone on first enrollment, it copies that
+clone's committed tree into the canonical location without changing the original.
+
+For direct bootstrap use (without the installer's backup/update wrapper):
 
 ```sh
-git clone --branch feat/chezmoi-v0.0.1 https://github.com/jeremyspofford/dotfiles.git
+git clone https://github.com/jeremyspofford/dotfiles.git
 cd dotfiles
-bash scripts/bootstrap.sh --branch feat/chezmoi-v0.0.1 --domain core
+bash scripts/bootstrap.sh --interactive
 ```
 
-Choose `personal`, `work` or `client` to select another overlay. Domains begin with
-the shared core and contain empty, documented customization points; no invented
-personal aliases are added. Existing source directories must have the same Git
-origin; otherwise choose a new `--source /absolute/path`. Review existing machine
-configuration before applying.
+Choose `core`, `personal`, `work` or `client` at the prompt. The selected overlay
+adds to core; identity stays machine-local. The lower-level bootstrap also accepts
+`--domain personal` for noninteractive setup with default identity values.
 
 To use **your own trusted chezmoi repository**, use this bootstrap as tooling:
 
@@ -111,8 +123,8 @@ Ollama's environment-only model, are documented in [AGENTS.md](docs/AGENTS.md).
 ## Development and review
 
 ```sh
-shellcheck -x scripts/*.sh
-shfmt -d scripts/*.sh
+shellcheck -x install.sh scripts/*.sh
+shfmt -d install.sh scripts/*.sh
 python3 -m unittest discover -s tests -p 'test_*.py' -v
 npm install --ignore-scripts
 npm run test:release
