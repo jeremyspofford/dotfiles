@@ -46,16 +46,11 @@ Preserve local changes in a separate branch/patch with private storage.
 
 ## Preservation and merge gate
 
-Owner requires `legacy/stow-2026` to tag the existing main before any merge.
-The connector supports branches but not creating tags, and local Git execution
-is blocked; the tag has **not** been created. Once execution is restored, verify
-main has not moved, then create an annotated tag at the reviewed snapshot:
-
-```sh
-git fetch origin main
-git tag -a legacy/stow-2026 3421071b3ddcbd0dd5ddc728df009af1ba8ca902 -m "Archive pre-v0.0.1 Workbench and Stow history"
-git push origin refs/tags/legacy/stow-2026
-```
+Owner requires `legacy/stow-2026` before any merge. This annotated tag now exists
+and points to `3421071b3ddcbd0dd5ddc728df009af1ba8ca902`, verified through the GitHub API.
+The preservation [workflow run](https://github.com/jeremyspofford/dotfiles/actions/runs/43736087968)
+created it without moving main. Its tag-object SHA is
+`f32ac6ce6d2315d44f67af393bc4b053e6cc46bf`.
 
 Do not move an existing tag. A restoration is a checkout of this tag in a separate
 clone/worktree, followed by the legacy README's instructions; it is not a forced

@@ -34,7 +34,7 @@ jobs:
             }
             const tag = await github.rest.git.createTag({
               owner, repo, tag: "legacy/stow-2026", object: expected, type: "commit",
-              message: "Preserve the owner-reviewed pre-v0.0.1 Workbench and Stow history."
+              message: "Preserve the owner-requested pre-v0.0.1 Workbench and Stow history."
             });
             await github.rest.git.createRef({owner, repo, ref: "refs/" + ref, sha: tag.data.sha});
             core.info("Created legacy/stow-2026 at " + expected + "; main is unchanged.");
