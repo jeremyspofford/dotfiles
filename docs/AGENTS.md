@@ -1,42 +1,51 @@
 # Agent configuration
 
-`agents/manifest.toml` owns native config content, discovery commands, formats,
-and OS paths. `agents/skills/` owns skill content. Run:
+An agent is an installed coding assistant. A skill is a folder of instructions for an agent.
+The manifest, a configuration list at `agents/manifest.toml`, owns content, discovery commands, formats, and operating-system paths. Skills live in `agents/skills/`.
+`PATH` lists directories searched for commands. Only commands found there get configuration.
+It installs and starts no agent. Agent login remains separate.
 
-```sh
-bash scripts/generate-agent-configs.sh --dry-run
-bash scripts/generate-agent-configs.sh
-```
+To generate settings from `~/dotfiles`:
 
-Only commands found on PATH are configured. No agent binary is installed or
-started. JSON/TOML defaults are deliberately minimal; native authentication stays
-with each agent. Per-skill symlinks avoid copying skill content or replacing an
-entire user skills directory. Keep the source checkout at a stable location.
+1. Run `bash scripts/generate-agent-configs.sh --dry-run`. This validates inputs and reports proposed paths without writing.
+2. Review the paths and resolve any conflicts.
+3. Run `bash scripts/generate-agent-configs.sh` to write settings and links.
 
-Existing unowned or modified files cause a failure before writes. Review and move
-them aside, incorporate desired non-secret settings into the manifest, then rerun.
-The output inventory at `~/.local/state/dotfiles/agents.json` stores paths and
-hashes, never credentials. It retains records for absent agents; removing an agent
-does not silently delete its configuration. To tear down, remove only files whose
-hash/link still matches the inventory, then remove those entries. Never recursively
-delete an agent directory; it may contain credentials or user-created skills.
+JSON and TOML are configuration file formats. Generated defaults use minimal valid content.
+Each skill gets a symbolic link to its source folder, without copying content or replacing whole skills directories.
+Keep the checkout at a stable path.
 
-| Agent | Native config relative to home | Skill discovery relative to home |
+Unknown or modified files or links stop generation before writes. Review them, then move them aside.
+Add wanted non-secret settings to the manifest and rerun. Never put login credentials in the manifest.
+`~/.local/state/dotfiles/agents.json` records output paths and hashes, not credentials. A hash identifies file contents for comparison.
+Records for absent agents and unused outputs remain for review. Removing an agent never silently deletes configuration.
+
+## Paths and limits
+
+| Agent | Configuration in home | Skills in home |
 | --- | --- | --- |
-| [claude](https://code.claude.com/docs/en/settings) | `.claude/settings.json` | `.claude/skills` |
-| [codex](https://developers.openai.com/codex/config-basic/) | `.codex/config.toml` | `.agents/skills` |
-| [gemini](https://geminicli.com/docs/cli/skills/) | `.gemini/settings.json` | `.gemini/skills` |
-| [grok](https://docs.x.ai/build/settings) | `.grok/config.toml` | `.grok/skills` |
-| [pi](https://github.com/badlogic/pi-mono/tree/main/packages/coding-agent) | `.pi/agent/settings.json` | `.pi/agent/skills` |
-| [opencode](https://opencode.ai/docs/config/) | `.config/opencode/opencode.json` | `.config/opencode/skills` |
-| [Ollama](https://docs.ollama.com/faq) | Process/service environment; no portable config-file path | None |
+| [claude](https://code.claude.com/docs/en/settings) | `~/.claude/settings.json` | `~/.claude/skills` |
+| [codex](https://developers.openai.com/codex/config-basic/) | `~/.codex/config.toml` | `~/.agents/skills` |
+| [gemini](https://geminicli.com/docs/cli/skills/) | `~/.gemini/settings.json` | `~/.gemini/skills` |
+| [grok](https://docs.x.ai/build/settings) | `~/.grok/config.toml` | `~/.grok/skills` |
+| [pi](https://github.com/badlogic/pi-mono/tree/main/packages/coding-agent) | `~/.pi/agent/settings.json` | `~/.pi/agent/skills` |
+| [opencode](https://opencode.ai/docs/config/) | `~/.config/opencode/opencode.json` | `~/.config/opencode/skills` |
+| [Ollama](https://docs.ollama.com/faq) | Process/service environment; no portable file path | None |
 
-The manifest spells out Linux, macOS, Windows and WSL mappings. Bash bootstrap is
-supported on Linux/macOS/WSL; native Windows mappings are descriptive and generator
-symlinks require developer mode or suitable privileges. WSL configures Linux
-agents, not Windows executables. Custom agent home environment variables require
-corresponding manifest changes; defaults here target documented standard homes.
+The manifest maps Linux, macOS, Windows, and WSL (Windows Subsystem for Linux).
+Bash setup supports Linux, macOS, and WSL. Native Windows paths are descriptive; links require developer mode or suitable privileges.
+WSL configures Linux agents, not Windows executables. Custom agent-home environment variables require matching manifest changes.
+Defaults target documented standard homes.
 
-Ollama is explicitly unsupported by this config-file generator. Its documented
-service environment differs between systemd, launchctl and Windows; inventing a
-config file would imply support that does not exist.
+Ollama is unsupported: it uses process/service environment settings, not a portable configuration file.
+Service setup differs across Linux's systemd, macOS's launchctl, and Windows.
+The generator reports this limit; it invents no file or skill loader.
+
+## Remove generated agent files
+
+1. Read `~/.local/state/dotfiles/agents.json` before deleting the checkout.
+2. Compare each file's hash or link target with its recorded value.
+3. Remove only outputs that still match. Preserve edited files and explain any retained output before proceeding.
+4. Remove matching entries from the record. Remove the record itself only when no entries remain.
+
+Never recursively delete an agent directory. It can contain credentials or user-created skills.

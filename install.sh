@@ -1,9 +1,11 @@
 #!/usr/bin/env bash
-# Purpose: Enroll or update a machine using the bundled chezmoi scaffold.
-# Usage: bash install.sh [--defaults]; see usage() for the curl | bash command.
-# Parameters: --defaults (noninteractive core profile), -h, --help.
+# Purpose: Install or update the bundled home configuration.
+# Usage: bash install.sh [--defaults]; see --help for the one-line command.
+# Parameters: --defaults selects shared settings and blank Git identity without prompts.
+# -h and --help print full help.
 # Examples: bash install.sh; bash install.sh --defaults
-# Exit codes: 0 success/help; 1 preflight/install/drift failure; 2 invalid arguments.
+# Exit codes: 0 success/help; 1 missing tool, install failure, or drift; 2 invalid arguments.
+# Drift means home files differ from the generated result.
 # Author: Jeremy Spofford / Aria Labs; Version: read from VERSION at runtime.
 set -euo pipefail
 
@@ -22,19 +24,27 @@ if [[ -n $script_dir && -r $script_dir/VERSION ]]; then
 fi
 usage() {
 	cat <<HELP
-install.sh — enroll or update this machine ($DOTFILES_VERSION)
+install.sh — install or update dotfiles ($DOTFILES_VERSION)
 Usage: bash install.sh [OPTIONS]
        curl -fsSL $raw/install.sh | bash
 
-Back up existing managed files, install missing user-local chezmoi/Mise,
-and apply the bundled dotfiles. Requires Bash, git, curl and tar on Linux,
-macOS or WSL. No sudo. First-run prompts read /dev/tty, never piped stdin.
-Choose a domain and Git identity on first run; updates reuse that profile.
-An existing ~/dotfiles checkout must be clean, on main, and fast-forwardable.
-A local clone can seed a first install; its committed checkout is used as-is.
+Dotfiles are home configuration files. chezmoi generates them; Mise manages tools.
+Setup backs up existing managed files, then applies the bundled files.
+It installs missing chezmoi and Mise into ~/.local/bin without sudo.
+Requires Bash, git, curl, and tar on Linux, macOS, or WSL.
+WSL means Windows Subsystem for Linux. Native Windows users must use WSL.
+
+A profile saves this machine's domain and Git commit identity.
+Domain choices: core = shared only; personal = shared plus personal settings;
+work = shared plus employer settings; client = shared plus client settings.
+Git name/email identify the commit author; blank leaves identity unset here.
+First-run prompts read /dev/tty, the terminal device, never piped input.
+Updates reuse the profile. The ~/dotfiles Git checkout must be clean and on main.
+Updates must fast-forward: advance without merging separate histories.
+A first run inside another clone copies its committed files without changing it.
 
 Options:
-  --defaults  Explicitly accept core/blank identity without a terminal (CI).
+  --defaults  Select core and blank identity without prompts; for test homes.
   -h, --help  Print full help and exit 0.
 
 Examples:
@@ -42,11 +52,13 @@ Examples:
   bash install.sh --defaults
   curl -fsSL $raw/install.sh | bash
 
-Backups: ~/dotfleet-backups/<YYYYMMDD-HHMMSS>/ (unique suffix on collision).
-Your dotfiles: ~/dotfiles (a git checkout). Tools: ~/.local/bin when missing from PATH.
-Inspect backups' MANIFEST before restoring home/ files; external symlink
-file targets are preserved separately under external/. See docs/DESIGN.md.
-Exit codes: 0 success/help; 1 runtime failure; 2 invalid arguments.
+Edit your checkout at ~/dotfiles, then run chezmoi apply.
+Backups: ~/dotfleet-backups/<YYYYMMDD-HHMMSS>/; collisions get a unique suffix.
+MANIFEST records saved/absent paths and link targets. home/ holds file copies.
+external/ holds file targets outside your home. Review MANIFEST before restoring.
+See docs/DESIGN.md for recovery steps.
+Exit codes: 0 success/help; 1 missing tool, install failure, or drift; 2 invalid arguments.
+Drift means home files differ from the generated result.
 Author: Jeremy Spofford / Aria Labs; Version: $DOTFILES_VERSION (VERSION).
 HELP
 }
@@ -86,7 +98,10 @@ finish() {
 	log_info 'Check drift: chezmoi status (or ~/.local/bin/chezmoi status before opening a new shell).'
 	log_info 'Backups: ~/dotfleet-backups/<timestamp>/; MANIFEST records saved and absent paths and symlink targets.'
 	# shellcheck disable=SC2016 # Print a command for the user to run later.
-	log_info 'Roll back: review MANIFEST; restore external/ targets to their recorded paths, then cp -a BACKUP/home/. "$HOME/"; remove only newly created files marked absent. Do not apply again until ready.'
+	log_info 'Roll back: review MANIFEST. Restore external/ targets to their recorded paths.'
+	# shellcheck disable=SC2016 # Print a command for the user to run later.
+	log_info 'Then run: cp -a BACKUP/home/. "$HOME/". Remove only newly created files marked absent.'
+	log_info 'Do not apply again until ready.'
 	log_info "Docs: $source_path/README.md and $source_path/docs/DESIGN.md"
 	[[ -z $work_dir ]] || rm -rf -- "$work_dir"
 	exit "$result"

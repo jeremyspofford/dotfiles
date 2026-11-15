@@ -1,11 +1,14 @@
-"""Render the manifest through generate-agent-configs.sh; Python 3.11+.
+"""Write settings for installed coding agents; requires Python 3.11+.
 
+An agent is a coding assistant. The manifest lists its settings and paths.
 Usage: python3 scripts/agent_configs.py [--home PATH] [--os OS] [--dry-run]
-Parameters: --home, --os, --dry-run, -h/--help. See argparse full help.
+Parameters: --home selects a full target home path; --dry-run lists changes only.
+--os selects linux (Linux), darwin (macOS), windows (Windows), or wsl (Windows Subsystem for Linux).
+-h and --help print full help. See argparse, Python's argument parser, for details.
 Example: bash scripts/generate-agent-configs.sh --dry-run
-Exit codes: 0 success/help, 1 conflicts/runtime failures, 2 invalid arguments.
-Author: Jeremy Spofford / Aria Labs; version is read from ../VERSION.
-Messages go through the calling Bash wrapper's logger.sh.
+Exit codes: 0 success/help; 1 conflict or runtime failure; 2 invalid arguments.
+Author: Jeremy Spofford / Aria Labs; Version: read from ../VERSION.
+The calling Bash wrapper sends messages through logger.sh.
 """
 import argparse
 import hashlib
@@ -122,15 +125,17 @@ def generate(home, os_name, dry_run):
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Render installed agents from the canonical manifest; wrapper provides logger.sh.",
+        description="Write settings for installed coding agents from agents/manifest.toml.\n"
+        "An agent is a coding assistant. The manifest lists settings and paths.\n"
+        "The Bash wrapper logs messages through logger.sh. Requires Python 3.11+.",
         epilog="Example: bash scripts/generate-agent-configs.sh --dry-run\n"
-        "Exit: 0 success/help, 1 failure, 2 usage. "
+        "Exit codes: 0 success/help; 1 conflict or runtime failure; 2 invalid arguments.\n"
         "Author: Jeremy Spofford / Aria Labs; Version: " + (ROOT / "VERSION").read_text().strip(),
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
-    parser.add_argument("--home", type=Path, default=Path.home(), help="absolute target home")
-    parser.add_argument("--os", choices=["linux", "darwin", "windows", "wsl"], help="native path mapping")
-    parser.add_argument("--dry-run", action="store_true", help="validate and list only")
+    parser.add_argument("--home", type=Path, default=Path.home(), help="full target home path; default: current user home")
+    parser.add_argument("--os", choices=["linux", "darwin", "windows", "wsl"], help="linux=Linux, darwin=macOS, windows=Windows, wsl=Windows Subsystem for Linux; default: detected system")
+    parser.add_argument("--dry-run", action="store_true", help="validate and report proposed paths without writing")
     args = parser.parse_args()
     if not args.home.is_absolute():
         parser.error("--home must be absolute")
