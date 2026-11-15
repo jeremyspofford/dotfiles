@@ -34,6 +34,9 @@ Choose a domain and identity at the prompts:
 
 First-run prompts read `/dev/tty`, the terminal device, never piped input. Updates reuse the profile.
 For disposable test homes, `bash install.sh --defaults` selects `core` and a blank identity without a terminal.
+Core supplies shell startup, aliases, Git defaults, and tool setup to every machine. It does not depend on the machine or role.
+An overlay adds one role's aliases, settings, and configuration fragments. Personal, work, and client each select exactly one overlay above core.
+Choose the machine's role at the prompt. Domains keep personal and employer settings separate.
 Domain folders start empty. Aliases are command shortcuts; this setup invents no personal aliases.
 
 Use Linux, macOS, or WSL (Windows Subsystem for Linux). Install Bash, git, curl, and tar first. Native Windows users must use WSL.
@@ -46,6 +49,8 @@ Setup refuses local edits, unrelated repositories, and separate histories. It ne
 First runs from another clone copy its committed files without changing it.
 Updates move the active checkout from the previous hidden location when `~/dotfiles` is absent. Preserved archives stay untouched.
 Saved configuration points chezmoi at `~/dotfiles`. Bare `chezmoi status` and `chezmoi apply` work from any directory.
+The end summary prints the checkout location and commit. Edit checkout files, then run `chezmoi apply`.
+Direct edits to generated home files can be overwritten by the next apply.
 
 ## Files in your home
 
@@ -80,6 +85,7 @@ bash ~/dotfiles/scripts/bootstrap.sh --help
 ```
 
 Change `[data].domain` in `~/.config/chezmoi/chezmoi.toml` to a domain listed above, then run `chezmoi apply`.
+The new overlay replaces the old overlay in the same generated files; obsolete settings disappear.
 The `.chezmoi.toml.tmpl` template creates local configuration. Templates contain placeholders for machine settings.
 Git identity can instead live in `~/.config/git/local.gitconfig`; see the [example](docs/examples/local.gitconfig).
 Keep machine-only shell edits in `~/.commonrc.local`, `~/.aliases.local`, `~/.zshrc.local`, or `~/.bashrc.local`.
