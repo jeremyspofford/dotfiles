@@ -4,6 +4,18 @@ All notable changes are documented here, following [Keep a Changelog](https://ke
 and [Semantic Versioning](https://semver.org/). Versions remain below 1.0.0 until
 the owner deliberately declares production readiness.
 
+## [0.0.3] - 2026-11-15
+
+### Changed
+
+- move dotfleet stub to its own repo
+
+### Fixed
+
+- apply Git config with stable managed permissions
+- make release proposal tests version-relative (#5)
+- make release proposal tests version-relative
+
 ## [0.0.2] - 2026-11-15
 
 ### Fixed
