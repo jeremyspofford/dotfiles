@@ -4,6 +4,7 @@ import errno
 import fcntl
 import pty
 import select
+import signal
 import termios
 import time
 import os
@@ -192,13 +193,21 @@ class InstallerTests(unittest.TestCase):
                 if not chunk:
                     break
                 transcript += chunk
-                if answered < len(responses) and responses[answered][0] in transcript:
-                    os.write(master, responses[answered][1])
-                    answered += 1
             elif process.poll() is not None:
                 break
+            if answered < len(responses):
+                prompt = transcript.rfind(responses[answered][0])
+                # The question is printed before the editor enters raw mode.
+                # Sending Enter then races ICRNL and turns it into a newline
+                # the editor ignores. Wait for both the rendered input field
+                # and raw terminal state, not an arbitrary sleep.
+                ready_for_input = (prompt >= 0 and b"> " in transcript[prompt:]
+                                   and not termios.tcgetattr(master)[3] & termios.ICANON)
+                if ready_for_input:
+                    os.write(master, responses[answered][1])
+                    answered += 1
         if process.poll() is None:
-            process.kill()
+            os.killpg(process.pid, signal.SIGKILL)
         process.wait(timeout=5)
         self.assertEqual(process.returncode, 0, transcript.decode(errors="replace"))
         self.assertEqual(answered, 3, transcript.decode(errors="replace"))
