@@ -36,6 +36,16 @@ macOS finds either Homebrew package-manager prefix, the installation directory. 
 WSL uses Linux paths and tools. The agent manifest describes native Windows paths; Bash setup there requires WSL. Bash is a command shell.
 Portable core has no fixed macOS application-bundle executable path.
 
+## Global tool pins
+
+A pin selects a tool version. Local `[data.miseTools]` owns global pins; the Mise template renders them into `~/.config/mise/config.toml`.
+Before the first apply, initialization copies existing `[tools]` entries into that data. Lists and option tables retain their values.
+Without existing pins, it records the newest installed Node and Python versions, when present. It installs neither runtime.
+Saved data wins on later runs, including an explicit empty table. Project files override global choices within their projects.
+Change the data, then apply. `mise use -g` edits only the generated file; copy its selections into machine data before applying.
+Malformed existing TOML, the configuration format, stops enrollment before apply. The installer backs up the original file before initialization.
+The end summary lists pins and their initial source. The repository contains no machine's version choices.
+
 ## Secrets
 
 The secret template stores a 1Password reference, never a credential value. A reference names a stored secret without containing its value.

@@ -3,6 +3,7 @@
 # Usage: bash install.sh [--defaults]; see --help for the one-line command.
 # Parameters: --defaults selects shared settings and blank Git identity without prompts.
 # -h and --help print full help.
+# Save existing global tool pins before apply; otherwise select installed Node/Python defaults.
 # Examples: bash install.sh; bash install.sh --defaults
 # Exit codes: 0 success/help; 1 missing tool, install failure, or drift; 2 invalid arguments.
 # Drift means home files differ from the generated result.
@@ -40,6 +41,10 @@ work = shared plus employer settings; client = shared plus client settings.
 Git name/email identify the commit author; blank leaves identity unset here.
 First-run prompts read /dev/tty, the terminal device, never piped input.
 Updates reuse the profile. The ~/dotfiles Git checkout must be clean and on main.
+Pins select global tool versions. Setup saves existing pins before the first apply.
+Without pins, it selects the newest installed Node and Python, when present.
+Change pins in [data.miseTools] in ~/.config/chezmoi/chezmoi.toml, then run chezmoi apply.
+Do not edit the generated Mise file or use mise use -g as permanent storage.
 Updates must fast-forward: advance without merging separate histories.
 A first run inside another clone copies its committed files without changing it.
 
@@ -81,6 +86,7 @@ work_dir=
 backup_path='not created'
 source_commit='not resolved'
 status_result='not run (installation incomplete)'
+mise_pins_result='not recorded (installation incomplete)'
 
 finish() {
 	local result=$?
@@ -92,6 +98,7 @@ finish() {
 	log_info 'Your dotfiles live in: ~/dotfiles — a git checkout. Edit files there, then run: chezmoi apply'
 	log_info "Commit: $source_commit"
 	log_info "chezmoi status: $status_result"
+	log_info "Mise global pins: $mise_pins_result"
 	log_info 'Additional information'
 	log_info "Update: curl -fsSL $raw/install.sh | bash"
 	log_info 'Or: cd ~/dotfiles && git pull && chezmoi apply'
@@ -301,6 +308,7 @@ main() {
 	if [[ $defaults == 0 ]]; then bootstrap+=(--interactive); fi
 	# Bootstrap owns domain/identity initialization and validated apply.
 	"${bootstrap[@]}" </dev/null
+	mise_pins_result=$(chezmoi execute-template '{{ if .miseTools }}{{ .miseTools | toJson }}{{ else }}none{{ end }} (initial source: {{ .misePinsSource }})')
 	if ! chezmoi status >"$work_dir/status"; then
 		status_result='FAILED (status command failed)'
 		error_exit 'Cannot check chezmoi status.'
