@@ -2,6 +2,11 @@
 {{- if not (has $domain (list "core" "personal" "work" "client")) -}}
 {{- fail "domain must be core, personal, work, or client" -}}
 {{- end }}
+# Define target permissions independently of the invoking shell's umask.
+# Keep managed files/directories private (0600/0700), including on later applies.
+# The private_ source attribute also explicitly protects .secrets.
+umask = 0o077
+
 [data]
 domain = {{ $domain | quote }}
 gitName = {{ promptStringOnce . "gitName" "Git name (optional)" "" | quote }}

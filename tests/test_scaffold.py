@@ -1,9 +1,11 @@
 """Portable integration tests; never apply configuration to the invoking user's home."""
 import importlib.util
+import hashlib
 import json
 import os
 from pathlib import Path
 import shutil
+import stat
 import subprocess
 import tempfile
 import unittest
@@ -44,6 +46,13 @@ class ScaffoldTests(unittest.TestCase):
                 self.assertEqual(secret.stat().st_mode & 0o777, 0o600)
                 self.assertNotIn("op://", secret.read_text())
                 self.assertTrue((home / ".aliases").exists())
+                self.assertIn(".gitconfig", subprocess.check_output(command + ["managed"], text=True).splitlines())
+                self.assertTrue((home / ".gitconfig").is_file())
+                self.assertEqual(subprocess.check_output(
+                    ["git", "config", "--file", str(home / ".gitconfig"), "--get", "init.defaultBranch"],
+                    text=True).strip(), "main")
+                for metadata in (".git", ".gitignore", ".github"):
+                    self.assertFalse((home / metadata).exists())
                 self.assertFalse((home / "scripts").exists())
                 self.assertFalse((home / "agents").exists())
                 # ZDOTDIR points to an isolated startup directory without changing HOME.
@@ -55,6 +64,80 @@ class ScaffoldTests(unittest.TestCase):
                 self.assertEqual(shell.stdout.strip(), domain)
                 subprocess.run(command + ["verify"], check=True, capture_output=True)
                 self.assertEqual(subprocess.check_output(command + ["diff"]), b"")
+
+    @unittest.skipUnless(shutil.which("chezmoi") and shutil.which("mise"), "chezmoi/mise required")
+    def test_bootstrap_modes_and_managed_idempotence_across_umasks(self):
+        with tempfile.TemporaryDirectory() as directory:
+            temporary = Path(directory)
+            seed = temporary / "repo"
+            seed.mkdir()
+            # Commit a snapshot of the working sources, so local edits and CI use
+            # the same fixture without fetching GitHub or installing tools.
+            tracked = subprocess.check_output(["git", "ls-files", "-z"], cwd=ROOT).decode().split("\0")
+            for relative in filter(None, tracked):
+                target = seed / relative
+                target.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(ROOT / relative, target)
+            git_env = {"PATH": os.environ["PATH"], "HOME": str(temporary),
+                       "GIT_CONFIG_NOSYSTEM": "1", "GIT_CONFIG_GLOBAL": os.devnull}
+            for arguments in (["init", "--quiet"], ["add", "."],
+                              ["-c", "user.name=Fixture", "-c", "user.email=fixture@example.invalid",
+                               "-c", "commit.gpgsign=false", "commit", "--quiet", "-m", "test: seed bootstrap fixture"]):
+                subprocess.run(["git", "-C", str(seed)] + arguments, env=git_env, check=True, capture_output=True)
+
+            snapshots = []
+            for mask in (0o077, 0o022):
+                with self.subTest(umask=oct(mask)):
+                    home = temporary / ("home-" + str(mask))
+                    home.mkdir()
+                    env = {**git_env, "HOME": str(home), "TMPDIR": str(temporary),
+                           "XDG_CONFIG_HOME": str(home / ".config"),
+                           "XDG_DATA_HOME": str(home / ".local/share"),
+                           "XDG_STATE_HOME": str(home / ".local/state"),
+                           "XDG_CACHE_HOME": str(home / ".cache")}
+                    source = home / ".local/share/chezmoi"
+                    bootstrap = ["bash", str(seed / "scripts/bootstrap.sh"), "--repo", str(seed), "--source", str(source)]
+                    chezmoi = ["chezmoi", "--source", str(source)]
+
+                    def run(command, umask):
+                        result = subprocess.run(command, env=env, cwd=temporary, umask=umask, capture_output=True, text=True)
+                        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+                        return result.stdout
+
+                    def managed_snapshot():
+                        # Tool-owned state/mtime is deliberately outside the
+                        # idempotence contract: compare managed bytes and modes.
+                        snapshot = {}
+                        for relative in run(chezmoi + ["managed"], 0o022).splitlines():
+                            target = home / relative
+                            mode = stat.S_IMODE(target.lstat().st_mode)
+                            if target.is_symlink():
+                                content = os.readlink(target)
+                            elif target.is_file():
+                                content = hashlib.sha256(target.read_bytes()).hexdigest()
+                            else:
+                                content = None
+                            snapshot[relative] = (mode, content)
+                        return snapshot
+
+                    run(bootstrap + ["--dry-run"], mask)
+                    self.assertFalse((home / ".zshrc").exists())
+                    run(bootstrap, mask)
+                    self.assertEqual(run(chezmoi + ["status"], 0o022), "")
+                    self.assertEqual(run(chezmoi + ["diff"], 0o022), "")
+                    before = managed_snapshot()
+                    self.assertEqual(before[".secrets"][0], 0o600)
+                    for relative, (mode, _) in before.items():
+                        if relative != ".secrets":
+                            self.assertEqual(mode, 0o700 if (home / relative).is_dir() else 0o600, relative)
+                    # Changing ambient umask must not change the managed state.
+                    run(bootstrap, 0o022 if mask == 0o077 else 0o077)
+                    self.assertEqual(managed_snapshot(), before)
+                    self.assertEqual(run(chezmoi + ["status"], 0o077), "")
+                    self.assertEqual(run(chezmoi + ["status"], 0o022), "")
+                    snapshots.append(before)
+            self.assertEqual(len(snapshots), 2)
+            self.assertEqual(snapshots[0], snapshots[1])
 
     def test_git_ignores_secrets_at_any_depth(self):
         for path in (".secrets", "nested/.secrets", ".secrets.backup"):
