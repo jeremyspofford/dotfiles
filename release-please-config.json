@@ -1,0 +1,12 @@
+{
+  "release-type": "simple",
+  "version-file": "VERSION",
+  "versioning": "zero-major",
+  "bump-minor-pre-major": true,
+  "bump-patch-for-minor-pre-major": false,
+  "changelog-type": "keep-a-changelog",
+  "include-component-in-tag": false,
+  "packages": {
+    ".": {}
+  }
+}

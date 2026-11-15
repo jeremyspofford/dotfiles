@@ -1,2 +1,0 @@
-# Workbench non-interactive environment. Credentials are loaded by tools as needed.
-. "$HOME/.config/workbench/shell/env.sh"

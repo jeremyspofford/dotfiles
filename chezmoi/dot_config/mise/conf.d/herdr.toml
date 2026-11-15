@@ -1,3 +1,0 @@
-# Optional: workbench apply --components herdr, then mise install.
-[tools]
-herdr = "0.9.5"

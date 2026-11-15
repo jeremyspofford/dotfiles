@@ -1,143 +1,129 @@
-# Workbench dotfiles
+# dotfiles
 
-A small, chezmoi-based setup for daily work on this Mac: zsh/Bash, Git,
-mise tools, Neovim, and tmux, plus optional tools you choose. `chezmoi/` is the
-configuration source.
+A standalone, chezmoi-managed shell and Git scaffold, built from a sanitized
+existing Workbench configuration. Git stores the source, chezmoi renders it for
+one machine and domain, and Mise manages tools. You can use this layer on its own.
 
-## New machine
+**v0.0.1 is a migration candidate on `feat/chezmoi-v0.0.1`. Main still contains
+Workbench. Do not migrate an existing machine until the owner has reviewed the
+[legacy inventory](docs/LEGACY-INVENTORY.md), salvage decisions, and preservation
+references. WSL inventory is complete on `legacy/stow-local-2026`.** See
+[blockers and acceptance status](docs/BLOCKERS.md).
 
-```sh
-git clone <this repository> ~/workspace/dotfiles
-~/workspace/dotfiles/bootstrap.sh
-```
+![dotfiles, Dotfleet and add-on layers](docs/diagrams/layers.svg)
 
-The script checks for Python 3.9+ and Git and installs the Homebrew bootstrap
-packages (macOS) or mise (Linux), each only after asking. It installs the pinned
-chezmoi, writes `~/.config/git/local.gitconfig` (carrying over the name and email
-from an existing `~/.gitconfig`), shows the Workbench plan and applies it with a
-checkpoint once you confirm, runs `mise install`, and finishes with
-`workbench doctor`. Existing config files are replaced only if you agree, and
-their originals stay in the checkpoint. It is safe to re-run. `--yes` accepts
-every prompt; `--name`, `--email`, and `--existing skip|replace` answer
-individual ones. Optional tools come afterwards with
-`workbench apply --interactive`.
+Dotfleet will consume dotfiles to provide onboarding and fleet profiles.
+Add-ons will extend Dotfleet. Neither is required here; there is no custom sync
+engine, GUI, daemon, or agent pack.
 
-## Daily use
+## Install
 
-```sh
-workbench doctor
-workbench plan --existing replace
-workbench apply --existing replace --plan <reviewed-hash>
-workbench checkpoints
-```
+Prerequisites: Bash, Git, curl, tar and zsh; Linux, macOS or WSL. For example, a
+fresh Ubuntu container needs `apt-get install -y git curl ca-certificates tar zsh`.
+Bootstrap installs missing chezmoi and Mise into `~/.local/bin`. Python 3.11+ is
+needed only for the optional agent generator. Authenticate Git before cloning this
+private repository. Native Windows bootstrap is deferred; use WSL.
 
-`workbench doctor` checks core tool availability, confirms every
-`manifests/Brewfile.core` entry and every pinned mise tool is installed, checks
-the local Git identity, and compares every managed file
-with the rendered source, including permissions and symlinks. It lists `MISSING`
-packages and `MISSING` or `DRIFT` paths without printing file contents or
-changing installed files. Newer upstream package versions are not reported.
-It exits 0 when tools and packages are present and configuration matches, or 1
-when a tool or package is missing, configuration differs, or the check cannot
-complete. Review drift
-with `workbench plan --existing replace` before deciding what to preserve or apply.
-
-Open a new terminal after shell changes. Use `./bin/workbench` from this checkout
-before installation or during recovery. It requires Python 3.9+ and chezmoi.
-
-Every replacement gets a checkpoint. Apply requires the exact reviewed plan hash
-and refuses stale plans. Existing files are skipped unless `--existing replace`
-is specified. The wrapper changes only its explicitly listed configuration files;
-it never moves, cleans, or resets client repositories.
+Clone the migration candidate and run one setup command:
 
 ```sh
-workbench --color always plan --existing replace | less -R
-workbench plan --existing replace --format html > /tmp/workbench-review.html
-workbench rollback <checkpoint-id>
-workbench rollback <checkpoint-id> --plan <reviewed-rollback-hash>
+git clone --branch feat/chezmoi-v0.0.1 https://github.com/jeremyspofford/dotfiles.git
+cd dotfiles
+bash scripts/bootstrap.sh --branch feat/chezmoi-v0.0.1 --domain core
 ```
 
-`chezmoi diff`, `chezmoi status`, and `chezmoi verify` inspect the installed state.
-Use Workbench for apply/rollback so changes retain checkpoints.
+Choose `personal`, `work` or `client` to select another overlay. Domains begin with
+the shared core and contain empty, documented customization points; no invented
+personal aliases are added. Existing source directories must have the same Git
+origin; otherwise choose a new `--source /absolute/path`. Review existing machine
+configuration before applying.
 
-## Optional tools
+To use **your own trusted chezmoi repository**, use this bootstrap as tooling:
 
-Core components always apply. Optional components add one tool each, pinned in
-its own `~/.config/mise/conf.d/<component>.toml`:
+```sh
+bash scripts/bootstrap.sh --repo https://github.com/you/dotfiles.git --dry-run
+bash scripts/bootstrap.sh --repo https://github.com/you/dotfiles.git
+```
 
-| Component | Adds |
+Both modes initialize a checkout and validate templates with `chezmoi diff`
+before applying. Dry-run installs tools and initializes source/config state but
+does not apply dotfiles. Diff content is suppressed to keep secrets out of logs.
+A failing diff prevents apply. A repo can run code through templates and hooks;
+dry-run is validation, not a sandbox. The own-repo mode does not inject this
+project's aliases, domain values, secrets template, or agents.
+
+Open zsh after setup. Set it as your login shell separately if desired.
+Interactive Bash and Bash login sessions are also managed; both shells share
+`~/.commonrc` for aliases, secrets, tool paths and Mise activation.
+Starship, eza, fzf and other integrations activate only when installed. The
+[optional Workbench Mise profile](docs/examples/workbench-tools.toml) preserves
+the existing tool choices and commented WSL additions; it is not automatically installed.
+
+## Usage
+
+```sh
+chezmoi status
+chezmoi diff                   # May display secrets; use only in a private terminal.
+chezmoi apply
+chezmoi update                 # Git pull plus apply; ordinary chezmoi behavior.
+bash scripts/generate-agent-configs.sh --dry-run
+bash scripts/generate-agent-configs.sh
+bash scripts/bootstrap.sh --help
+```
+
+Change `[data].domain` in `~/.config/chezmoi/chezmoi.toml`, then apply again.
+The repository's `.chezmoi.toml.tmpl` creates this machine-local configuration.
+Names and email addresses are optional template data or can stay in
+`~/.config/git/local.gitconfig`; see the [sanitized example](docs/examples/local.gitconfig).
+
+Machine-only shell adjustments can stay in `~/.commonrc.local`,
+`~/.aliases.local`, `~/.zshrc.local` or `~/.bashrc.local`. These optional
+inputs are not generated or committed. When AWS CLI is installed, `sso PROFILE`
+logs in and exports credentials in the current shell; omitting PROFILE requires
+an existing `AWS_PROFILE`. Shell startup never performs an AWS login.
+
+Secrets are disabled by default, so a fresh machine gets a private, comment-only
+`~/.secrets`. To enable a value, install/sign in to 1Password CLI and set
+`secretsEnabled = true` and `secretReference = "op://YourVault/YourItem/field"`
+under local `[data]`, then apply. Only references belong in source control.
+The rendered file is mode 0600, shell-escaped, and ignored by both repository and
+managed global Git ignore rules. Never run `chezmoi add ~/.secrets`.
+
+## How it works
+
+| Source of truth | Generated result |
 | --- | --- |
-| `herdr` | Herdr terminal workspace and its config |
-| `zoetrope` | `zoe`, a live flow graph of a Claude Code session |
+| `dot_zshenv`, `dot_zprofile`, `dot_zshrc` | Shell startup files |
+| `dot_bash_profile`, `dot_bashrc`, `dot_commonrc` | Bash startup and shared interactive setup |
+| `core/aliases.zsh` plus selected domain | `~/.aliases` |
+| `dot_config/` templates and files | Platform/domain fragments, prompt, Git ignore, Mise settings |
+| `dot_gitconfig.tmpl` plus local data | `~/.gitconfig` |
+| `.chezmoitemplates/dot_secrets.tmpl` | `~/.secrets` via `private_dot_secrets.tmpl` |
+| `agents/manifest.toml`, `agents/skills/` | Native configs, skill links and output inventory |
+| `docs/diagrams/layers.d2` | Committed `layers.svg` |
 
-The quickest way to add, remove, or update tools is the checklist:
+The `private_` chezmoi attribute protects secrets permissions; the named secrets
+template holds the content in one place. Source-only directories are excluded by
+`.chezmoiignore`. Every output and regeneration command is listed in
+[GENERATED.md](docs/GENERATED.md). Agent defaults and limitations, including
+Ollama's environment-only model, are documented in [AGENTS.md](docs/AGENTS.md).
 
-```sh
-workbench apply --interactive
-```
-
-It lists core tools (always installed) and optional components, with each pinned
-version and any newer release from `mise outdated`. Space chooses a component or
-marks a tool for update; Enter shows the exact diff; `y` applies it with a
-checkpoint and then runs `mise install` (or `mise uninstall` for removed tools).
-Updates change the pin in this repository so every machine converges; commit them
-afterwards. Homebrew status is shown read-only. Cancelling at any point leaves the
-repository and home directory unchanged.
-
-The same choices work without the checklist:
+## Development and review
 
 ```sh
-workbench plan --components herdr
-workbench apply --components herdr --plan <reviewed-hash>
-mise install
-```
-
-A component counts as chosen once any of its files exists. After that, a plain
-`workbench plan` and `workbench doctor` include it; unchosen ones are ignored.
-To drop one, uncheck it in `workbench apply --interactive` (rollback restores its
-files), or delete its files and run `mise prune`. Editor and shell plugins are
-not managed; add them per machine as needed.
-
-## What's here
-
-| Path | Purpose |
-| --- | --- |
-| `chezmoi/` | The active configuration (no personal data) |
-| `bin/workbench` | File preview, checkpoint, apply, rollback, and doctor |
-| `manifests/Brewfile.core` | Bootstrap Homebrew packages |
-| `tests/` | Transaction, shell/editor, and isolated Herdr checks |
-| `docs/` | Shortcuts, Herdr usage, and recovery |
-
-`chezmoi/dot_config/mise/config.toml` pins CLI and development tools, including
-Neovim, Herdr, chezmoi, and delta. Homebrew holds only the bootstrap layer (mise,
-Git, tmux, zsh plugins). Package installation is separate from configuration changes.
-
-Git identity is machine-local. The shared `.gitconfig` ends by including
-`~/.config/git/local.gitconfig`, which holds your name, email, and any
-per-directory `includeIf` identities. Start from
-[`docs/examples/local.gitconfig`](docs/examples/local.gitconfig); `workbench doctor`
-fails until it exists and sets `user.email`. That file, SSH configuration, and
-credentials stay local and are never committed.
-
-The legacy Stow packages, AI workflows, old installers, and machine migration
-records have been archived outside this checkout. The active shell does not source
-legacy aliases, secrets, or local override files. Multi-machine bootstrap and
-optional tool profiles are deferred until this Mac's daily workflow is settled.
-
-## Guides and checks
-
-- [Shell, tmux, and Neovim shortcuts](docs/workbench-shortcuts.md)
-- [Using Herdr](docs/herdr.md)
-- [Checkpoints and legacy recovery](docs/recovery.md)
-- [Next steps and open work](docs/next-steps.md)
-
-```sh
+shellcheck -x scripts/*.sh
+shfmt -d scripts/*.sh
 python3 -m unittest discover -s tests -p 'test_*.py' -v
-python3 tests/baseline_smoke.py
-python3 tests/baseline_smoke.py --live
-python3 tests/herdr_smoke.py ~/workspace/<project>
-chezmoi verify
+npm install --ignore-scripts
+npm run test:release
+d2 --layout=dagre docs/diagrams/layers.d2 docs/diagrams/layers.svg
 ```
 
-Smoke scripts currently target this Apple Silicon Mac and its installed tools.
-Herdr's smoke check uses a separate server and read-only repository commands.
+CI runs shell checks, a fresh Linux-container bootstrap, isolated chezmoi
+dry-run/apply tests, release-policy tests and D2 rendering. D2 is pinned to 0.7.1
+in CI. Read [DESIGN.md](docs/DESIGN.md) for boundaries and [RELEASES.md](docs/RELEASES.md)
+for the owner-only 1.0.0 gate and pending live release test. VERSION is the
+version source; Conventional Commit subjects become plain-language changelog entries.
+
+This repository remains private. The existing history includes personal metadata;
+sanitizing the current source does not sanitize historical commits.

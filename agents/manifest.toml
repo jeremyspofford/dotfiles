@@ -1,0 +1,124 @@
+schema_version = 1
+# Canonical authored skills live here. Native paths are relative to the user's home.
+skills_source = "agents/skills"
+# Empty JSON/TOML are valid native defaults. Add reviewed native keys here.
+# Paths are explicit per OS; WSL intentionally uses Linux-native tools and paths.
+
+[agents.claude]
+command = "claude"
+format = "json"
+supported = true
+content = "{}\n"
+documentation = "https://code.claude.com/docs/en/settings"
+[agents.claude.config_paths]
+linux = ".claude/settings.json"
+darwin = ".claude/settings.json"
+windows = ".claude/settings.json"
+wsl = ".claude/settings.json"
+[agents.claude.skills_paths]
+linux = ".claude/skills"
+darwin = ".claude/skills"
+windows = ".claude/skills"
+wsl = ".claude/skills"
+
+[agents.codex]
+command = "codex"
+format = "toml"
+supported = true
+content = "# Generated from agents/manifest.toml. Edit the manifest, then regenerate.\n"
+documentation = "https://developers.openai.com/codex/config-basic/"
+[agents.codex.config_paths]
+linux = ".codex/config.toml"
+darwin = ".codex/config.toml"
+windows = ".codex/config.toml"
+wsl = ".codex/config.toml"
+[agents.codex.skills_paths]
+linux = ".agents/skills"
+darwin = ".agents/skills"
+windows = ".agents/skills"
+wsl = ".agents/skills"
+
+[agents.gemini]
+command = "gemini"
+format = "json"
+supported = true
+content = "{}\n"
+documentation = "https://geminicli.com/docs/cli/skills/"
+[agents.gemini.config_paths]
+linux = ".gemini/settings.json"
+darwin = ".gemini/settings.json"
+windows = ".gemini/settings.json"
+wsl = ".gemini/settings.json"
+[agents.gemini.skills_paths]
+linux = ".gemini/skills"
+darwin = ".gemini/skills"
+windows = ".gemini/skills"
+wsl = ".gemini/skills"
+
+[agents.grok]
+command = "grok"
+format = "toml"
+supported = true
+content = "# Generated from agents/manifest.toml. Edit the manifest, then regenerate.\n"
+documentation = "https://docs.x.ai/build/settings"
+[agents.grok.config_paths]
+linux = ".grok/config.toml"
+darwin = ".grok/config.toml"
+windows = ".grok/config.toml"
+wsl = ".grok/config.toml"
+[agents.grok.skills_paths]
+linux = ".grok/skills"
+darwin = ".grok/skills"
+windows = ".grok/skills"
+wsl = ".grok/skills"
+
+[agents.pi]
+command = "pi"
+format = "json"
+supported = true
+content = "{}\n"
+documentation = "https://github.com/badlogic/pi-mono/tree/main/packages/coding-agent"
+[agents.pi.config_paths]
+linux = ".pi/agent/settings.json"
+darwin = ".pi/agent/settings.json"
+windows = ".pi/agent/settings.json"
+wsl = ".pi/agent/settings.json"
+[agents.pi.skills_paths]
+linux = ".pi/agent/skills"
+darwin = ".pi/agent/skills"
+windows = ".pi/agent/skills"
+wsl = ".pi/agent/skills"
+
+[agents.opencode]
+command = "opencode"
+format = "json"
+supported = true
+content = "{}\n"
+documentation = "https://opencode.ai/docs/config/"
+[agents.opencode.config_paths]
+linux = ".config/opencode/opencode.json"
+darwin = ".config/opencode/opencode.json"
+windows = ".config/opencode/opencode.json"
+wsl = ".config/opencode/opencode.json"
+[agents.opencode.skills_paths]
+linux = ".config/opencode/skills"
+darwin = ".config/opencode/skills"
+windows = ".config/opencode/skills"
+wsl = ".config/opencode/skills"
+
+[agents.ollama]
+command = "ollama"
+format = "environment"
+supported = false
+reason = "Ollama uses service/process environment variables and has no native SKILL.md loader."
+documentation = "https://docs.ollama.com/faq"
+[agents.ollama.config_paths]
+linux = ""
+darwin = ""
+windows = ""
+wsl = ""
+[agents.ollama.skills_paths]
+linux = ""
+darwin = ""
+windows = ""
+wsl = ""
