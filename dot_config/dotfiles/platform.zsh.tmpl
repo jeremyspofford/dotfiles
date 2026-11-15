@@ -13,7 +13,12 @@ export DOTFILES_PLATFORM=darwin
 export DOTFILES_PLATFORM=wsl
 {{ else -}}
 # Native Linux: no distribution-specific package manager is assumed here.
-export DOTFILES_PLATFORM=linux
+# WSL shells launched without WSL_* environment variables still identify correctly.
+if [[ -r /proc/version ]] && grep -qi microsoft /proc/version; then
+  export DOTFILES_PLATFORM=wsl
+else
+  export DOTFILES_PLATFORM=linux
+fi
 {{ end -}}
 {{ else if eq .chezmoi.os "windows" -}}
 # Native Windows: template example for zsh in a POSIX shell.

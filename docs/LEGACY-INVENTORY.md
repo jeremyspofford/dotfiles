@@ -19,6 +19,8 @@ AGENTS.md and no active Stow package directories.
 | Tests | Python unit and smoke tests for Workbench, bootstrap, shell completion and optional apps | Preserve history; replace active checks with portable scaffold acceptance tests |
 | Identity | Machine-local Git include, documented placeholder example | Keep machine-local; no personal values adopted |
 | Secrets | Main shell intentionally does not load legacy secrets | Add requested opt-in 1Password template; never copy old credential material |
+| `chezmoi/dot_config/private_chezmoi/chezmoi.toml.tmpl` | Legacy Workbench chezmoi configuration | Superseded by the root `.chezmoi.toml.tmpl` and local domain data |
+| `chezmoi/dot_config/private_herdr/config.toml` | Herdr terminal/session behavior, update settings, theme and toasts | Preserved in tagged history; not installed by this shell/Git scaffold because Herdr configuration is outside v0.0.1 |
 
 ## Stow evidence and limits
 
@@ -26,23 +28,75 @@ The current tracked main is already a Workbench/chezmoi layout. Its README says
 the legacy Stow packages, AI workflows, old installers, and migration records
 were archived outside the checkout. `docs/next-steps.md` says older commits contain
 names, emails and client directory names, and other machines may still have local
-CLAUDE.md instructions describing Stow. These are statements in existing docs;
-this run has not independently inspected the external archives or local machines.
+CLAUDE.md instructions describing Stow. The preserved WSL Stow tree has now also been reviewed, as recorded below.
 Keep the repository private. No history rewrite is proposed.
 
-## WSL working tree — blocked, not clean
+## WSL inventory — complete; preservation verified
 
-No local command can start: the execution sandbox rejects its own read-only
-`/home/jeremy/.agents` symlink mapping. File writes also fail. Therefore the WSL
-clone location, current branch, index, untracked files, ignored files and local
-diffs remain **uninspected**. This inventory must not be interpreted as evidence
-of a clean clone. No local checkout, reset, clean, stash or apply has occurred.
+The owner completed the WSL inventory and pushed
+[`legacy/stow-local-2026`](https://github.com/jeremyspofford/dotfiles/tree/legacy/stow-local-2026).
+Its preservation commit is `16477c53fa6bc200b329430f2bac732cdaecee15`, based on
+`7f42fc1`. The parent was **32 commits behind** the inventoried main; this count
+was verified against `3421071b3ddcbd0dd5ddc728df009af1ba8ca902`.
 
-Before merge, in the actual WSL clone, capture `git status --short --branch`,
-`git diff --stat`, `git diff --cached --stat`, `git ls-files --others --exclude-standard`,
-and inspect the corresponding diffs locally for salvage. Do not paste secrets
-into this inventory. Record sanitized paths, purposes and dispositions here.
-Preserve local changes in a separate branch/patch with private storage.
+The preservation commit contains **eight tracked modifications**:
+
+- `packages/git/.gitconfig`
+- `packages/mise/.config/mise/config.toml`
+- `packages/nvim/.config/nvim/lazy-lock.json`
+- `packages/shell/.aliases`
+- `packages/shell/.bashrc`
+- `packages/shell/.commonrc`
+- `packages/shell/.zshrc`
+- `packages/ssh/.ssh/config`
+
+It also preserves five previously untracked files:
+
+- `packages/nvim/.config/nvim/lua/plugins/telescope.lua`
+- `packages/opencode/.config/opencode/herdr-opencode/tui.js`
+- `packages/opencode/.config/opencode/herdr-tui-session.js`
+- `packages/opencode/.config/opencode/plugins/herdr-agent-state.js`
+- `packages/opencode/.config/opencode/tui.jsonc`
+
+`packages/agents/.agents/.skill-lock.json` and
+`packages/agents/.agents/claude-audit.txt` were deliberately left untracked, per the
+owner; neither is in the preservation commit. The WSL inventory merge blocker is
+closed. The earlier sandbox failure is historical; local execution now works.
+This pass used an isolated worktree and did not apply dotfiles to the WSL home.
+
+## WSL salvage decisions
+
+Compared the seven requested source files at the preservation commit against the
+candidate's canonical sources. The decisions below distinguish additions from
+behavior already covered and incompatible machine preferences.
+
+| Source / item | Disposition | Reason |
+| --- | --- | --- |
+| `.zshrc`: history, comments, bun completion and autosuggestions | Already covered; retain current behavior | The newer Workbench scaffold already supplies these features and guarded plugin discovery. |
+| `.zshrc`: AWS completion and dircolors-aware completion | Taken into `dot_zshrc` | Registers the installed AWS completer without repeating `compinit`; uses available color definitions. |
+| `.zshrc`: `.zshrc.local` | Taken as a final optional source | Preserves per-machine overrides without committing their contents. |
+| `.zshrc`: vi bindings, adam1 prompt and older completion styles | Not taken as defaults | Keep the newer scaffold's emacs bindings, Starship/fallback prompt and cached completion; a local override can select personal preferences. |
+| `.zshrc`: NVM loader and `OLLAMA_HOST` | Not taken | Mise owns Node; the Windows Ollama endpoint is a machine topology choice, not a cross-platform default. |
+| `.aliases`: navigation, Git, listing fallbacks, process/network, tool and utility shortcuts | Taken into `core/aliases.zsh` | Restores real conveniences with platform branches and installed-tool guards while retaining Workbench's eza tree exclusions. |
+| `.aliases`: `sso()` | Taken with sanitized profile selection | Explicit argument or `AWS_PROFILE` replaces the personal `dev` default; login/export failures stop before changing profile, native exports are retained and credential values are never printed. |
+| `.aliases`: `.aliases.local` | Taken after the selected overlay | A machine-local extension overrides generated aliases without becoming another committed source. |
+| `.aliases`: replacements for standard commands and forced cleanup/history shortcuts | Not taken | Keep standard commands predictable; omit `dprune`, `tfd`, Git amend/undo/WIP shortcuts from general defaults, including the non-Conventional-Commit WIP message. |
+| `.aliases`: `sync-cursor` | Not taken | It depends on an unmanaged personal script and client rules outside this scaffold. |
+| `.commonrc`: standalone bin paths, bun/Go/pnpm paths, WSL browser and local override | Taken into `dot_commonrc` | Adds only existing directories without duplication, preserves explicit environment overrides and selects `wslview` only when installed. |
+| `.commonrc`: editor, aliases, secrets, platform and Mise setup | Already covered; shared through `dot_commonrc` | Bash and zsh now source the same canonical fragments; Mise activation follows the actual shell instead of the login-shell variable. |
+| `.commonrc`: `SSH_AUTH_SOCK`, Windows SSH bridge and wiki path | Not taken | Agent selection, transport and the wiki location remain machine-local; the preserved WSL change had already disabled the Windows Git SSH override. |
+| `.bashrc`: history, resize handling, dircolors, completion, prompt and local override | Taken into `dot_bashrc`, with a login entrypoint | Restores Bash behavior and AWS completion while reusing the shared startup and optional Starship integration. |
+| `.gitconfig`: aliases, automatic upstream setup and moved-line coloring | Taken into `dot_gitconfig.tmpl` | Retains portable convenience without embedding an identity, client directory or executable version path. |
+| `.gitconfig`: main branch, pruning, colors, delta and gh credentials | Already covered | The current template resolves installed tools through PATH and retains the machine-local identity include. |
+| `.gitconfig`: identities/client clone aliases, absolute gh path, pull/rebase/autostash, push-current, autocrlf and diff3 defaults | Not taken | Keep identities/routing local and retain the newer fast-forward/simple/zdiff3 baseline; line-ending and history policies remain explicit local choices. |
+| Mise config: additional active tools, including Go 1.27 and pnpm | Taken as commented selections in `docs/examples/workbench-tools.toml` | Preserve the real WSL choices without imposing rolling versions or installing agents on every machine; overlapping tools retain Workbench pins. |
+| Mise config: Herdr and experimental settings | Not taken into active configuration | Herdr remains outside scope and a blanket experimental-mode setting is unnecessary for the minimal scaffold. |
+| SSH config: the one added line | No scaffold change or example | The added line is blank, so there is no missing behavior; the surrounding personal host aliases, agent sockets and agent forwarding remain machine-local. |
+| nvim lockfile/telescope and OpenCode/Herdr files | Preserved only on the legacy branch | These editor/app integrations are outside the requested shell/Git/tool salvage scope. |
+
+AWS behavior follows its documented [environment export format](https://docs.aws.amazon.com/cli/latest/reference/configure/export-credentials.html)
+and [Bash/zsh completion setup](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-completion.html).
+No real credentials were fetched or committed during this pass.
 
 ## Preservation and merge gate
 

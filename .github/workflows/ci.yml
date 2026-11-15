@@ -19,12 +19,17 @@ jobs:
         run: |
           shellcheck -x scripts/*.sh
           shfmt -d scripts/*.sh
+          # Sourced home fragments are rendered later; source-path resolution is unavailable here.
+          shellcheck -s bash -e SC1091 dot_commonrc dot_bashrc dot_bash_profile core/aliases.zsh
+          shfmt -ln bash -d dot_commonrc dot_bashrc dot_bash_profile core/aliases.zsh
       - name: Bootstrap in fresh Linux container
         run: |
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
           bash scripts/bootstrap.sh --repo "$GITHUB_WORKSPACE" --source "$HOME/.local/share/chezmoi"
           "$HOME/.local/bin/chezmoi" apply --dry-run
           zsh -lic '[[ -r ~/.secrets && -r ~/.aliases ]]; print "Managed zsh started"'
+          bash -lic '[[ -r ~/.commonrc && -r ~/.aliases && -n $DOTFILES_PLATFORM ]] && alias gs && printf "Managed Bash started\n"'
+          bash -ic 'before=$PATH; source ~/.commonrc; [[ $PATH == "$before" ]]'
           test -f "$HOME/.secrets"
           test "$(stat -c %a "$HOME/.secrets")" = 600
           git check-ignore --no-index .secrets

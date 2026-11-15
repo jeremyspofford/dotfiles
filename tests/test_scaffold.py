@@ -90,6 +90,76 @@ class ScaffoldTests(unittest.TestCase):
             self.assertEqual(set(agent["config_paths"]), {"darwin", "linux", "windows", "wsl"})
             self.assertEqual(set(agent["skills_paths"]), {"darwin", "linux", "windows", "wsl"})
 
+    def test_restored_gitignore_protections(self):
+        paths = [
+            "token.secret", "shell.local", "cert.pem", "private.key",
+            "id_rsa", "id_rsa.pub", "id_ed25519", "id_ed25519.pub",
+            ".vscode/settings.json", ".claude/settings.json", "draft~",
+            "edit.swp", "edit.swo", "__pycache__/module.pyc",
+            "module.pyc", "module.pyo", "module.pyd", ".venv/bin/python",
+            "venv/bin/python", ".worktrees/topic/file", ".herdr-web-ui/paste",
+            ".secrets", "nested/.secrets", ".env", ".env.production",
+        ]
+        for path in paths:
+            with self.subTest(path=path):
+                result = subprocess.run(["git", "check-ignore", "--no-index", path], cwd=ROOT, capture_output=True)
+                self.assertEqual(result.returncode, 0, path)
+        for path in (".env.example", "nested/.env.example", ".chezmoitemplates/dot_secrets.tmpl"):
+            result = subprocess.run(["git", "check-ignore", "--no-index", path], cwd=ROOT, capture_output=True)
+            self.assertEqual(result.returncode, 1, path)
+
+    def test_salvaged_shell_syntax(self):
+        for path in ("dot_bashrc", "dot_bash_profile", "dot_commonrc", "core/aliases.zsh"):
+            subprocess.run(["bash", "-n", path], cwd=ROOT, check=True)
+        if shutil.which("zsh"):
+            for path in ("dot_commonrc", "dot_zshrc", "core/aliases.zsh"):
+                subprocess.run(["zsh", "-n", path], cwd=ROOT, check=True)
+
+    def test_salvaged_aliases_and_sso_in_both_shells(self):
+        env = {key: value for key, value in os.environ.items() if not key.startswith("AWS_")}
+        script = r'''
+command() {
+    if [[ $1 == -v && $2 == eza ]]; then return 1; fi
+    builtin command "$@"
+}
+aws() {
+    case "$1 $2" in
+    "sso login") return 0 ;;
+    "configure export-credentials") printf 'export AWS_ACCESS_KEY_ID=fixture_key\nexport AWS_SESSION_TOKEN=fixture_session\n' ;;
+    "sts get-caller-identity") printf 'fixture-identity\n' ;;
+    *) return 99 ;;
+    esac
+}
+export DOTFILES_PLATFORM=linux
+source "$1/core/aliases.zsh"
+[[ $(alias ll) == *"ls -alF"* ]] || exit 10
+[[ $(alias gs) == *"git status"* ]] || exit 11
+alias ls >/dev/null 2>&1 && exit 12
+alias cat >/dev/null 2>&1 && exit 13
+sso chosen || exit 14
+[[ $AWS_PROFILE == chosen && $AWS_ACCESS_KEY_ID == fixture_key && $AWS_SESSION_TOKEN == fixture_session ]] || exit 15
+unset AWS_PROFILE
+sso 2>/dev/null
+[[ $? == 2 ]] || exit 16
+export AWS_PROFILE=previous
+aws() {
+    case "$1 $2" in
+    "sso login") return 0 ;;
+    "configure export-credentials") return 42 ;;
+    *) printf 'unexpected-call\n'; return 99 ;;
+    esac
+}
+sso chosen
+[[ $? == 42 && $AWS_PROFILE == previous ]] || exit 17
+'''
+        for shell in ("bash", "zsh"):
+            if not shutil.which(shell):
+                continue
+            with self.subTest(shell=shell):
+                result = subprocess.run([shell, "-f", "-c", script, "test", str(ROOT)], env=env, capture_output=True, text=True)
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertEqual(result.stdout, "fixture-identity\n")
+
 
 if __name__ == "__main__":
     unittest.main()

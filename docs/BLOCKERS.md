@@ -1,16 +1,18 @@
 # Blockers and acceptance evidence
 
-## WSL inventory and local execution — unresolved, merge blocker
+## WSL inventory and local execution — resolved
 
-On 2026-11-15 every local process launch failed before executing:
-`cannot enforce sandbox read-only path /home/jeremy/.agents because it crosses writable symlink /home/jeremy/.agents`.
-The patch tool also failed to write files. Local instructions and the WSL clone
-could not be inspected. The WSL branch, staged/unstaged changes, untracked files,
-and external Stow archive remain **unknown**, not clean.
+The owner completed the inventory and pushed `legacy/stow-local-2026` at
+`16477c53fa6bc200b329430f2bac732cdaecee15`. Its parent was 32 commits behind main.
+The branch preserves eight tracked modifications plus five formerly untracked
+OpenCode/Herdr and nvim telescope files. `.skill-lock.json` and `claude-audit.txt`
+were deliberately left untracked. The requested shell, Git, Mise and SSH sources
+were compared with the scaffold; sanitized salvage and exclusions are recorded in
+[LEGACY-INVENTORY.md](LEGACY-INVENTORY.md).
 
-Remote main's 35 files were read and inventoried before scaffold changes.
-See [LEGACY-INVENTORY.md](LEGACY-INVENTORY.md). Complete the sanitized WSL inventory
-before approving migration. No local configuration or working tree was changed.
+The earlier execution-sandbox failure no longer applies. This pass used an
+isolated worktree; it did not alter the preserved branch or install configuration
+into the WSL home. **WSL inventory is no longer a merge blocker.**
 
 ## Main migration — awaiting explicit owner review
 
@@ -36,13 +38,12 @@ release PR merging must be automated/serialized. Standard release-please can
 batch several merged changes into one release. The current workflow does not
 claim to solve that by itself. See [RELEASES.md](RELEASES.md).
 
-## Dotfleet repository — not created
+## Dotfleet publication — deferred
 
-`jeremyspofford/dotfleet` returned 404. The connector has no repository-creation
-endpoint, and local GitHub CLI is unavailable. The README and draft add-on contract
-are staged under `dotfleet-stub/`; no Dotfleet code exists. No new repository
-was created. The later owner instruction keeps this migration in the existing
-dotfiles repository.
+The earlier run could not create the requested stub repository. Local GitHub CLI
+access now works, but repository creation is outside this follow-up. The README
+and add-on contract remain staged under `dotfleet-stub/`; no Dotfleet code was
+added. This PR stays in the existing dotfiles repository.
 
 ## Ollama native config — explicit scope exception
 

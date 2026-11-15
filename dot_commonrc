@@ -1,0 +1,45 @@
+# Shared interactive Bash/zsh setup salvaged from the preserved WSL configuration.
+export XDG_CONFIG_HOME="${XDG_CONFIG_HOME:-$HOME/.config}"
+export XDG_DATA_HOME="${XDG_DATA_HOME:-$HOME/.local/share}"
+if [[ -z ${DOTFILES_PLATFORM:-} && -r "$HOME/.config/dotfiles/platform.zsh" ]]; then
+	. "$HOME/.config/dotfiles/platform.zsh"
+fi
+
+# Keep standalone tool paths usable without installing or loading another manager.
+export BUN_INSTALL="${BUN_INSTALL:-$HOME/.bun}"
+case ${DOTFILES_PLATFORM:-} in
+darwin) export PNPM_HOME="${PNPM_HOME:-$HOME/Library/pnpm}" ;;
+*) export PNPM_HOME="${PNPM_HOME:-$HOME/.local/share/pnpm}" ;;
+esac
+for _dotfiles_bin in "$HOME/.local/bin" "$HOME/bin" "$HOME/.npm-global/bin" \
+	"$BUN_INSTALL/bin" "$HOME/go/bin" "$PNPM_HOME"; do
+	if [[ -d $_dotfiles_bin ]]; then
+		case ":$PATH:" in
+		*":$_dotfiles_bin:"*) ;;
+		*) PATH="$_dotfiles_bin:$PATH" ;;
+		esac
+	fi
+done
+unset _dotfiles_bin
+export PATH
+if [[ ${DOTFILES_PLATFORM:-} == wsl && -z ${BROWSER:-} ]] && command -v wslview >/dev/null 2>&1; then
+	export BROWSER=wslview
+fi
+
+# This fragment is compatible with both shells despite its historical .zsh name.
+. "$HOME/.config/dotfiles/interactive.zsh"
+. "$HOME/.config/dotfiles/domain.zsh"
+. "$HOME/.aliases"
+if [[ -r "$HOME/.secrets" ]]; then
+	. "$HOME/.secrets"
+fi
+if command -v mise >/dev/null 2>&1; then
+	if [[ -n ${ZSH_VERSION:-} ]]; then
+		eval "$(mise activate zsh)"
+	elif [[ -n ${BASH_VERSION:-} ]]; then
+		eval "$(mise activate bash)"
+	fi
+fi
+if [[ -r "$HOME/.commonrc.local" ]]; then
+	. "$HOME/.commonrc.local"
+fi

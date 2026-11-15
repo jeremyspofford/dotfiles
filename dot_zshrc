@@ -4,11 +4,7 @@ HISTSIZE=10000
 SAVEHIST=10000
 HISTFILE="$HOME/.zsh_history"
 bindkey -e
-. "$HOME/.config/dotfiles/interactive.zsh"
-. "$HOME/.aliases"
-. "$HOME/.config/dotfiles/domain.zsh"
-[[ ! -r "$HOME/.secrets" ]] || source "$HOME/.secrets"
-if command -v mise >/dev/null 2>&1; then eval "$(mise activate zsh)"; fi
+. "$HOME/.commonrc"
 
 # Native completion: ignore case, group candidates, select with arrow keys.
 typeset -U fpath
@@ -19,11 +15,25 @@ autoload -Uz compinit
 _dotfiles_cache="${XDG_CACHE_HOME:-$HOME/.cache}/dotfiles/zsh"
 mkdir -p "$_dotfiles_cache"
 compinit -d "$_dotfiles_cache/zcompdump-$ZSH_VERSION"
+# AWS's completer is Bash-compatible; initialize the bridge only when installed.
+if command -v aws_completer >/dev/null 2>&1; then
+  autoload -Uz bashcompinit
+  bashcompinit
+  complete -C "$(command -v aws_completer)" aws
+fi
 zstyle ':completion:*' menu select
 zstyle ':completion:*' matcher-list 'm:{a-zA-Z}={A-Za-z}'
 zstyle ':completion:*' group-name ''
 zstyle ':completion:*:descriptions' format '%F{cyan}%d%f'
 zstyle ':completion:*' list-colors 'di=34' 'ln=36' 'ex=32'
+if command -v dircolors >/dev/null 2>&1; then
+  if [[ -r "$HOME/.dircolors" ]]; then
+    eval "$(dircolors -b "$HOME/.dircolors")"
+  else
+    eval "$(dircolors -b)"
+  fi
+  zstyle ':completion:*:default' list-colors ${(s.:.)LS_COLORS}
+fi
 autoload -Uz up-line-or-beginning-search down-line-or-beginning-search
 zle -N up-line-or-beginning-search
 zle -N down-line-or-beginning-search
@@ -57,3 +67,6 @@ unset _dotfiles_prefix _dotfiles_cache
 
 # bun completions
 [ -s "$HOME/.bun/_bun" ] && source "$HOME/.bun/_bun"
+if [[ -r "$HOME/.zshrc.local" ]]; then
+  source "$HOME/.zshrc.local"
+fi

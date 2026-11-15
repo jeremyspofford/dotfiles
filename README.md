@@ -6,8 +6,9 @@ one machine and domain, and Mise manages tools. You can use this layer on its ow
 
 **v0.0.1 is a migration candidate on `feat/chezmoi-v0.0.1`. Main still contains
 Workbench. Do not migrate an existing machine until the owner has reviewed the
-[legacy inventory](docs/LEGACY-INVENTORY.md), local WSL changes, and preservation
-tag.** See [blockers and acceptance status](docs/BLOCKERS.md).
+[legacy inventory](docs/LEGACY-INVENTORY.md), salvage decisions, and preservation
+references. WSL inventory is complete on `legacy/stow-local-2026`.** See
+[blockers and acceptance status](docs/BLOCKERS.md).
 
 ![dotfiles, Dotfleet and add-on layers](docs/diagrams/layers.svg)
 
@@ -52,9 +53,11 @@ dry-run is validation, not a sandbox. The own-repo mode does not inject this
 project's aliases, domain values, secrets template, or agents.
 
 Open zsh after setup. Set it as your login shell separately if desired.
+Interactive Bash and Bash login sessions are also managed; both shells share
+`~/.commonrc` for aliases, secrets, tool paths and Mise activation.
 Starship, eza, fzf and other integrations activate only when installed. The
 [optional Workbench Mise profile](docs/examples/workbench-tools.toml) preserves
-the existing tool choices; it is not automatically installed.
+the existing tool choices and commented WSL additions; it is not automatically installed.
 
 ## Usage
 
@@ -73,6 +76,12 @@ The repository's `.chezmoi.toml.tmpl` creates this machine-local configuration.
 Names and email addresses are optional template data or can stay in
 `~/.config/git/local.gitconfig`; see the [sanitized example](docs/examples/local.gitconfig).
 
+Machine-only shell adjustments can stay in `~/.commonrc.local`,
+`~/.aliases.local`, `~/.zshrc.local` or `~/.bashrc.local`. These optional
+inputs are not generated or committed. When AWS CLI is installed, `sso PROFILE`
+logs in and exports credentials in the current shell; omitting PROFILE requires
+an existing `AWS_PROFILE`. Shell startup never performs an AWS login.
+
 Secrets are disabled by default, so a fresh machine gets a private, comment-only
 `~/.secrets`. To enable a value, install/sign in to 1Password CLI and set
 `secretsEnabled = true` and `secretReference = "op://YourVault/YourItem/field"`
@@ -85,6 +94,7 @@ managed global Git ignore rules. Never run `chezmoi add ~/.secrets`.
 | Source of truth | Generated result |
 | --- | --- |
 | `dot_zshenv`, `dot_zprofile`, `dot_zshrc` | Shell startup files |
+| `dot_bash_profile`, `dot_bashrc`, `dot_commonrc` | Bash startup and shared interactive setup |
 | `core/aliases.zsh` plus selected domain | `~/.aliases` |
 | `dot_config/` templates and files | Platform/domain fragments, prompt, Git ignore, Mise settings |
 | `dot_gitconfig.tmpl` plus local data | `~/.gitconfig` |

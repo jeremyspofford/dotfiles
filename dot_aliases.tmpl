@@ -5,3 +5,6 @@
 {{ include (printf "%s/aliases.zsh" .domain) }}
 {{ else }}{{ fail "invalid domain" }}{{ end }}
 {{ end }}
+if [[ -r "$HOME/.aliases.local" ]]; then
+  . "$HOME/.aliases.local"
+fi

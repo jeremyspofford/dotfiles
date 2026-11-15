@@ -18,5 +18,27 @@ chezmoi = "2.73.3"
 delta = "0.20.1"
 shellcheck = "0.11.0"
 
+# Additional active choices from the preserved WSL profile (opt in individually).
+# Original rolling versions are recorded as examples, not installed by bootstrap.
+# Existing Workbench pins above stay authoritative for overlapping tools.
+# 1password-cli = "latest"
+# aws-cli = { version = "latest", symlink_bins = "true" }
+# "aqua:anthropics/claude-code" = "latest"
+# "npm:@google/gemini-cli" = "latest"
+# opencode = "latest"
+# "npm:@earendil-works/pi-coding-agent" = "latest"
+# lazygit = "latest"
+# yq = "latest"
+# tlrc = "latest"
+# "npm:markdownlint" = "latest"
+# shfmt = "latest"
+# gitleaks = "latest"
+# lazydocker = "latest"
+# "aqua:cloudflare/cloudflared" = "latest"
+# pnpm = "latest"
+# lazyssh = "latest"
+# pandoc = "latest"
+# go = "1.27"
+
 [settings]
 idiomatic_version_file_enable_tools = ["node", "python"]

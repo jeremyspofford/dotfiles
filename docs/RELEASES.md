@@ -18,7 +18,8 @@ release and an explicit review of the automation policy.
 
 ## Activation after owner review
 
-1. Resolve the WSL inventory and create `legacy/stow-2026` at the preserved main.
+1. Review the completed WSL inventory/salvage and verify `legacy/stow-2026` and
+   `legacy/stow-local-2026` still preserve the recorded snapshots.
 2. Review and approve the scaffold PR. Do not auto-merge this migration.
 3. Establish the reviewed `v0.0.1` baseline tag/release and set the config's
    `bootstrap-sha` to that baseline commit before the first automated proposal.

@@ -16,10 +16,24 @@
     ff = only
 [push]
     default = simple
+    autoSetupRemote = true
 [fetch]
     prune = true
 [merge]
     conflictStyle = zdiff3
+[diff]
+    colorMoved = default
+[alias]
+    co = checkout
+    br = branch
+    ci = commit
+    st = status
+    unstage = reset HEAD --
+    last = log -1 HEAD
+    lg = log --oneline --graph --decorate -20
+    branches = branch -a
+    remotes = remote -v
+    stashes = stash list
 {{ if lookPath "gh" }}
 [credential "https://github.com"]
     helper =

@@ -9,6 +9,9 @@ Paths below are relative to the destination home unless otherwise stated.
 | `dot_zshenv` | `.zshenv` | `chezmoi apply` |
 | `dot_zprofile` | `.zprofile` | `chezmoi apply` |
 | `dot_zshrc` | `.zshrc` | `chezmoi apply` |
+| `dot_bash_profile` | `.bash_profile` | `chezmoi apply` |
+| `dot_bashrc` | `.bashrc` | `chezmoi apply` |
+| `dot_commonrc` | `.commonrc` (shared Bash/zsh startup) | `chezmoi apply` |
 | `dot_aliases.tmpl` + `core/` + selected domain | `.aliases` | `chezmoi apply` |
 | `dot_gitconfig.tmpl` | `.gitconfig` | `chezmoi apply` |
 | `.chezmoitemplates/dot_secrets.tmpl` via private wrapper | `.secrets` (0600, ignored) | `chezmoi apply` |
@@ -26,3 +29,9 @@ Paths below are relative to the destination home unless otherwise stated.
 Mise and chezmoi install their own caches/binaries; these are tool-owned, not a
 second configuration source. Machine-local Git identity and 1Password
 authentication are deliberately not generated from this repository.
+
+Optional `.commonrc.local`, `.aliases.local`, `.bashrc.local` and
+`.zshrc.local` are user-owned inputs, not generated outputs. The `*.local`
+Git ignore rule protects these overrides. Shared editor/fzf settings remain
+canonical in `dot_config/dotfiles/interactive.zsh`; its content is Bash-compatible
+and both shells source it through `.commonrc`.

@@ -9,14 +9,15 @@ The annotated `legacy/stow-2026` tag preserves that commit.
 
 All 35 main files were read before implementation. Current main is Workbench/
 chezmoi, not an active Stow tree; its own docs say Stow files were archived
-outside the checkout. WSL changes and that archive could not be inspected due
-to the local sandbox error. The detailed [inventory](LEGACY-INVENTORY.md) identifies
-this explicitly rather than inventing a clean working tree.
+outside the checkout. The owner completed WSL preservation on `legacy/stow-local-2026`; its parent was
+32 commits behind main. The requested files were compared and salvaged, with
+per-item decisions in the [inventory](LEGACY-INVENTORY.md). The WSL blocker is closed.
 
 ## Salvaged
 
 - zsh history behavior, emacs key bindings, native completion and optional plugins.
-- Guarded eza aliases and fzf options from the real shared shell fragment.
+- Guarded eza aliases, portable WSL shortcuts, fzf options, AWS completion/SSO,
+  Bash startup, local override hooks and shared tool PATH handling.
 - Git fast-forward pulls, pruning, zdiff3, conditional delta/gh integration and
   machine-local identity include.
 - Existing Mise tool pins as an optional example, not a universal requirement.
@@ -33,7 +34,7 @@ teardown of existing home-directory files. Legacy installed files will remain
 until reviewed; do not blindly delete them.
 
 Added: domain overlays, private optional 1Password secrets, canonical agent skills
-and manifest, bootstrap, logger interface stub, release policy, CI and D2 source/
+and manifest, bootstrap, the owner's shared logger, release policy, CI and D2 source/
 rendered SVG. No separate personal aliases were invented; domain overlays are
 documented empty customization points. Dotfleet is documentation only.
 
@@ -43,7 +44,7 @@ CI has passed the fresh Linux container, shell standards, five integration tests
 release-policy tests and byte-for-byte D2 rendering check. Exact run links and
 limitations are in [BLOCKERS.md](BLOCKERS.md).
 
-Before any merge: complete WSL inventory, reconcile useful local changes, review
-this diff, and obtain explicit owner approval. The preservation tag is complete.
+Before any merge: review this diff and obtain explicit owner approval. WSL
+inventory/salvage and the preservation tag are complete. The PR remains a draft.
 The live release-please test and strict automatic per-merge publication remain
 pending; main must not be merged just to demonstrate them.
