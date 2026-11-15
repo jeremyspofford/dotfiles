@@ -22,6 +22,14 @@ Dotfleet will consume dotfiles to provide onboarding and fleet profiles.
 Add-ons will extend Dotfleet. Neither is required here; there is no custom sync
 engine, GUI, daemon, or agent pack.
 
+## Concepts
+
+Three ideas explain everything this repository does:
+
+- **Your checkout.** The installer keeps a full copy of this repository on your machine and prints its location in the end summary. That checkout is the source chezmoi reads. To change your dotfiles, edit files in the checkout, then run `chezmoi apply`. The files in your home directory are generated from the checkout — editing them directly works only until the next apply overwrites them.
+- **Core.** The baseline configuration that every machine gets: shell startup files, aliases, Git defaults and tool setup. Core always applies; it is not tied to any one machine or role. Choosing `core` as your domain means "baseline only, nothing role-specific."
+- **Domains.** On top of core, each machine gets exactly one overlay matching its role: `personal`, `work` or `client`. The overlay is where role-specific aliases, settings and fragments live, so the same baseline can serve a personal laptop and a work machine without mixing their settings. Pick the domain that matches the machine when the installer asks. You can switch later by changing `[data].domain` in `~/.config/chezmoi/chezmoi.toml` and applying again — the old overlay's files are removed, not left behind.
+
 ## Advanced bootstrap
 
 The installer supports Linux, macOS and WSL and requires Bash, git, curl and tar.
