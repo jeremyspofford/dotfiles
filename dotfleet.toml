@@ -1,0 +1,28 @@
+# Plain content. Paths are relative to this checkout and the destination home.
+format = "plain"
+paths = ["agents/skills"]
+overlays = ["core", "personal", "work", "client"]
+
+[secrets.EXAMPLE_API_TOKEN]
+reference = "op://Example/Development/api-token"
+enabled = false
+
+[groups.docker]
+description = "Docker container shortcuts"
+blocks = [".config/dotfiles/aliases/core.zsh"]
+
+[groups.terraform]
+description = "Terraform infrastructure shortcuts"
+blocks = [".config/dotfiles/aliases/core.zsh"]
+
+[groups.kubectl]
+description = "Kubernetes command shortcuts"
+blocks = [".config/dotfiles/aliases/core.zsh"]
+
+[groups.python]
+description = "Python interpreter shortcuts"
+blocks = [".config/dotfiles/aliases/core.zsh"]
+
+[groups.npm]
+description = "Node package manager shortcuts"
+blocks = [".config/dotfiles/aliases/core.zsh"]

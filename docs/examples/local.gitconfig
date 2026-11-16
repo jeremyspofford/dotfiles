@@ -1,6 +1,15 @@
 # Copy to ~/.config/git/local.gitconfig (chmod 600) and edit. This file is
-# machine-local: chezmoi never manages it and it is never committed.
+# machine-local. Dotfleet writes identity here; manual users edit it themselves.
+# Never commit a personal copy.
 [user]
     name = "Your Name"
     email = "you@example.com"
 
+
+# Optional: delta formats Git diffs. Install delta before enabling this block.
+# [core]
+#     pager = delta
+# [interactive]
+#     diffFilter = delta --color-only
+# [delta]
+#     navigate = true
