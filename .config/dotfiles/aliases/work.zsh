@@ -1,3 +1,5 @@
+# Purpose: Load work shell settings.
+# Usage: Source this file through the managed shell configuration.
 # Worked examples for work. Replace these with your own settings.
 # Show the current directory without changing files.
 alias work_where='pwd'

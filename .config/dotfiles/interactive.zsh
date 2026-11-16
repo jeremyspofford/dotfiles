@@ -1,3 +1,5 @@
+# Purpose: Load interactive shell settings.
+# Usage: Source this file through the managed shell configuration.
 # Salvaged Workbench editor and fuzzy-finder settings, with portable fallbacks.
 if command -v nvim >/dev/null 2>&1; then
 	export EDITOR=nvim

@@ -1,3 +1,5 @@
+# Purpose: Set interactive Bash behavior.
+# Usage: Bash reads this file when an interactive shell starts.
 # Bash-specific startup salvaged from the preserved WSL configuration.
 case $- in
 *i*) ;;
