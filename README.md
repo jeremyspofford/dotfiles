@@ -52,6 +52,21 @@ Saved configuration points chezmoi at `~/dotfiles`. Bare `chezmoi status` and `c
 The end summary prints the checkout location and commit. Edit checkout files, then run `chezmoi apply`.
 Direct edits to generated home files can be overwritten by the next apply.
 
+If a managed file has local edits, setup pauses for a choice. Type one letter, then press Enter.
+
+| Key | Effect |
+| --- | --- |
+| `d` | Show this file's changes, then ask again |
+| `o` | Overwrite this file with the generated version |
+| `a` | Overwrite this file and all remaining conflicts without asking again |
+| `s` | Keep this file unchanged; continue with other files |
+| `S` | Keep all conflicting files unchanged; apply other changes |
+| `q` | Stop applying; changes already made remain |
+
+Uppercase `S` differs from lowercase `s`. Skipped files can leave differences; the end summary reports them.
+Without a terminal, conflicts stop setup. A requested diff can show secrets; review it only in a private terminal.
+These keys describe installer prompts. Bare chezmoi commands keep chezmoi's own prompt interface.
+
 ## Concepts
 
 A tool pin selects a tool version. Globally pinned tools are available in every shell after installation.

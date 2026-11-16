@@ -14,3 +14,13 @@ This includes README files, docs/, script headers, --help text, changelog entrie
 5. Preserve every fact, condition, warning, exit code, and limit.
 
 A documentation change that ignores these rules is not done.
+
+## Interactive commands — mandatory
+
+Show accepted keys and each action's effect at the prompt. State whether Enter is required.
+Do not expose an unexplained third-party menu. Define uppercase and lowercase keys when their actions differ.
+Read user decisions from the terminal, never from piped script input. Never choose overwrite for unattended conflicts.
+Test prompts through a pseudo-terminal, which simulates a user's terminal.
+Include a previously managed file changed locally. A pre-existing unmanaged file does not test the same conflict path.
+Verify invalid input, diff followed by another choice, overwrite, skip, skip-all, and quit when those actions exist.
+A successful process exit alone does not prove that enrollment completed; check managed-file status.
