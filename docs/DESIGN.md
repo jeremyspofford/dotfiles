@@ -53,7 +53,7 @@ Secrets off generates private comments only. Secrets on retrieves the value thro
 Shell single quotes prevent credential contents from becoming commands. chezmoi's `private_` prefix sets mode `0600`: owner-only read/write access.
 Repository and global Git ignore rules exclude generated `.secrets`. CI, the automated checks, verifies ignore matching and no tracked secrets.
 Ignore rules cannot protect forced additions or files Git already tracks. Review changes before committing.
-A diff shows proposed file changes. Bootstrap, the setup script, never logs secret-bearing diffs.
+A diff shows proposed file changes. Bootstrap, the setup script, hides its validation diff. A requested conflict diff appears in your terminal and can expose secrets.
 A 1Password failure stops rendering; it never substitutes a fake credential.
 
 ## Enrollment and rollback
@@ -83,7 +83,10 @@ Setup backs up local chezmoi configuration before bootstrap regenerates it. Back
 
 `--interactive` reads setup prompts from `/dev/tty`, the terminal device.
 First enrollment without a terminal fails unless `--defaults` explicitly accepts core settings and blank identity.
-The installer uses bootstrap's existing diff validation and apply path. It adds no separate renderer.
+The installer uses bootstrap's existing diff validation and apply path. It adds no separate file renderer.
+For conflicts, bootstrap displays letter keys and action meanings. Users type a letter, then press Enter.
+It reads decisions from the terminal. chezmoi still detects conflicts and handles overwrite, skip, and quit.
+Without a terminal, conflicts stop apply. Skipped files remain unchanged and can leave differences reported by the installer.
 After loading the logger, which formats messages, every run prints backup, checkout, commit, and status, even on failure.
 Help and invalid arguments never start enrollment. Before logging is available, missing curl or a failed logger download produces shell or curl errors.
 

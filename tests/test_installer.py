@@ -377,6 +377,110 @@ class InstallerTests(unittest.TestCase):
         self.assertIn("already exists and is not this repository\'s clone", result.stderr)
         self.assertEqual(self.snapshot(), before)
 
+    def run_conflict_terminal(self, answers, expected=0):
+        master, slave = pty.openpty()
+
+        def controlling_terminal():
+            os.setsid()
+            fcntl.ioctl(slave, termios.TIOCSCTTY, 0)
+
+        process = subprocess.Popen(self.installer, cwd=self.base, env=self.env,
+                                   stdin=subprocess.PIPE, stdout=slave, stderr=slave,
+                                   preexec_fn=controlling_terminal)
+        os.close(slave)
+        self.addCleanup(os.close, master)
+        self.addCleanup(lambda: process.poll() is None and process.kill())
+        # The installer must read decisions from the terminal, never this pipe.
+        process.stdin.write(b"all-overwrite\n")
+        process.stdin.close()
+        transcript = b""
+        answered = 0
+        cursor = 0
+        deadline = time.monotonic() + 45
+        while time.monotonic() < deadline:
+            ready, _, _ = select.select([master], [], [], 0.1)
+            if ready:
+                try:
+                    chunk = os.read(master, 65536)
+                except OSError as error:
+                    if error.errno == errno.EIO:
+                        break
+                    raise
+                if not chunk:
+                    break
+                transcript += chunk
+            elif process.poll() is not None:
+                break
+            prompt = transcript.find(b"Choose [d/o/a/s/S/q]:", cursor)
+            if prompt >= 0 and answered < len(answers):
+                self.assertIn(b"Type one letter, then press Enter.", transcript[cursor:])
+                os.write(master, answers[answered])
+                cursor = len(transcript)
+                answered += 1
+        if process.poll() is None:
+            os.killpg(process.pid, signal.SIGKILL)
+        process.wait(timeout=5)
+        output = transcript.decode(errors="replace")
+        self.assertEqual(process.returncode, expected, output)
+        self.assertEqual(answered, len(answers), output)
+        self.assertNotIn("diff/overwrite/all-overwrite/skip/Skip-conflicts/quit", output)
+        return output
+
+    def test_managed_mise_conflict_explains_keys_diff_then_overwrite(self):
+        # Match the reported upgrade: chezmoi wrote the file, then mise changed it.
+        # The old machine data has no saved tool table yet.
+        self.seed_legacy_install()
+        config = self.home / ".config/mise/config.toml"
+        original = '# Local pin\n[tools]\nnode = "latest"\n[settings]\nexperimental = false\n'
+        config.write_text(original)
+        output = self.run_conflict_terminal([b"x\n", b"d\n", b"o\n"])
+        self.assertEqual(output.count("Choose [d/o/a/s/S/q]:"), 3)
+        self.assertIn("diff --git", output)
+        for explanation in (
+                "d  Show changes for this file, then ask again.",
+                "o  Overwrite this file with the generated version.",
+                "a  Overwrite this file and all remaining conflicts without asking again.",
+                "s  Keep this file unchanged; continue with other files.",
+                "S  Keep all conflicting files unchanged; apply other changes.",
+                "q  Stop applying. Changes already made remain in place."):
+            self.assertIn(explanation, output)
+        self.assertEqual(self.saved_tools(), {"node": "latest"})
+        self.assertEqual(self.rendered_tools(), {"node": "latest"})
+        self.assertEqual(self.run_command(["chezmoi", "status"]).stdout, "")
+        self.assertIn("Result: SUCCESS", output)
+        backup = next((self.home / "dotfleet-backups").iterdir())
+        self.assertEqual((backup / "home/.config/mise/config.toml").read_text(), original)
+
+    def test_conflict_skip_all_and_quit_preserve_edits(self):
+        self.run_command(self.installer + ["--defaults"])
+        paths = [self.home / ".aliases", self.home / ".bashrc"]
+        for path in paths:
+            path.write_text(path.read_text() + "\n# Keep this local edit\n")
+        contents = [path.read_bytes() for path in paths]
+        for answer in (b"S\n", b"q\n"):
+            with self.subTest(answer=answer):
+                output = self.run_conflict_terminal([answer], expected=1)
+                self.assertIn("chezmoi status: DRIFT", output)
+                self.assertEqual([path.read_bytes() for path in paths], contents)
+        # Lowercase s skips one file; the next conflict still needs a decision.
+        self.run_conflict_terminal([b"s\n", b"o\n"], expected=1)
+        self.assertEqual(paths[0].read_bytes(), contents[0])
+        self.assertNotEqual(paths[1].read_bytes(), contents[1])
+        # all-overwrite belongs to chezmoi; one answer must handle both conflicts.
+        paths[1].write_bytes(contents[1])
+        output = self.run_conflict_terminal([b"a\n"])
+        self.assertEqual(output.count("Choose [d/o/a/s/S/q]:"), 1)
+        self.assertEqual(self.run_command(["chezmoi", "status"]).stdout, "")
+
+    def test_unattended_conflict_stops_without_consuming_pipe_or_overwriting(self):
+        self.run_command(self.installer + ["--defaults"])
+        path = self.home / ".aliases"
+        path.write_text(path.read_text() + "\n# Preserve this edit\n")
+        before = path.read_bytes()
+        result = self.run_command(self.installer + ["--defaults"], expected=1, input="all-overwrite\n")
+        self.assertIn("Apply stopped. Review changes in a terminal", result.stderr)
+        self.assertEqual(path.read_bytes(), before)
+
     def run_on_terminal(self, responses):
         master, slave = pty.openpty()
 
