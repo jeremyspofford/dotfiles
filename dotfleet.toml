@@ -32,3 +32,8 @@ core = "Shared shell and Git settings, without extra domain commands."
 personal = "Your own settings; examples personal_where and personal_list show your directory and its entries."
 work = "Employer settings; examples work_where and work_list show your directory and its entries."
 client = "Customer settings; examples client_where and client_list show your directory and its entries."
+
+[groups.helpers]
+description = "Dotfleet update, status, and preview shortcuts"
+blocks = [".config/dotfiles/aliases/core.zsh"]
+default = true

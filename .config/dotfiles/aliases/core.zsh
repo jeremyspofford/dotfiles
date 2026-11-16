@@ -126,3 +126,12 @@ if command -v aws >/dev/null 2>&1; then
 		aws sts get-caller-identity --query 'Arn' --output text
 	}
 fi
+
+# dotfleet:group helpers begin
+if command -v dotfleet >/dev/null 2>&1; then
+	alias dtf='dotfleet'
+	alias dtfu='dotfleet update'
+	alias dtfs='dotfleet status'
+	alias dtfd='dotfleet diff'
+fi
+# dotfleet:group helpers end

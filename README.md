@@ -87,3 +87,10 @@ Local overrides remain supported: `~/.commonrc.local`, `~/.aliases.local`, `~/.z
 
 Read [DESIGN.md](docs/DESIGN.md), [GENERATED.md](docs/GENERATED.md), and [WRITING.md](docs/WRITING.md).
 Historical release notes and the legacy inventory remain records of the previous layout.
+
+## Manager helpers
+
+The optional helpers group defines shortcuts when `dotfleet` is installed. A group selects related commands or files.
+Use `dtf` for `dotfleet`, `dtfu` for update, `dtfs` for status, and `dtfd` for a preview.
+Run `dtf rollback` to restore a backup. Run `dtf domain personal` to switch to your personal settings.
+The helpers never replace `df`, the disk-usage command. Without Dotfleet, these aliases stay undefined.

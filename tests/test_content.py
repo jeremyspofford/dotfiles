@@ -15,7 +15,7 @@ class ContentTests(unittest.TestCase):
             self.assertNotIn(name, names)
         manifest = tomllib.loads((ROOT / 'dotfleet.toml').read_text())
         self.assertEqual(manifest['format'], 'plain')
-        self.assertEqual(set(manifest['groups']), {'docker', 'terraform', 'kubectl', 'python', 'npm'})
+        self.assertEqual(set(manifest['groups']), {'docker', 'terraform', 'kubectl', 'python', 'npm', 'helpers'})
 
     def test_domain_examples_are_described_and_read_only(self):
         manifest = tomllib.loads((ROOT / 'dotfleet.toml').read_text())
