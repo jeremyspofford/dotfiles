@@ -1,4 +1,5 @@
-# Optional sanitized Workbench example, not installed by bootstrap. Versions change deliberately through reviewed diffs.
+# Example: a DevOps workstation. DevOps combines software delivery and system operations.
+# Versions change through reviewed edits; these are examples, not required installations.
 # Project mise.toml files can select different runtimes without changing this file.
 [tools]
 node = "24.14.1"
@@ -19,8 +20,8 @@ delta = "0.20.1"
 shellcheck = "0.11.0"
 
 # Additional active choices from the preserved WSL profile (opt in individually).
-# Original rolling versions are recorded as examples, not installed by bootstrap.
-# Existing Workbench pins above stay authoritative for overlapping tools.
+# Original rolling versions are recorded as examples, not installed automatically.
+# Example pins above stay authoritative for overlapping tools.
 # 1password-cli = "latest"
 # aws-cli = { version = "latest", symlink_bins = "true" }
 # "aqua:anthropics/claude-code" = "latest"

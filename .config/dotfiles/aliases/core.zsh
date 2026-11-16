@@ -55,10 +55,7 @@ linux | wsl)
 	fi
 	;;
 esac
-if command -v curl >/dev/null 2>&1; then
-	alias myip='curl -s ifconfig.me'
-	alias weather='curl wttr.in'
-fi
+# dotfleet:group docker begin
 if command -v docker >/dev/null 2>&1; then
 	alias d='docker'
 	alias dc='docker compose'
@@ -68,6 +65,8 @@ if command -v docker >/dev/null 2>&1; then
 	alias dex='docker exec -it'
 	alias dlog='docker logs -f'
 fi
+# dotfleet:group docker end
+# dotfleet:group kubectl begin
 if command -v kubectl >/dev/null 2>&1; then
 	alias k='kubectl'
 	alias kgp='kubectl get pods'
@@ -78,24 +77,31 @@ if command -v kubectl >/dev/null 2>&1; then
 	alias kl='kubectl logs -f'
 	alias kex='kubectl exec -it'
 fi
+# dotfleet:group kubectl end
+# dotfleet:group terraform begin
 if command -v terraform >/dev/null 2>&1; then
 	alias tf='terraform'
 	alias tfi='terraform init'
 	alias tfp='terraform plan'
 	alias tfa='terraform apply'
 fi
+# dotfleet:group terraform end
+# dotfleet:group python begin
 if command -v python3 >/dev/null 2>&1; then
 	alias py='python3'
 	alias venv='python3 -m venv'
 	alias activate='source venv/bin/activate'
 	alias serve='python3 -m http.server 8000'
 fi
+# dotfleet:group python end
+# dotfleet:group npm begin
 if command -v npm >/dev/null 2>&1; then
 	alias ni='npm install'
 	alias nr='npm run'
 	alias ns='npm start'
 	alias nt='npm test'
 fi
+# dotfleet:group npm end
 if command -v nvim >/dev/null 2>&1; then
 	alias v='nvim'
 fi

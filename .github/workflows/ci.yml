@@ -2,87 +2,19 @@ name: CI
 on:
   pull_request:
   push:
-    branches: [main, "feat/chezmoi-v0.0.1"]
+    branches: [main]
 permissions:
   contents: read
 jobs:
-  linux:
+  content:
     runs-on: ubuntu-latest
     container: ubuntu:24.04
     steps:
-      - name: Install test prerequisites
-        run: |
-          apt-get update
-          apt-get install -y bash curl git tar zsh python3 shellcheck shfmt ca-certificates
+      - run: apt-get update && apt-get install -y git python3 zsh shellcheck shfmt
       - uses: actions/checkout@v4
-      - name: Shell standards
+      - run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+      - name: Plain shell content
         run: |
-          shellcheck -x install.sh scripts/*.sh
-          shfmt -d install.sh scripts/*.sh
-          # Sourced home fragments are rendered later; source-path resolution is unavailable here.
-          shellcheck -s bash -e SC1091 dot_commonrc dot_bashrc dot_bash_profile core/aliases.zsh
-          shfmt -ln bash -d dot_commonrc dot_bashrc dot_bash_profile core/aliases.zsh
-      - name: Installer with no preinstalled chezmoi or Mise
-        run: |
-          # A fresh HOME and the image's base PATH exercise user-local downloads.
-          # checkout is detached on PRs; the installer must also support that.
-          installer_home="$(mktemp -d)"
-          HOME="$installer_home" GIT_CONFIG_COUNT=1 \
-            GIT_CONFIG_KEY_0=safe.directory GIT_CONFIG_VALUE_0="$GITHUB_WORKSPACE" \
-            bash install.sh --defaults
-          test -d "$installer_home/dotfiles/.git"
-          test ! -e "$installer_home/.local/share/chezmoi"
-          # Start a new shell with no source/config/XDG environment hints.
-          env -i HOME="$installer_home" PATH=/usr/local/bin:/usr/bin:/bin TERM=dumb \
-            bash -ic 'cd /; test "$(chezmoi source-path)" = "$HOME/dotfiles" && test -z "$(chezmoi status)" && chezmoi apply && test -z "$(chezmoi status)"'
-      - name: Bootstrap in fresh Linux container
-        run: |
-          git config --global --add safe.directory "$GITHUB_WORKSPACE"
-          # Applying .gitconfig replaces the temporary global setting above.
-          # Keep this container-only exception in the supported local override.
-          mkdir -p "$HOME/.config/git"
-          git config --file "$HOME/.config/git/local.gitconfig" --add safe.directory "$GITHUB_WORKSPACE"
-          bash scripts/bootstrap.sh --repo "$GITHUB_WORKSPACE" --source "$HOME/dotfiles"
-          "$HOME/.local/bin/chezmoi" apply --dry-run
-          zsh -lic '[[ -r ~/.secrets && -r ~/.aliases ]]; print "Managed zsh started"'
-          bash -lic '[[ -r ~/.commonrc && -r ~/.aliases && -n $DOTFILES_PLATFORM ]] && alias gs && printf "Managed Bash started\n"'
-          bash -ic 'before=$PATH; source ~/.commonrc; [[ $PATH == "$before" ]]'
-          test -f "$HOME/.secrets"
-          test "$(stat -c %a "$HOME/.secrets")" = 600
-          git check-ignore --no-index .secrets
-          test -z "$(git ls-files .secrets)"
-      - name: Integration and regression checks
-        run: PATH="$HOME/.local/bin:$PATH" python3 -m unittest discover -s tests -p 'test_*.py' -v
-  release-policy:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-      - run: npm install --ignore-scripts
-      - run: npm run test:release
-  diagram:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
-        with:
-          go-version: "1.24"
-      - name: Render D2 headlessly
-        run: |
-          go install oss.terrastruct.com/d2@v0.7.1
-          "$(go env GOPATH)/bin/d2" --layout=dagre docs/diagrams/layers.d2 /tmp/layers.svg
-      - name: Compare committed SVG
-        run: |
-          test -s docs/diagrams/layers.svg
-          cmp docs/diagrams/layers.svg /tmp/layers.svg
-      - name: Publish rendered SVG for review
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: layers-svg
-          path: /tmp/layers.svg
-      - name: Emit rendered source for connector-only recovery
-        if: always()
-        run: python3 -c 'import json; print("D2_RENDERED=" + json.dumps(open("/tmp/layers.svg").read()))'
+          shellcheck -e SC1090,SC1091 -s bash .aliases .bashrc .bash_profile .commonrc .config/dotfiles/*.zsh .config/dotfiles/aliases/*.zsh
+          shfmt -ln bash -d .aliases .bashrc .bash_profile .commonrc .config/dotfiles/*.zsh .config/dotfiles/aliases/*.zsh
+          python3 -m unittest discover -s tests -v

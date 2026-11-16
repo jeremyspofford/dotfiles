@@ -1,11 +1,13 @@
 direction: down
-dotfiles: {
-  label: "Layer 0 · dotfiles\nStandalone · git + chezmoi + Mise"
-  source: "Core + one domain\nTemplates + skills manifest"
-  outputs: "Shell · Git · agent configs\nLocal generated secrets"
-  source -> outputs: "chezmoi + generation"
+dotfiles: "dotfiles · Plain content\nReal home paths · aliases · skills\nWorks by hand or through Dotfleet"
+dotfleet: {
+  label: "Dotfleet · Manager"
+  profile: "Machine profile\nDomain · identity · pins · groups"
+  source: "Content converter\nPlain or native chezmoi input"
+  home: "chezmoi applies home files\nGit · shell · Mise · local secrets"
+  profile -> source: "selects"
+  source -> home: "stages"
 }
-dotfleet: "Layer 1 · Dotfleet (future)\nTUI onboarding · profiles · orchestration"
-addons: "Add-ons (future)\nIndependent install and teardown contracts"
-dotfleet -> dotfiles: "consumes"
+dotfiles -> dotfleet.source: "provides content"
+addons: "Future add-ons\nInstall · machine data · teardown contract"
 addons -> dotfleet: "extends"

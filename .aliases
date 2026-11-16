@@ -1,0 +1,15 @@
+# Load shared shortcuts and the selected domain. Missing overlays are allowed.
+. "$HOME/.config/dotfiles/aliases/core.zsh"
+_dotfiles_domain=core
+if [[ -r "$HOME/.config/dotfiles/domain" ]]; then
+	IFS= read -r _dotfiles_domain <"$HOME/.config/dotfiles/domain" || true
+fi
+case $_dotfiles_domain in
+personal | work | client)
+	if [[ -r "$HOME/.config/dotfiles/aliases/$_dotfiles_domain.zsh" ]]; then
+		. "$HOME/.config/dotfiles/aliases/$_dotfiles_domain.zsh"
+	fi
+	;;
+esac
+unset _dotfiles_domain
+if [[ -r "$HOME/.aliases.local" ]]; then . "$HOME/.aliases.local"; fi

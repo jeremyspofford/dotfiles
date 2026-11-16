@@ -1,6 +1,0 @@
-# Noninteractive defaults. Local chezmoi config data overrides these values.
-domain = "core"
-gitName = ""
-gitEmail = ""
-secretsEnabled = false
-secretReference = "op://Example/Development/api-token"

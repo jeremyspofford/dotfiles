@@ -31,3 +31,7 @@ __pycache__/
 venv/
 .worktrees/
 .herdr-web-ui/
+
+# Local files written through manually linked configuration directories.
+.config/git/local.gitconfig
+.config/dotfiles/domain

@@ -1,0 +1,27 @@
+# Shared defaults. Machine identity and optional tools belong in local.gitconfig.
+[init]
+    defaultBranch = main
+[core]
+    excludesFile = ~/.config/git/ignore
+[color]
+    ui = auto
+[pull]
+    ff = only
+[push]
+    default = simple
+    autoSetupRemote = true
+[fetch]
+    prune = true
+[merge]
+    conflictStyle = zdiff3
+[diff]
+    colorMoved = default
+[alias]
+    unstage = reset HEAD --
+    last = log -1 HEAD
+    lg = log --oneline --graph --decorate -20
+    branches = branch -a
+    remotes = remote -v
+    stashes = stash list
+[include]
+    path = ~/.config/git/local.gitconfig
