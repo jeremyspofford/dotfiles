@@ -1,3 +1,5 @@
+# Purpose: Set interactive Zsh behavior.
+# Usage: Zsh reads this file when an interactive shell starts.
 # Portable defaults salvaged from the existing Workbench configuration.
 setopt histignorealldups histignorespace histreduceblanks sharehistory interactive_comments
 HISTSIZE=10000

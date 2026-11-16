@@ -1,3 +1,5 @@
+# Purpose: Load core shell settings.
+# Usage: Source this file through the managed shell configuration.
 # Portable shortcuts salvaged from Workbench and the preserved WSL aliases.
 # Keep standard commands (ls, cat, cp, mv, grep, df, du, vim, pip) unchanged.
 alias ..='cd ..'

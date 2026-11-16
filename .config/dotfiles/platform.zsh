@@ -1,3 +1,5 @@
+# Purpose: Load platform shell settings.
+# Usage: Source this file through the managed shell configuration.
 # Detect the running shell's system. WSL uses Linux tools and paths.
 case $(uname -s) in
 Darwin)

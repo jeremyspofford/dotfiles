@@ -24,3 +24,8 @@ Test prompts through a pseudo-terminal, which simulates a user's terminal.
 Include a previously managed file changed locally. A pre-existing unmanaged file does not test the same conflict path.
 Verify invalid input, diff followed by another choice, overwrite, skip, skip-all, and quit when those actions exist.
 A successful process exit alone does not prove that enrollment completed; check managed-file status.
+
+## Code style — mandatory
+
+Follow [docs/STYLE.md](docs/STYLE.md) for scripts, tests, and code changes.
+Keep formatting changes separate from behavior changes. Run the existing tests and preserve their output checks.

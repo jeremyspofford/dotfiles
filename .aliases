@@ -1,3 +1,5 @@
+# Purpose: Load shared aliases and the saved domain overlay.
+# Usage: Source this file from interactive shell configuration.
 # Load shared shortcuts and the selected domain. Missing overlays are allowed.
 . "$HOME/.config/dotfiles/aliases/core.zsh"
 _dotfiles_domain=core

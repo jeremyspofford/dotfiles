@@ -1,3 +1,5 @@
+# Purpose: Load domain shell settings.
+# Usage: Source this file through the managed shell configuration.
 # One local value selects the domain; shared settings always apply.
 DOTFILES_DOMAIN=core
 if [[ -r "$HOME/.config/dotfiles/domain" ]]; then
