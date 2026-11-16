@@ -17,6 +17,17 @@ class ContentTests(unittest.TestCase):
         self.assertEqual(manifest['format'], 'plain')
         self.assertEqual(set(manifest['groups']), {'docker', 'terraform', 'kubectl', 'python', 'npm'})
 
+    def test_domain_examples_are_described_and_read_only(self):
+        manifest = tomllib.loads((ROOT / 'dotfleet.toml').read_text())
+        self.assertEqual(set(manifest['domains']), {'core', 'personal', 'work', 'client'})
+        for domain in ['personal', 'work', 'client']:
+            text = (ROOT / f'.config/dotfiles/aliases/{domain}.zsh').read_text()
+            self.assertIn('Replace these with your own settings.', text)
+            self.assertEqual([line for line in text.splitlines() if line.startswith('alias ')],
+                             [f"alias {domain}_where='pwd'", f"alias {domain}_list='ls'"])
+            for suffix in ['where', 'list']:
+                self.assertIn(f'{domain}_{suffix}', manifest['domains'][domain])
+
     def test_git_and_secret_rules(self):
         text = (ROOT / '.gitconfig').read_text()
         self.assertNotIn('[user]', text)

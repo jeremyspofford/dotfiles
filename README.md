@@ -38,6 +38,7 @@ Back up existing target files before creating links. Do not force links over exi
 
    Choose core for shared settings only, personal for personal settings, work for employer settings, or client for client settings.
    Shared settings always apply. Missing overlay files are allowed. An overlay adds one domain's settings.
+   Each non-core overlay has two examples: DOMAIN_where runs pwd; DOMAIN_list runs ls. Replace these with your own aliases.
 
 4. Copy and edit the local Git example:
 

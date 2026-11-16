@@ -1,2 +1,5 @@
-# personal overlay: intentionally empty until you add domain-specific aliases.
-# The current main has no separate personal aliases to salvage.
+# Worked examples for personal. Replace these with your own settings.
+# Show the current directory without changing files.
+alias personal_where='pwd'
+# List directory entries without changing files.
+alias personal_list='ls'
