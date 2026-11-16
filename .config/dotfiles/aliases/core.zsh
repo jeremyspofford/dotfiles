@@ -129,9 +129,6 @@ fi
 
 # dotfleet:group helpers begin
 if command -v dotfleet >/dev/null 2>&1; then
-	alias dtf='dotfleet'
-	alias dtfu='dotfleet update'
-	alias dtfs='dotfleet status'
-	alias dtfd='dotfleet diff'
+	alias fleet='dotfleet'
 fi
 # dotfleet:group helpers end

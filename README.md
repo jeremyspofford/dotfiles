@@ -90,7 +90,7 @@ Historical release notes and the legacy inventory remain records of the previous
 
 ## Manager helpers
 
-The optional helpers group defines shortcuts when `dotfleet` is installed. A group selects related commands or files.
-Use `dtf` for `dotfleet`, `dtfu` for update, `dtfs` for status, and `dtfd` for a preview.
-Run `dtf rollback` to restore a backup. Run `dtf domain personal` to switch to your personal settings.
-The helpers never replace `df`, the disk-usage command. Without Dotfleet, these aliases stay undefined.
+The default-on helpers group defines one alias: `fleet` runs `dotfleet`. A group selects related commands or files.
+Use `fleet update`, `fleet status`, or `fleet diff` for updates, machine status, or a preview.
+Run `fleet rollback` to restore a backup. Run `fleet domain personal` to switch to your personal settings.
+Without Dotfleet, the alias stays undefined. It never replaces `df`, the disk-usage command.

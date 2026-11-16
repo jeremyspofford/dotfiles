@@ -34,6 +34,6 @@ work = "Employer settings; examples work_where and work_list show your directory
 client = "Customer settings; examples client_where and client_list show your directory and its entries."
 
 [groups.helpers]
-description = "Dotfleet update, status, and preview shortcuts"
+description = "The fleet command alias for Dotfleet"
 blocks = [".config/dotfiles/aliases/core.zsh"]
 default = true
