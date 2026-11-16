@@ -10,7 +10,7 @@ The [content contract](https://github.com/jeremyspofford/dotfleet/blob/main/docs
 Edit content here. Keep machine identity, domain, pins, and secret references in the manager profile or local files for manual use.
 Pins select tool versions. A domain selects shared settings alone or one personal, work, or client overlay.
 An overlay adds role-specific settings. `.config/dotfiles/domain.zsh` reads `~/.config/dotfiles/domain` when the shell starts.
-`.aliases` loads shared shortcuts and the chosen overlay when present. Domain overlays remain unchanged from the previous layout.
+`.aliases` loads shared shortcuts and the chosen overlay when present. Each non-core overlay contains two harmless worked examples to replace. The manifest describes each domain.
 
 `.config/dotfiles/platform.zsh` detects the operating system at runtime with uname and Linux's /proc/version.
 WSL means Windows Subsystem for Linux. It uses Linux tools and paths.

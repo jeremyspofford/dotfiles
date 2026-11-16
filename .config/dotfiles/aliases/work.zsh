@@ -1,2 +1,5 @@
-# work overlay: intentionally empty until you add domain-specific aliases.
-# The current main has no separate work aliases to salvage.
+# Worked examples for work. Replace these with your own settings.
+# Show the current directory without changing files.
+alias work_where='pwd'
+# List directory entries without changing files.
+alias work_list='ls'
