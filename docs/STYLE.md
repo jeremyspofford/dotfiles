@@ -12,6 +12,8 @@ Use [WRITING.md](WRITING.md) for headers, help, comments, and documentation.
 8. End Python files with a main guard. This condition runs entry code only when the file is executed directly.
 9. Use names that explain their purpose. Avoid abbreviations that a new reader must decode.
 
+Use Prettier, the JavaScript formatter, for release helpers.
+
 ## Preserve behavior
 
 Run the same tests after a style change. Keep output, exit codes, and golden files unchanged.
