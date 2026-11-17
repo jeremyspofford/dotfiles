@@ -97,6 +97,6 @@ Historical release notes and the legacy inventory remain records of the previous
 
 The default-on helpers group defines one alias: `fleet` runs `dotfleet`. A group selects related commands or files.
 Use `fleet update`, `fleet status`, or `fleet diff` for updates, machine status, or a preview.
-Run `fleet rollback` to restore a backup. Run `fleet domain personal` to switch to your personal settings.
+Run `fleet rollback` to restore a backup. Run `fleet domain set --name personal` to switch to your personal settings.
 Without `dotfleet`, the alias stays undefined. An existing `fleet` command also keeps the alias undefined.
 This protects Rancher’s Fleet command. It never replaces `df`, the disk-usage command.
