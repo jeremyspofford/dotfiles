@@ -53,7 +53,7 @@ Back up existing target files before creating links. Do not force links over exi
 6. Open a fresh shell. Install optional tools separately.
 
 Mise selects tool versions. Its plain config is a DevOps workstation example; DevOps combines software delivery and system operations.
-Review its pins, which select versions, before using it by hand. Project Mise files can override global choices.
+Review its selected tool versions before using it by hand. Project Mise files can override global choices.
 Run `gh auth setup-git` once if you use GitHub CLI credentials. That command configures Git's credential helper.
 `pull.ff = only` is deliberate: Git pull advances matching history and stops when histories have diverged. It never creates a merge automatically.
 
@@ -65,7 +65,7 @@ Use [Fleet's one-line installer](https://github.com/jeremyspofford/fleet#install
 curl -fsSL https://raw.githubusercontent.com/jeremyspofford/fleet/main/install.sh | bash
 ```
 
-A profile saves a machine's domain, identity, pins, and content selections. Fleet converts this plain content for chezmoi, which applies home files.
+A profile saves a machine's domain, identity, tools, and content selections. Fleet converts this plain content for chezmoi, which applies home files.
 The content checkout stays at `~/dotfiles`. Fleet owns its private converted source and never rewrites the content checkout.
 
 ## Content
@@ -97,6 +97,7 @@ Historical release notes and the legacy inventory remain records of the previous
 
 The default-on helpers group defines one alias: `fleet` runs `dotfleet`. A group selects related commands or files.
 Use `fleet update`, `fleet status`, or `fleet diff` for updates, machine status, or a preview.
-Run `fleet rollback` to restore a backup. Run `fleet domain set --name personal` to switch to your personal settings.
+Run `fleet tools list` to see selected versions. Use `fleet tools set node --version 26.13.1` to select and install a version.
+Run `fleet backups restore` to restore a backup. Run `fleet domain set --name personal` to switch to your personal settings.
 Without `dotfleet`, the alias stays undefined. An existing `fleet` command also keeps the alias undefined.
 This protects Rancher’s Fleet command. It never replaces `df`, the disk-usage command.

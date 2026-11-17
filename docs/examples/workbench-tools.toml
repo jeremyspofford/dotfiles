@@ -21,7 +21,7 @@ shellcheck = "0.11.0"
 
 # Additional active choices from the preserved WSL profile (opt in individually).
 # Original rolling versions are recorded as examples, not installed automatically.
-# Example pins above stay authoritative for overlapping tools.
+# Example tool versions above stay authoritative for overlapping tools.
 # 1password-cli = "latest"
 # aws-cli = { version = "latest", symlink_bins = "true" }
 # "aqua:anthropics/claude-code" = "latest"
