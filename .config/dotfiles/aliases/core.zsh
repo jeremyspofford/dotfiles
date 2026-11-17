@@ -130,7 +130,7 @@ if command -v aws >/dev/null 2>&1; then
 fi
 
 # dotfleet:group helpers begin
-if command -v dotfleet >/dev/null 2>&1; then
+if command -v dotfleet >/dev/null 2>&1 && ! command -v fleet >/dev/null 2>&1; then
 	alias fleet='dotfleet'
 fi
 # dotfleet:group helpers end

@@ -1,8 +1,8 @@
 # dotfiles
 
 Dotfiles are home configuration files. This repository contains plain files with real names, such as `.zshrc` and `.gitconfig`.
-It has no installer, templates, or release automation. [Dotfleet](https://github.com/jeremyspofford/dotfleet) is the optional manager.
-The shared [content contract](https://github.com/jeremyspofford/dotfleet/blob/main/docs/CONTENT-CONTRACT.md) defines files, groups, and ownership.
+It has no installer, templates, or release automation. [Fleet](https://github.com/jeremyspofford/fleet) is the optional manager.
+The shared [content contract](https://github.com/jeremyspofford/fleet/blob/main/docs/CONTENT-CONTRACT.md) defines files, groups, and ownership.
 
 ![Content and manager layers](docs/diagrams/layers.svg)
 
@@ -57,11 +57,16 @@ Review its pins, which select versions, before using it by hand. Project Mise fi
 Run `gh auth setup-git` once if you use GitHub CLI credentials. That command configures Git's credential helper.
 `pull.ff = only` is deliberate: Git pull advances matching history and stops when histories have diverged. It never creates a merge automatically.
 
-## Use Dotfleet
+## Use Fleet
 
-Use [Dotfleet's one-line installer](https://github.com/jeremyspofford/dotfleet#install) for backups, profiles, group choices, and generated machine settings.
-A profile saves a machine's domain, identity, pins, and content selections. Dotfleet converts this plain content for chezmoi, which applies home files.
-The content checkout stays at `~/dotfiles`. Dotfleet owns its private converted source and never rewrites the content checkout.
+Use [Fleet's one-line installer](https://github.com/jeremyspofford/fleet#install) for backups, profiles, group choices, and generated machine settings.
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/jeremyspofford/fleet/main/install.sh | bash
+```
+
+A profile saves a machine's domain, identity, pins, and content selections. Fleet converts this plain content for chezmoi, which applies home files.
+The content checkout stays at `~/dotfiles`. Fleet owns its private converted source and never rewrites the content checkout.
 
 ## Content
 
@@ -73,7 +78,7 @@ The content checkout stays at `~/dotfiles`. Dotfleet owns its private converted 
 - Agent skills: `agents/skills/`. A skill is a folder of instructions for a coding assistant.
 - Secret guidance: `.secrets.example`, which contains comments only.
 
-`dotfleet.toml` declares optional Docker, Terraform, Kubernetes, Python, and npm shortcut groups.
+`fleet.toml` declares optional Docker, Terraform, Kubernetes, Python, and npm shortcut groups.
 The manager can omit their marked blocks. Manual users get all available shortcut blocks.
 The `sso()` function keeps AWS sign-in credentials in the current shell. It requires a profile argument or `AWS_PROFILE`; startup never signs in.
 Local overrides remain supported: `~/.commonrc.local`, `~/.aliases.local`, `~/.zshrc.local`, and `~/.bashrc.local`.
@@ -81,9 +86,9 @@ Local overrides remain supported: `~/.commonrc.local`, `~/.aliases.local`, `~/.z
 ## Update and remove
 
 1. Commit your edits, then run `git -C ~/dotfiles pull --ff-only`.
-2. With manual links, open a fresh shell. With Dotfleet, rerun its installer.
+2. With manual links, open a fresh shell. With Fleet, rerun its installer.
 3. To remove manual setup, unlink only links that point into this checkout. Restore your backups before deleting the checkout.
-4. For managed setup, restore a Dotfleet backup using its recorded paths. Keep unrelated settings, credentials, tools, and archives.
+4. For managed setup, restore a Fleet backup using its recorded paths. Keep unrelated settings, credentials, tools, and archives.
 
 Read [DESIGN.md](docs/DESIGN.md), [GENERATED.md](docs/GENERATED.md), and [WRITING.md](docs/WRITING.md).
 Historical release notes and the legacy inventory remain records of the previous layout.
@@ -93,4 +98,5 @@ Historical release notes and the legacy inventory remain records of the previous
 The default-on helpers group defines one alias: `fleet` runs `dotfleet`. A group selects related commands or files.
 Use `fleet update`, `fleet status`, or `fleet diff` for updates, machine status, or a preview.
 Run `fleet rollback` to restore a backup. Run `fleet domain personal` to switch to your personal settings.
-Without Dotfleet, the alias stays undefined. It never replaces `df`, the disk-usage command.
+Without `dotfleet`, the alias stays undefined. An existing `fleet` command also keeps the alias undefined.
+This protects Rancher’s Fleet command. It never replaces `df`, the disk-usage command.

@@ -1,9 +1,9 @@
 # Plain content design
 
-Dotfiles is content. Dotfleet is the optional manager. Neither requires a custom sync engine.
+Dotfiles is content. Fleet is the optional manager. Neither requires a custom sync engine.
 Git stores source history. Plain files keep their real home names and work with manual links.
-Dotfleet converts them into chezmoi source names, then chezmoi applies them.
-The [content contract](https://github.com/jeremyspofford/dotfleet/blob/main/docs/CONTENT-CONTRACT.md) governs both repositories.
+Fleet converts them into chezmoi source names, then chezmoi applies them.
+The [content contract](https://github.com/jeremyspofford/fleet/blob/main/docs/CONTENT-CONTRACT.md) governs both repositories.
 
 ## One source per setting
 
@@ -25,15 +25,15 @@ Optional delta settings live in the local Git example. Run `gh auth setup-git` s
 
 The Mise file is an example DevOps workstation selection. DevOps combines software delivery and system operations.
 Mise manages tool versions. Manual users review the example themselves.
-Dotfleet merges content defaults under profile pins. It applies defaults only when their requested versions are already installed.
+Fleet merges content defaults under profile pins. It applies defaults only when their requested versions are already installed.
 The manager lists other defaults as available; it does not install them.
 
 ## Secrets and ownership
 
-`.secrets.example` has comments only. Dotfleet owns generated `~/.secrets`; manual users create their own file.
+`.secrets.example` has comments only. Fleet owns generated `~/.secrets`; manual users create their own file.
 The manifest names EXAMPLE_API_TOKEN and a disabled 1Password reference. A reference names a stored secret without containing its value.
 Keep values outside Git and use owner-only mode 0600. Git ignore rules cannot protect forced additions or already tracked files.
 
-Agents are coding assistants. Their plain skill folders stay here; Dotfleet owns the agent manifest and generator.
-The installer, converter, profile store, backups, and releases also belong to Dotfleet.
+Agents are coding assistants. Their plain skill folders stay here; Fleet owns the agent manifest and generator.
+The installer, converter, profile store, backups, and releases also belong to Fleet.
 Historical inventory and changelog files describe the old setup. They do not define current behavior.

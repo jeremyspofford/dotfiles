@@ -29,14 +29,14 @@ class ContentTests(unittest.TestCase):
             "agents/manifest.toml",
         ]:
             self.assertNotIn(name, names)
-        manifest = tomllib.loads((ROOT / "dotfleet.toml").read_text())
+        manifest = tomllib.loads((ROOT / "fleet.toml").read_text())
         self.assertEqual(manifest["format"], "plain")
         self.assertEqual(
             set(manifest["groups"]), {"docker", "terraform", "kubectl", "python", "npm", "helpers"}
         )
 
     def test_domain_examples_are_described_and_read_only(self):
-        manifest = tomllib.loads((ROOT / "dotfleet.toml").read_text())
+        manifest = tomllib.loads((ROOT / "fleet.toml").read_text())
         self.assertEqual(set(manifest["domains"]), {"core", "personal", "work", "client"})
         for domain in ["personal", "work", "client"]:
             text = (ROOT / f".config/dotfiles/aliases/{domain}.zsh").read_text()

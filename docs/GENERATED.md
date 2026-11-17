@@ -12,7 +12,7 @@ A manual link maps each content path to the same path under your home directory.
 | Tool and prompt examples | `~/.config/mise/config.toml`, `~/.config/starship.toml` |
 | Plain agent skills | `~/agents/skills/` when managed; otherwise use the checkout directly |
 
-Dotfleet generates the domain file, local Git identity, merged Mise settings, and private secrets.
-It stores converted content at `~/.local/share/dotfleet/chezmoi-source` and machine data at `~/.config/dotfleet/profile.toml`.
-See the [content contract](https://github.com/jeremyspofford/dotfleet/blob/main/docs/CONTENT-CONTRACT.md) for regeneration and ownership rules.
-The optional Dotfleet agent generator records every output and preserves edited files during removal.
+Fleet generates the domain file, local Git identity, merged Mise settings, and private secrets.
+It stores converted content at `~/.local/share/fleet/chezmoi-source` and machine data at `~/.config/fleet/profile.toml`.
+See the [content contract](https://github.com/jeremyspofford/fleet/blob/main/docs/CONTENT-CONTRACT.md) for regeneration and ownership rules.
+The optional Fleet agent generator records every output and preserves edited files during removal.
