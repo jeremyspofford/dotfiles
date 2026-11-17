@@ -7,8 +7,8 @@ The [content contract](https://github.com/jeremyspofford/fleet/blob/main/docs/CO
 
 ## One source per setting
 
-Edit content here. Keep machine identity, domain, pins, and secret references in the manager profile or local files for manual use.
-Pins select tool versions. A domain selects shared settings alone or one personal, work, or client overlay.
+Edit content here. Keep machine identity, domain, tools, and secret references in the manager profile or local files for manual use.
+Tools use selected versions. A domain selects shared settings alone or one personal, work, or client overlay.
 An overlay adds role-specific settings. `.config/dotfiles/domain.zsh` reads `~/.config/dotfiles/domain` when the shell starts.
 `.aliases` loads shared shortcuts and the chosen overlay when present. Each non-core overlay contains two harmless worked examples to replace. The manifest describes each domain.
 
@@ -25,7 +25,7 @@ Optional delta settings live in the local Git example. Run `gh auth setup-git` s
 
 The Mise file is an example DevOps workstation selection. DevOps combines software delivery and system operations.
 Mise manages tool versions. Manual users review the example themselves.
-Fleet merges content defaults under profile pins. It applies defaults only when their requested versions are already installed.
+Fleet merges content defaults under profile tool versions. It applies defaults only when their requested versions are already installed.
 The manager lists other defaults as available; it does not install them.
 
 ## Secrets and ownership
