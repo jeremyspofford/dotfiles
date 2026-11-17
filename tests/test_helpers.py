@@ -17,7 +17,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 class HelpersTests(unittest.TestCase):
     def test_one_default_on_guarded_alias(self):
-        manifest = tomllib.loads((ROOT / "dotfleet.toml").read_text())
+        manifest = tomllib.loads((ROOT / "fleet.toml").read_text())
         self.assertTrue(manifest["groups"]["helpers"]["default"])
         text = (ROOT / ".config/dotfiles/aliases/core.zsh").read_text()
         block = text.split("# dotfleet:group helpers begin\n", 1)[1].split(
@@ -71,6 +71,24 @@ class HelpersTests(unittest.TestCase):
                 self.assertIn("fleet=", result.stdout)
                 for forbidden in ["df", "dtf", "dtfu", "dtfs", "dtfd", "fleetu"]:
                     self.assertNotRegex(result.stdout, rf"(?m)^(?:alias )?{forbidden}=")
+                competitor = bin_dir / "fleet"
+                competitor.write_text('#!/bin/sh\nprintf "existing-fleet:%s\\n" "$1"\n')
+                competitor.chmod(0o700)
+                result = subprocess.run(
+                    [
+                        *options,
+                        "-c",
+                        script + "; fleet status",
+                        "helpers",
+                        str(ROOT / ".config/dotfiles/aliases/core.zsh"),
+                    ],
+                    env=env,
+                    text=True,
+                    capture_output=True,
+                )
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertEqual(result.stderr, "")
+                self.assertEqual(result.stdout, "existing-fleet:status\n")
 
 
 def usage():
